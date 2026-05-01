@@ -27,6 +27,7 @@ pub enum EngineType {
     GigaAM,
     Canary,
     Cohere,
+    AppleSpeech,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -610,6 +611,58 @@ impl ModelManager {
             },
         );
 
+        // Register Apple Speech (SFSpeechRecognizer) as a virtual model on macOS.
+        // No download required — it uses system capabilities directly.
+        #[cfg(target_os = "macos")]
+        {
+            // BCP-47 locale codes supported by SFSpeechRecognizer (common subset).
+            // Note: Apple Speech requires full BCP-47 tags, unlike other engines
+            // that use short ISO 639-1 codes. The BCP-47→locale mapping is done
+            // inside transcription.rs when dispatching to this engine.
+            let apple_speech_languages: Vec<String> = vec![
+                "en-US", "en-GB", "en-AU", "en-CA", "en-IN", "zh-CN", "zh-TW", "zh-HK", "ja-JP",
+                "ko-KR", "fr-FR", "fr-CA", "de-DE", "es-ES", "es-MX", "pt-BR", "pt-PT", "ru-RU",
+                "it-IT", "nl-NL", "pl-PL", "tr-TR", "ar-SA", "hi-IN", "th-TH", "vi-VN", "id-ID",
+                "ms-MY", "uk-UA", "cs-CZ", "sk-SK", "ro-RO", "hu-HU", "fi-FI", "da-DK", "sv-SE",
+                "nb-NO", "el-GR", "he-IL", "bg-BG", "hr-HR", "ca-ES",
+            ]
+            .into_iter()
+            .map(String::from)
+            .collect();
+
+            // Call is_apple_speech_available() at registration time.
+            // This only checks framework/locale presence and does NOT trigger
+            // the authorization dialog — the dialog fires on first actual transcription.
+            let apple_speech_downloaded = crate::apple_speech::is_apple_speech_available();
+
+            available_models.insert(
+                "apple-speech".to_string(),
+                ModelInfo {
+                    id: "apple-speech".to_string(),
+                    name: "Apple Speech".to_string(),
+                    description:
+                        "On-device dictation via Apple's Speech framework. macOS only, no download required."
+                            .to_string(),
+                    filename: "".to_string(),
+                    url: None,
+                    sha256: None,
+                    size_mb: 0,
+                    is_downloaded: apple_speech_downloaded,
+                    is_downloading: false,
+                    partial_size: 0,
+                    is_directory: false,
+                    engine_type: EngineType::AppleSpeech,
+                    accuracy_score: 0.80,
+                    speed_score: 0.90,
+                    supports_translation: false,
+                    is_recommended: false,
+                    supported_languages: apple_speech_languages,
+                    supports_language_selection: true,
+                    is_custom: false,
+                },
+            );
+        }
+
         // Auto-discover custom Whisper models (.bin files) in the models directory
         if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models) {
             warn!("Failed to discover custom models: {}", e);
@@ -723,6 +776,13 @@ impl ModelManager {
         let mut models = self.available_models.lock().unwrap();
 
         for model in models.values_mut() {
+            // AppleSpeech is a virtual model — no files to check on disk.
+            // Its availability is already set at registration time and does not
+            // change unless the OS is updated (restart required either way).
+            if matches!(model.engine_type, EngineType::AppleSpeech) {
+                continue;
+            }
+
             if model.is_directory {
                 // For directory-based models, check if the directory exists
                 let model_path = self.models_dir.join(&model.filename);
@@ -1336,6 +1396,13 @@ impl ModelManager {
             model_info.ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
 
         debug!("ModelManager: Found model info: {:?}", model_info);
+
+        // AppleSpeech is a virtual model — nothing to delete
+        if matches!(model_info.engine_type, EngineType::AppleSpeech) {
+            return Err(anyhow::anyhow!(
+                "Apple Speech is a system capability and cannot be deleted"
+            ));
+        }
 
         let model_path = self.models_dir.join(&model_info.filename);
         let partial_path = self

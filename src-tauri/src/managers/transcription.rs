@@ -45,6 +45,13 @@ enum LoadedEngine {
     GigaAM(GigaAMModel),
     Canary(CanaryModel),
     Cohere(CohereModel),
+    /// Apple Speech (SFSpeechRecognizer) — no persistent model state; each
+    /// call creates a new SFSpeechAudioBufferRecognitionRequest internally.
+    /// The _default_locale field stores the BCP-47 locale resolved at load time
+    /// (reserved for future use when streaming partial results are added).
+    AppleSpeech {
+        _default_locale: String,
+    },
 }
 
 /// RAII guard that clears the `is_loading` flag and notifies waiters on drop.
@@ -284,6 +291,56 @@ impl TranscriptionManager {
             return Err(anyhow::anyhow!(error_msg));
         }
 
+        // AppleSpeech is a virtual model with no on-disk file.
+        // Skip get_model_path for it and short-circuit early.
+        #[cfg(target_os = "macos")]
+        if matches!(model_info.engine_type, EngineType::AppleSpeech) {
+            let emit_loading_failed_apple = |error_msg: &str| {
+                let _ = self.app_handle.emit(
+                    "model-state-changed",
+                    ModelStateEvent {
+                        event_type: "loading_failed".to_string(),
+                        model_id: Some(model_id.to_string()),
+                        model_name: Some(model_info.name.clone()),
+                        error: Some(error_msg.to_string()),
+                    },
+                );
+            };
+            if !crate::apple_speech::is_apple_speech_available() {
+                let error_msg = "Apple Speech is not available on this device";
+                emit_loading_failed_apple(error_msg);
+                return Err(anyhow::anyhow!(error_msg));
+            }
+            info!("Apple Speech engine ready (no model to load)");
+            let loaded_engine = LoadedEngine::AppleSpeech {
+                _default_locale: "en-US".to_string(),
+            };
+            {
+                let mut engine = self.lock_engine();
+                *engine = Some(loaded_engine);
+            }
+            {
+                let mut current_model = self.current_model_id.lock().unwrap();
+                *current_model = Some(model_id.to_string());
+            }
+            self.touch_activity();
+            let _ = self.app_handle.emit(
+                "model-state-changed",
+                ModelStateEvent {
+                    event_type: "loading_completed".to_string(),
+                    model_id: Some(model_id.to_string()),
+                    model_name: Some(model_info.name.clone()),
+                    error: None,
+                },
+            );
+            let load_duration = load_start.elapsed();
+            debug!(
+                "Apple Speech engine loaded (took {}ms)",
+                load_duration.as_millis()
+            );
+            return Ok(());
+        }
+
         let model_path = self.model_manager.get_model_path(model_id)?;
 
         // Create appropriate engine based on model type
@@ -376,6 +433,14 @@ impl TranscriptionManager {
                     anyhow::anyhow!(error_msg)
                 })?;
                 LoadedEngine::Cohere(engine)
+            }
+            EngineType::AppleSpeech => {
+                // On macOS this branch is unreachable: AppleSpeech is handled
+                // by the early-return block above (before get_model_path).
+                // On other platforms we still need a match arm for exhaustiveness.
+                let error_msg = "Apple Speech is only available on macOS";
+                emit_loading_failed(error_msg);
+                return Err(anyhow::anyhow!(error_msg));
             }
         };
 
@@ -629,6 +694,30 @@ impl TranscriptionManager {
                                 .transcribe(&audio, &options)
                                 .map_err(|e| anyhow::anyhow!("Cohere transcription failed: {}", e))
                         }
+                        #[cfg(target_os = "macos")]
+                        LoadedEngine::AppleSpeech { .. } => {
+                            let bcp47 = map_to_bcp47(&validated_language);
+                            let contextual: Vec<String> = settings.custom_words.clone();
+                            crate::apple_speech::transcribe(
+                                &audio,
+                                16000.0,
+                                &bcp47,
+                                &contextual,
+                                true,   // require_on_device
+                                30_000, // 30s timeout
+                            )
+                            .map(|text| transcribe_rs::TranscriptionResult {
+                                text,
+                                segments: None,
+                            })
+                            .map_err(|e| {
+                                anyhow::anyhow!("Apple Speech transcription failed: {}", e)
+                            })
+                        }
+                        #[cfg(not(target_os = "macos"))]
+                        LoadedEngine::AppleSpeech { .. } => {
+                            Err(anyhow::anyhow!("Apple Speech is only available on macOS"))
+                        }
                     }
                 },
             ));
@@ -683,14 +772,20 @@ impl TranscriptionManager {
         };
 
         // Apply word correction if custom words are configured.
-        // Skip for Whisper models since custom words are already passed as initial_prompt.
-        let is_whisper = self
+        // Skip for Whisper (custom words passed as initial_prompt) and Apple Speech
+        // (custom words passed as contextual hints to SFSpeechRecognizer).
+        let skip_word_correction = self
             .model_manager
             .get_model_info(&settings.selected_model)
-            .map(|info| matches!(info.engine_type, EngineType::Whisper))
+            .map(|info| {
+                matches!(
+                    info.engine_type,
+                    EngineType::Whisper | EngineType::AppleSpeech
+                )
+            })
             .unwrap_or(false);
 
-        let corrected_result = if !settings.custom_words.is_empty() && !is_whisper {
+        let corrected_result = if !settings.custom_words.is_empty() && !skip_word_correction {
             apply_custom_words(
                 &result.text,
                 &settings.custom_words,
@@ -730,6 +825,54 @@ impl TranscriptionManager {
         self.maybe_unload_immediately("transcription");
 
         Ok(final_result)
+    }
+}
+
+/// Map an app-internal language code (ISO 639-1 or zh-Hans/zh-Hant) to a BCP-47
+/// locale tag suitable for SFSpeechRecognizer.
+///
+/// SFSpeechRecognizer requires full BCP-47 tags (e.g. "en-US") while the rest of
+/// Handy uses short ISO 639-1 codes (e.g. "en"). This function bridges the two.
+pub fn map_to_bcp47(lang: &str) -> String {
+    match lang {
+        "auto" | "en" => "en-US".to_string(),
+        "zh" | "zh-Hans" => "zh-CN".to_string(),
+        "zh-Hant" => "zh-TW".to_string(),
+        "ja" => "ja-JP".to_string(),
+        "ko" => "ko-KR".to_string(),
+        "fr" => "fr-FR".to_string(),
+        "de" => "de-DE".to_string(),
+        "es" => "es-ES".to_string(),
+        "pt" => "pt-BR".to_string(),
+        "ru" => "ru-RU".to_string(),
+        "it" => "it-IT".to_string(),
+        "nl" => "nl-NL".to_string(),
+        "pl" => "pl-PL".to_string(),
+        "tr" => "tr-TR".to_string(),
+        "ar" => "ar-SA".to_string(),
+        "hi" => "hi-IN".to_string(),
+        "th" => "th-TH".to_string(),
+        "vi" => "vi-VN".to_string(),
+        "id" => "id-ID".to_string(),
+        "ms" => "ms-MY".to_string(),
+        "uk" => "uk-UA".to_string(),
+        "cs" => "cs-CZ".to_string(),
+        "sk" => "sk-SK".to_string(),
+        "ro" => "ro-RO".to_string(),
+        "hu" => "hu-HU".to_string(),
+        "fi" => "fi-FI".to_string(),
+        "da" => "da-DK".to_string(),
+        "sv" => "sv-SE".to_string(),
+        "nb" | "no" => "nb-NO".to_string(),
+        "el" => "el-GR".to_string(),
+        "he" => "he-IL".to_string(),
+        "bg" => "bg-BG".to_string(),
+        "hr" => "hr-HR".to_string(),
+        "ca" => "ca-ES".to_string(),
+        // Pass-through if already a full BCP-47 tag (contains a hyphen)
+        s if s.contains('-') => s.to_string(),
+        // Fallback: append -XX region as best guess
+        s => format!("{}-{}", s, s.to_uppercase()),
     }
 }
 
