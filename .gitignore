@@ -46,3 +46,6 @@ result
 # Original pink icon backups (pre-blue redesign)
 src-tauri/icons/_pink_originals/
 src-tauri/resources/_pink_originals/
+
+# Handoff files: session-local handoff notes (handoff skill)
+.handoffs/
