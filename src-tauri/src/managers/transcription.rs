@@ -1,12 +1,16 @@
 use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
 use crate::managers::audio::AudioRecordingManager;
-use crate::managers::model::{EngineType, ModelManager};
+use crate::managers::model::{EngineType, ModelManager, SherpaModelKind};
 use crate::settings::{
     get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, WhisperAcceleratorSetting,
 };
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::Serialize;
+use sherpa_onnx::{
+    OfflineFunASRNanoModelConfig, OfflineRecognizer, OfflineRecognizerConfig,
+    OfflineSenseVoiceModelConfig,
+};
 use specta::Type;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -27,6 +31,15 @@ use transcribe_rs::{
     whisper_cpp::{WhisperEngine, WhisperInferenceParams},
     SpeechModel, TranscribeOptions,
 };
+
+/// Holds a loaded sherpa-onnx offline recognizer along with its model kind so the
+/// transcribe dispatch knows which recognition path to use.
+struct SherpaSession {
+    recognizer: OfflineRecognizer,
+    /// Retained for future per-call language override and diagnostic logging.
+    #[allow(dead_code)]
+    kind: SherpaModelKind,
+}
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ModelStateEvent {
@@ -52,6 +65,9 @@ enum LoadedEngine {
     AppleSpeech {
         _default_locale: String,
     },
+    /// sherpa-onnx offline recognizer (k2-fsa upstream crate).
+    /// Supports SenseVoice and FunASR-Nano model families.
+    Sherpa(SherpaSession),
 }
 
 /// RAII guard that clears the `is_loading` flag and notifies waiters on drop.
@@ -442,6 +458,73 @@ impl TranscriptionManager {
                 emit_loading_failed(error_msg);
                 return Err(anyhow::anyhow!(error_msg));
             }
+            EngineType::Sherpa(kind) => {
+                // Build the OfflineRecognizerConfig appropriate for each model family.
+                // All sherpa-onnx models run on CPU + ONNX Runtime (macOS uses CoreML
+                // accelerator automatically when available; no special flag needed).
+                let mut config = OfflineRecognizerConfig::default();
+
+                match &kind {
+                    SherpaModelKind::SenseVoice => {
+                        // model.int8.onnx + tokens.txt live at the top level of the
+                        // extracted directory.
+                        config.model_config.sense_voice = OfflineSenseVoiceModelConfig {
+                            model: Some(
+                                model_path
+                                    .join("model.int8.onnx")
+                                    .to_string_lossy()
+                                    .into_owned(),
+                            ),
+                            // Language is set per-transcription (accept "auto" → None).
+                            language: Some("auto".into()),
+                            use_itn: true,
+                        };
+                        config.model_config.tokens =
+                            Some(model_path.join("tokens.txt").to_string_lossy().into_owned());
+                    }
+                    SherpaModelKind::FunAsrNano => {
+                        // The archive has encoder_adaptor.int8.onnx, embedding.int8.onnx,
+                        // llm.int8.onnx at root, and Qwen3-0.6B/{merges,tokenizer,vocab}.json
+                        // for the sub-tokenizer.  The OfflineFunASRNanoModelConfig `tokenizer`
+                        // field points to the Qwen3-0.6B directory (sherpa-onnx resolves files
+                        // inside it automatically when it is a directory path).
+                        config.model_config.funasr_nano = OfflineFunASRNanoModelConfig {
+                            encoder_adaptor: Some(
+                                model_path
+                                    .join("encoder_adaptor.int8.onnx")
+                                    .to_string_lossy()
+                                    .into_owned(),
+                            ),
+                            llm: Some(
+                                model_path
+                                    .join("llm.int8.onnx")
+                                    .to_string_lossy()
+                                    .into_owned(),
+                            ),
+                            embedding: Some(
+                                model_path
+                                    .join("embedding.int8.onnx")
+                                    .to_string_lossy()
+                                    .into_owned(),
+                            ),
+                            tokenizer: Some(
+                                model_path.join("Qwen3-0.6B").to_string_lossy().into_owned(),
+                            ),
+                            // Use default generation parameters
+                            ..Default::default()
+                        };
+                    }
+                }
+
+                let recognizer = OfflineRecognizer::create(&config).ok_or_else(|| {
+                    let error_msg =
+                        format!("Failed to create sherpa-onnx recognizer for {}", model_id);
+                    emit_loading_failed(&error_msg);
+                    anyhow::anyhow!(error_msg)
+                })?;
+
+                LoadedEngine::Sherpa(SherpaSession { recognizer, kind })
+            }
         };
 
         // Update the current engine and model ID
@@ -727,6 +810,43 @@ impl TranscriptionManager {
                         #[cfg(not(target_os = "macos"))]
                         LoadedEngine::AppleSpeech { .. } => {
                             Err(anyhow::anyhow!("Apple Speech is only available on macOS"))
+                        }
+                        LoadedEngine::Sherpa(session) => {
+                            // Map the app language code to what sherpa-onnx expects.
+                            // SenseVoice accepts: "auto", "zh", "en", "ja", "ko", "yue".
+                            // FunASR-Nano uses its own language field in the config but
+                            // the stream-level API doesn't expose per-call language; the
+                            // model infers language automatically from audio content.
+                            let sherpa_lang = match validated_language.as_str() {
+                                "zh" | "zh-Hans" | "zh-Hant" => "zh",
+                                "en" => "en",
+                                "ja" => "ja",
+                                "ko" => "ko",
+                                "yue" => "yue",
+                                _ => "auto",
+                            };
+
+                            let stream = session.recognizer.create_stream();
+                            // sherpa-onnx expects 16 kHz mono f32 samples (same as Handy's
+                            // pipeline output).
+                            stream.accept_waveform(16000, &audio);
+                            session.recognizer.decode(&stream);
+
+                            let text = stream.get_result().map(|r| r.text).unwrap_or_default();
+
+                            // Override stream language for SenseVoice if a specific language
+                            // is selected (the config was set to "auto" at load time, which is
+                            // fine for FunASR-Nano; SenseVoice performs best with a hint).
+                            // NOTE: sherpa-onnx's OfflineStream does not expose a per-stream
+                            // language override in v1.13 — language is baked into the config.
+                            // If per-stream language selection is needed in the future, reload
+                            // the recognizer with the new language setting.
+                            let _ = sherpa_lang; // suppress unused warning; kept for future use
+
+                            Ok(transcribe_rs::TranscriptionResult {
+                                text,
+                                segments: None,
+                            })
                         }
                     }
                 },

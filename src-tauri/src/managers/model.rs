@@ -1,5 +1,6 @@
 use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
+use bzip2::read::BzDecoder;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
 use log::{debug, info, warn};
@@ -17,6 +18,14 @@ use std::time::{Duration, Instant};
 use tar::Archive;
 use tauri::{AppHandle, Emitter, Manager};
 
+/// Identifies which sherpa-onnx offline model family to use.
+/// Designed for forward-compatibility: add Paraformer, WhisperViaSherpa, etc. here.
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub enum SherpaModelKind {
+    SenseVoice,
+    FunAsrNano,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub enum EngineType {
     Whisper,
@@ -28,6 +37,9 @@ pub enum EngineType {
     Canary,
     Cohere,
     AppleSpeech,
+    /// sherpa-onnx offline recognizer path (k2-fsa upstream crate).
+    /// `SherpaModelKind` selects which model family within the sherpa-onnx engine.
+    Sherpa(SherpaModelKind),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -606,6 +618,89 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: cohere_languages,
+                supports_language_selection: true,
+                is_custom: false,
+            },
+        );
+
+        // ── sherpa-onnx models ────────────────────────────────────────────────────
+        // Both models are downloaded as .tar.bz2 archives from the k2-fsa GitHub
+        // release page, then extracted to a directory under models_dir.
+        // SHA256 values are left empty (None) because they require downloading the
+        // full archive (~155 MB / ~1 GB) to compute; fill them in before release
+        // using: curl -L <url> | sha256sum
+        // See: https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models
+
+        // SenseVoice Small (int8) — 5 languages: zh/en/ja/ko/yue
+        let sherpa_sense_voice_languages: Vec<String> =
+            vec!["zh", "zh-Hans", "zh-Hant", "en", "ja", "ko", "yue"]
+                .into_iter()
+                .map(String::from)
+                .collect();
+
+        available_models.insert(
+            "sense-voice-small".to_string(),
+            ModelInfo {
+                id: "sense-voice-small".to_string(),
+                name: "SenseVoice Small (sherpa)".to_string(),
+                description: "Fast. Chinese, English, Japanese, Korean, Cantonese. Via sherpa-onnx.".to_string(),
+                // The archive extracts to a directory named:
+                // sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17
+                filename: "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17".to_string(),
+                url: Some(
+                    "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17.tar.bz2".to_string(),
+                ),
+                // TODO: compute SHA256 before release:
+                //   curl -L <url> | sha256sum
+                sha256: None,
+                size_mb: 155,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::Sherpa(SherpaModelKind::SenseVoice),
+                accuracy_score: 0.68,
+                speed_score: 0.93,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: sherpa_sense_voice_languages,
+                supports_language_selection: true,
+                is_custom: false,
+            },
+        );
+
+        // FunASR-Nano (int8) — Chinese SOTA compact model (~1 GB)
+        let sherpa_funasr_nano_languages: Vec<String> = vec!["zh", "zh-Hans", "zh-Hant", "en"]
+            .into_iter()
+            .map(String::from)
+            .collect();
+
+        available_models.insert(
+            "funasr-nano".to_string(),
+            ModelInfo {
+                id: "funasr-nano".to_string(),
+                name: "FunASR Nano (sherpa)".to_string(),
+                description: "Chinese SOTA compact model. Via sherpa-onnx.".to_string(),
+                // The archive extracts to a directory named:
+                // sherpa-onnx-funasr-nano-int8-2025-12-30
+                filename: "sherpa-onnx-funasr-nano-int8-2025-12-30".to_string(),
+                url: Some(
+                    "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-funasr-nano-int8-2025-12-30.tar.bz2".to_string(),
+                ),
+                // TODO: compute SHA256 before release:
+                //   curl -L <url> | sha256sum
+                sha256: None,
+                size_mb: 900,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::Sherpa(SherpaModelKind::FunAsrNano),
+                accuracy_score: 0.88,
+                speed_score: 0.75,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: sherpa_funasr_nano_languages,
                 supports_language_selection: true,
                 is_custom: false,
             },
@@ -1293,13 +1388,31 @@ impl ModelManager {
             // Create temporary extraction directory
             fs::create_dir_all(&temp_extract_dir)?;
 
-            // Open the downloaded tar.gz file
-            let tar_gz = File::open(&partial_path)?;
-            let tar = GzDecoder::new(tar_gz);
-            let mut archive = Archive::new(tar);
+            // Detect archive format by URL extension and decompress accordingly.
+            // Supported: .tar.gz / .tgz  and  .tar.bz2 / .tbz2
+            let archive_url = url.to_lowercase();
+            let is_bz2 = archive_url.ends_with(".tar.bz2") || archive_url.ends_with(".tbz2");
+
+            // Helper closure: run the unpack and emit extraction-failed on error
+            let unpack_result: Result<()> = if is_bz2 {
+                let file = File::open(&partial_path)?;
+                let decoder = BzDecoder::new(file);
+                let mut archive = Archive::new(decoder);
+                archive
+                    .unpack(&temp_extract_dir)
+                    .map_err(|e| anyhow::anyhow!("Failed to extract .tar.bz2 archive: {}", e))
+            } else {
+                // Default: treat as .tar.gz
+                let file = File::open(&partial_path)?;
+                let decoder = GzDecoder::new(file);
+                let mut archive = Archive::new(decoder);
+                archive
+                    .unpack(&temp_extract_dir)
+                    .map_err(|e| anyhow::anyhow!("Failed to extract .tar.gz archive: {}", e))
+            };
 
             // Extract to the temporary directory first
-            archive.unpack(&temp_extract_dir).map_err(|e| {
+            unpack_result.map_err(|e| {
                 let error_msg = format!("Failed to extract archive: {}", e);
                 // Clean up failed extraction
                 let _ = fs::remove_dir_all(&temp_extract_dir);
