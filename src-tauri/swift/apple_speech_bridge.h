@@ -41,6 +41,26 @@ AppleSpeechResponse* transcribe_pcm_f32_apple_speech(
 // Free memory allocated by an AppleSpeechResponse.
 void free_apple_speech_response(AppleSpeechResponse* response);
 
+// Callback type for streaming partial transcription results.
+// partial_text is a UTF-8 C string valid only for the duration of the callback.
+// user_data is the opaque pointer passed to transcribe_pcm_f32_apple_speech_with_partials.
+typedef void (*PartialCallback)(const char* partial_text, void* user_data);
+
+// Like transcribe_pcm_f32_apple_speech but calls partial_cb for each intermediate
+// result before the final one.  partial_cb may be NULL (behaves like the plain variant).
+AppleSpeechResponse* transcribe_pcm_f32_apple_speech_with_partials(
+    const float* samples,
+    size_t sample_count,
+    double sample_rate,
+    const char* locale_bcp47,
+    const char* const* contextual_strings,
+    size_t contextual_count,
+    int require_on_device,
+    int timeout_ms,
+    PartialCallback partial_cb,
+    void* user_data
+);
+
 #ifdef __cplusplus
 }
 #endif

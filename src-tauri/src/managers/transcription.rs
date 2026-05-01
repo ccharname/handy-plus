@@ -567,6 +567,9 @@ impl TranscriptionManager {
             }
         };
 
+        // Clone app_handle for use inside the catch_unwind closure (AppleSpeech partial emitter).
+        let partial_emit_handle = self.app_handle.clone();
+
         // Perform transcription with the appropriate engine.
         // We use catch_unwind to prevent engine panics from poisoning the mutex,
         // which would make the app hang indefinitely on subsequent operations.
@@ -698,13 +701,20 @@ impl TranscriptionManager {
                         LoadedEngine::AppleSpeech { .. } => {
                             let bcp47 = map_to_bcp47(&validated_language);
                             let contextual: Vec<String> = settings.custom_words.clone();
-                            crate::apple_speech::transcribe(
+                            let partial_app_handle = partial_emit_handle.clone();
+                            crate::apple_speech::transcribe_with_partials(
                                 &audio,
                                 16000.0,
                                 &bcp47,
                                 &contextual,
                                 true,   // require_on_device
                                 30_000, // 30s timeout
+                                move |text| {
+                                    let _ = partial_app_handle.emit(
+                                        "transcription-partial",
+                                        serde_json::json!({ "text": text }),
+                                    );
+                                },
                             )
                             .map(|text| transcribe_rs::TranscriptionResult {
                                 text,

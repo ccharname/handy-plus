@@ -30,6 +30,28 @@ public func transcribePcmF32AppleSpeech(
     return responsePtr
 }
 
+@_cdecl("transcribe_pcm_f32_apple_speech_with_partials")
+public func transcribePcmF32AppleSpeechWithPartials(
+    _ samples: UnsafePointer<Float>,
+    _ sampleCount: Int,
+    _ sampleRate: Double,
+    _ localeBcp47: UnsafePointer<CChar>,
+    _ contextualStrings: UnsafePointer<UnsafePointer<CChar>?>?,
+    _ contextualCount: Int,
+    _ requireOnDevice: Int32,
+    _ timeoutMs: Int32,
+    _ partialCb: (@convention(c) (UnsafePointer<CChar>?, UnsafeMutableRawPointer?) -> Void)?,
+    _ userData: UnsafeMutableRawPointer?
+) -> UnsafeMutablePointer<AppleSpeechResponse> {
+    let responsePtr = ResponsePointer.allocate(capacity: 1)
+    responsePtr.initialize(to: AppleSpeechResponse(text: nil, success: 0, error_message: nil))
+
+    let msg = "Apple Speech is not available in this build (macOS only)."
+    responsePtr.pointee.error_message = strdup(msg)
+
+    return responsePtr
+}
+
 @_cdecl("free_apple_speech_response")
 public func freeAppleSpeechResponse(_ response: UnsafeMutablePointer<AppleSpeechResponse>?) {
     guard let response = response else { return }

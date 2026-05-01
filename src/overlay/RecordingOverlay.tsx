@@ -18,6 +18,7 @@ const RecordingOverlay: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [state, setState] = useState<OverlayState>("recording");
   const [levels, setLevels] = useState<number[]>(Array(16).fill(0));
+  const [partialText, setPartialText] = useState<string>("");
   const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
   const direction = getLanguageDirection(i18n.language);
 
@@ -51,11 +52,31 @@ const RecordingOverlay: React.FC = () => {
         setLevels(smoothed.slice(0, 9));
       });
 
+      // Listen for Apple Speech partial transcription results
+      const unlistenPartial = await listen<{ text: string }>(
+        "transcription-partial",
+        (event) => {
+          const raw = event.payload.text;
+          // Keep the trailing 80 chars so the most-recent words are always visible
+          setPartialText(raw.length > 80 ? raw.slice(raw.length - 80) : raw);
+        },
+      );
+
+      // Clear partial text when transcription finishes or a new session starts
+      const unlistenPartialClear = await listen(
+        "transcription-partial-clear",
+        () => {
+          setPartialText("");
+        },
+      );
+
       // Cleanup function
       return () => {
         unlistenShow();
         unlistenHide();
         unlistenLevel();
+        unlistenPartial();
+        unlistenPartialClear();
       };
     };
 
@@ -94,7 +115,9 @@ const RecordingOverlay: React.FC = () => {
           </div>
         )}
         {state === "transcribing" && (
-          <div className="transcribing-text">{t("overlay.transcribing")}</div>
+          <div className={partialText ? "partial-text" : "transcribing-text"}>
+            {partialText || t("overlay.transcribing")}
+          </div>
         )}
         {state === "processing" && (
           <div className="transcribing-text">{t("overlay.processing")}</div>

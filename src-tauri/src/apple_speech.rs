@@ -1,5 +1,5 @@
 use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_double, c_float, c_int};
+use std::os::raw::{c_char, c_double, c_float, c_int, c_void};
 
 // Define the response structure matching the Swift/C side
 #[repr(C)]
@@ -8,6 +8,11 @@ pub struct AppleSpeechResponse {
     pub success: c_int,
     pub error_message: *mut c_char,
 }
+
+/// C callback type for streaming partial results from the Swift engine.
+/// Called on a Speech framework dispatch queue; must return quickly.
+/// `partial_text` is a transient UTF-8 C string valid only for the callback duration.
+pub type PartialCallback = unsafe extern "C" fn(*const c_char, *mut c_void);
 
 // Declarations for the Swift-exported C functions.
 // We use #[link_name] to map Rust identifiers to the actual C symbol names.
@@ -25,6 +30,20 @@ extern "C" {
         contextual_count: usize,
         require_on_device: c_int,
         timeout_ms: c_int,
+    ) -> *mut AppleSpeechResponse;
+
+    #[link_name = "transcribe_pcm_f32_apple_speech_with_partials"]
+    fn ffi_transcribe_pcm_f32_apple_speech_with_partials(
+        samples: *const c_float,
+        sample_count: usize,
+        sample_rate: c_double,
+        locale_bcp47: *const c_char,
+        contextual_strings: *const *const c_char,
+        contextual_count: usize,
+        require_on_device: c_int,
+        timeout_ms: c_int,
+        partial_cb: Option<PartialCallback>,
+        user_data: *mut c_void,
     ) -> *mut AppleSpeechResponse;
 
     #[link_name = "free_apple_speech_response"]
@@ -106,6 +125,107 @@ pub fn transcribe(
     };
 
     // Free the Swift-allocated response
+    unsafe { ffi_free_apple_speech_response(response_ptr) };
+
+    result
+}
+
+/// Transcribe PCM audio using Apple SFSpeechRecognizer, delivering partial results
+/// to `on_partial` as they arrive.
+///
+/// Identical to [`transcribe`] except that `on_partial` is called for each intermediate
+/// recognition result before the final one. The closure is invoked on a Speech framework
+/// dispatch queue; it must not block for long.
+///
+/// # Arguments
+/// * `on_partial` – called with each non-final transcription text. May be called 0 or more times.
+pub fn transcribe_with_partials<F>(
+    samples: &[f32],
+    sample_rate: f64,
+    locale: &str,
+    contextual: &[String],
+    require_on_device: bool,
+    timeout_ms: i32,
+    on_partial: F,
+) -> Result<String, String>
+where
+    F: FnMut(&str) + Send,
+{
+    let locale_cstr = CString::new(locale).map_err(|e| e.to_string())?;
+
+    let contextual_cstrings: Vec<CString> = contextual
+        .iter()
+        .filter_map(|s| CString::new(s.as_str()).ok())
+        .collect();
+    let contextual_ptrs: Vec<*const c_char> =
+        contextual_cstrings.iter().map(|s| s.as_ptr()).collect();
+
+    let (ctx_ptr, ctx_count) = if contextual_ptrs.is_empty() {
+        (std::ptr::null(), 0usize)
+    } else {
+        (contextual_ptrs.as_ptr(), contextual_ptrs.len())
+    };
+
+    // Box the closure so we can pass it through `*mut c_void`.
+    // We use a double-box so the fat pointer is stored on the heap and we can
+    // cast it to a thin `*mut c_void`.
+    let boxed: Box<Box<dyn FnMut(&str) + Send>> = Box::new(Box::new(on_partial));
+    let user_data: *mut c_void = Box::into_raw(boxed) as *mut c_void;
+
+    // C shim: receives the transient `*const c_char` from Swift and forwards to
+    // the Rust closure stored in `user_data`.
+    unsafe extern "C" fn partial_shim(partial_text: *const c_char, user_data: *mut c_void) {
+        if partial_text.is_null() || user_data.is_null() {
+            return;
+        }
+        // Borrow the closure from user_data without consuming it (it may be called again).
+        let cb = &mut *(user_data as *mut Box<dyn FnMut(&str) + Send>);
+        let text = CStr::from_ptr(partial_text).to_string_lossy();
+        cb(text.as_ref());
+    }
+
+    let response_ptr = unsafe {
+        ffi_transcribe_pcm_f32_apple_speech_with_partials(
+            samples.as_ptr(),
+            samples.len(),
+            sample_rate,
+            locale_cstr.as_ptr(),
+            ctx_ptr,
+            ctx_count,
+            if require_on_device { 1 } else { 0 },
+            timeout_ms,
+            Some(partial_shim),
+            user_data,
+        )
+    };
+
+    // Reclaim the boxed closure to drop it properly, regardless of outcome.
+    // Safety: user_data was created by Box::into_raw above and Swift guarantees
+    // it will not be used after the function returns.
+    let _ = unsafe { Box::from_raw(user_data as *mut Box<dyn FnMut(&str) + Send>) };
+
+    if response_ptr.is_null() {
+        return Err("Null response from Apple Speech (with_partials)".to_string());
+    }
+
+    let response = unsafe { &*response_ptr };
+
+    let result = if response.success == 1 {
+        if response.text.is_null() {
+            Ok(String::new())
+        } else {
+            let c_str = unsafe { CStr::from_ptr(response.text) };
+            Ok(c_str.to_string_lossy().into_owned())
+        }
+    } else {
+        let error_c_str = if !response.error_message.is_null() {
+            unsafe { CStr::from_ptr(response.error_message) }
+        } else {
+            CStr::from_bytes_with_nul(b"Unknown Apple Speech error\0").unwrap()
+        };
+        Err(error_c_str.to_string_lossy().into_owned())
+    };
+
     unsafe { ffi_free_apple_speech_response(response_ptr) };
 
     result

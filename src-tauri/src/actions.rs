@@ -520,6 +520,10 @@ impl ShortcutAction for TranscribeAction {
                 binding_id
             );
 
+            // Clear any partial text from a previous session as soon as we enter
+            // the transcribing state.
+            let _ = ah.emit("transcription-partial-clear", ());
+
             let stop_recording_time = Instant::now();
             if let Some(samples) = rm.stop_recording(&binding_id) {
                 debug!(
@@ -579,6 +583,9 @@ impl ShortcutAction for TranscribeAction {
                                 transcription
                             );
 
+                            // Transcription is done; clear any partial text from the overlay.
+                            let _ = ah.emit("transcription-partial-clear", ());
+
                             if post_process {
                                 show_processing_overlay(&ah);
                             }
@@ -629,6 +636,8 @@ impl ShortcutAction for TranscribeAction {
                         }
                         Err(err) => {
                             debug!("Global Shortcut Transcription error: {}", err);
+                            // Clear any partial text that may have accumulated before the error.
+                            let _ = ah.emit("transcription-partial-clear", ());
                             // Save entry with empty text so user can retry
                             if wav_saved {
                                 if let Err(save_err) = hm.save_entry(
