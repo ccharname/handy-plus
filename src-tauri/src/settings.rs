@@ -367,7 +367,10 @@ pub struct AppProfile {
 }
 
 fn default_power_mode_enabled() -> bool {
-    false
+    // Handy+ default: opt users into Power Mode — bundled profiles ship disabled
+    // individually, so this only flips the master switch on; no behavior change
+    // until the user enables a specific profile.
+    true
 }
 
 pub fn default_app_profiles() -> Vec<AppProfile> {
@@ -656,7 +659,10 @@ fn default_sound_theme() -> SoundTheme {
 }
 
 fn default_post_process_enabled() -> bool {
-    false
+    // Handy+ default: on macOS, Apple Intelligence post-processing is on-device,
+    // free, and ships with the OS — enable by default. Other platforms keep it off
+    // until the user adds an API key.
+    cfg!(target_os = "macos")
 }
 
 fn default_app_language() -> String {
@@ -670,7 +676,17 @@ fn default_show_tray_icon() -> bool {
 }
 
 fn default_post_process_provider_id() -> String {
-    "openai".to_string()
+    // Handy+ default: prefer on-device Apple Intelligence on macOS so users get a
+    // working post-process pipeline without entering an API key. Falls back to
+    // OpenAI elsewhere (still requires user key, matching upstream behavior).
+    #[cfg(target_os = "macos")]
+    {
+        APPLE_INTELLIGENCE_PROVIDER_ID.to_string()
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        "openai".to_string()
+    }
 }
 
 fn default_post_process_providers() -> Vec<PostProcessProvider> {
@@ -936,6 +952,12 @@ pub fn get_default_settings() -> AppSettings {
         start_hidden: default_start_hidden(),
         autostart_enabled: default_autostart_enabled(),
         update_checks_enabled: default_update_checks_enabled(),
+        // Handy+ default: pick Apple Speech on macOS — zero-download, on-device,
+        // streaming partials. Other platforms keep upstream's empty default and
+        // run through the existing first-run model picker.
+        #[cfg(target_os = "macos")]
+        selected_model: "apple-speech".to_string(),
+        #[cfg(not(target_os = "macos"))]
         selected_model: "".to_string(),
         always_on_microphone: false,
         selected_microphone: None,
@@ -961,7 +983,10 @@ pub fn get_default_settings() -> AppSettings {
         post_process_api_keys: default_post_process_api_keys(),
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
-        post_process_selected_prompt_id: None,
+        // Handy+ default: pre-select the bundled "Improve Transcriptions" prompt
+        // so post-processing works out of the box (paired with Apple Intelligence
+        // provider on macOS). Users can swap or write their own from settings.
+        post_process_selected_prompt_id: Some("default_improve_transcriptions".to_string()),
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
