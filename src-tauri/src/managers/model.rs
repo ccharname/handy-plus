@@ -464,7 +464,7 @@ impl ModelManager {
             ModelInfo {
                 id: "sense-voice-int8".to_string(),
                 name: "SenseVoice".to_string(),
-                description: "Very fast. Chinese, English, Japanese, Korean, Cantonese."
+                description: "Recommended. ~70 ms / 10 s audio with built-in Chinese punctuation. Auto-detects Chinese, English, Japanese, Korean, Cantonese."
                     .to_string(),
                 filename: "sense-voice-int8".to_string(),
                 url: Some("https://blob.handy.computer/sense-voice-int8.tar.gz".to_string()),
@@ -480,7 +480,7 @@ impl ModelManager {
                 accuracy_score: 0.65,
                 speed_score: 0.95,
                 supports_translation: false,
-                is_recommended: false,
+                is_recommended: true,
                 supported_languages: sense_voice_languages,
                 supports_language_selection: true,
                 is_custom: false,
@@ -737,7 +737,7 @@ impl ModelManager {
                     id: "apple-speech".to_string(),
                     name: "Apple Speech".to_string(),
                     description:
-                        "On-device dictation via Apple's Speech framework. macOS only, no download required. 流式实时上屏，适合输入法场景。"
+                        "On-device dictation via Apple's Speech framework. macOS only, no download required. Note: Chinese output has no punctuation; partials only fire after stop. Use SenseVoice instead unless you need a specific Apple-only locale."
                             .to_string(),
                     filename: "".to_string(),
                     url: None,
@@ -751,7 +751,7 @@ impl ModelManager {
                     accuracy_score: 0.80,
                     speed_score: 0.90,
                     supports_translation: false,
-                    is_recommended: true,
+                    is_recommended: false,
                     supported_languages: apple_speech_languages,
                     supports_language_selection: true,
                     is_custom: false,

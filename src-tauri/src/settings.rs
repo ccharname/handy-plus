@@ -964,11 +964,15 @@ pub fn get_default_settings() -> AppSettings {
         start_hidden: default_start_hidden(),
         autostart_enabled: default_autostart_enabled(),
         update_checks_enabled: default_update_checks_enabled(),
-        // Handy+ default: pick Apple Speech on macOS — zero-download, on-device,
-        // streaming partials. Other platforms keep upstream's empty default and
-        // run through the existing first-run model picker.
+        // Handy+ default: SenseVoice (transcribe-rs path, ~152 MB).  Real-world
+        // testing showed it beats both Apple Speech (which on the current
+        // architecture only emits partials *after* stop, with no Chinese
+        // punctuation) and Fun-ASR-Nano (1 GB, 1-2.5 s per utterance) for an
+        // input-method workflow: ~70 ms inference per 10 s of audio, built-in
+        // Chinese punctuation/ITN, auto-detects zh/en/ja/ko/yue, no system
+        // permission flow, and CER trails Fun-ASR-Nano by under 1 point.
         #[cfg(target_os = "macos")]
-        selected_model: "apple-speech".to_string(),
+        selected_model: "sense-voice-int8".to_string(),
         #[cfg(not(target_os = "macos"))]
         selected_model: "".to_string(),
         always_on_microphone: false,
