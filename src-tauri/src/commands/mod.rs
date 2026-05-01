@@ -185,3 +185,13 @@ pub fn initialize_shortcuts(app: AppHandle) -> Result<(), String> {
     log::info!("Shortcuts initialized successfully");
     Ok(())
 }
+
+/// Return the current foreground application.
+/// macOS: bundle_id = CFBundleIdentifier; window_title requires Screen Recording permission.
+/// Windows: bundle_id = exe basename (e.g. "chrome.exe").
+/// Linux: always returns null.
+#[specta::specta]
+#[tauri::command]
+pub fn get_foreground_app() -> Option<crate::foreground::ForegroundApp> {
+    crate::foreground::current_foreground_app()
+}
