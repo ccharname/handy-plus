@@ -562,10 +562,9 @@ impl TranscriptionManager {
 
     /// Kicks off the model loading in a background thread if it's not already loaded.
     ///
-    /// Implements a "best-effort + graceful fallback" strategy on macOS:
-    /// if the user's selected model is `funasr-nano` but it hasn't been downloaded
-    /// yet, we temporarily load `apple-speech` instead (without persisting the
-    /// change) and emit a `model-fallback` event so the frontend can surface a hint.
+    /// Default strategy: `apple-speech` is the macOS default (streaming partials,
+    /// zero-download, ideal for IME/dictation). FunASR-Nano is a user-chosen
+    /// "accuracy-first" alternative that must be explicitly selected in Models settings.
     pub fn initiate_model_load(&self) {
         let mut is_loading = self.is_loading.lock().unwrap();
         if *is_loading || self.is_model_loaded() {
@@ -576,34 +575,7 @@ impl TranscriptionManager {
         let self_clone = self.clone();
         thread::spawn(move || {
             let settings = get_settings(&self_clone.app_handle);
-            let mut model_to_load = settings.selected_model.clone();
-
-            // Fallback: if the preferred model is not yet downloaded, try apple-speech
-            // on macOS rather than hard-failing. The selection is NOT persisted —
-            // the user's preference is preserved and respected once they download it.
-            #[cfg(target_os = "macos")]
-            if model_to_load == "funasr-nano" {
-                let is_downloaded = self_clone
-                    .model_manager
-                    .get_model_info("funasr-nano")
-                    .map(|info| info.is_downloaded)
-                    .unwrap_or(false);
-
-                if !is_downloaded {
-                    info!(
-                        "funasr-nano not downloaded; falling back to apple-speech for this session"
-                    );
-                    model_to_load = "apple-speech".to_string();
-                    let _ = self_clone.app_handle.emit(
-                        "model-fallback",
-                        serde_json::json!({
-                            "preferred_model_id": "funasr-nano",
-                            "fallback_model_id": "apple-speech",
-                            "reason": "not_downloaded"
-                        }),
-                    );
-                }
-            }
+            let model_to_load = settings.selected_model.clone();
 
             if let Err(e) = self_clone.load_model(&model_to_load) {
                 error!("Failed to load model: {}", e);

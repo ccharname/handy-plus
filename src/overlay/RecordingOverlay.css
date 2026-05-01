@@ -1,3 +1,20 @@
+/* Overlay window is loaded in its own webview that does not import App.css,
+   so the brand tokens have to be redeclared here. Keep these in sync with
+   src/App.css. */
+:root {
+  --color-text: #0f0f0f;
+  --color-background: #fbfbfb;
+  --color-logo-primary: #007aff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: #fbfbfb;
+    --color-background: #2c2b29;
+    --color-logo-primary: #0a84ff;
+  }
+}
+
 .recording-overlay {
   height: 36px;
   width: 172px;
@@ -5,7 +22,11 @@
   grid-template-columns: auto 1fr auto;
   align-items: center;
   padding: 6px;
-  background: #000000cc;
+  background: color-mix(in srgb, var(--color-text) 88%, transparent);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid
+    color-mix(in srgb, var(--color-logo-primary) 40%, transparent);
   border-radius: 18px;
   opacity: 0;
   transition: opacity 300ms ease-out;
@@ -53,7 +74,7 @@
 }
 
 .transcribing-text {
-  color: white;
+  color: color-mix(in srgb, var(--color-background) 95%, transparent);
   font-size: 12px;
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -71,7 +92,7 @@
 }
 
 .partial-text {
-  color: color-mix(in srgb, white 80%, transparent);
+  color: color-mix(in srgb, var(--color-background) 80%, transparent);
   font-size: 12px;
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;

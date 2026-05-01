@@ -18,10 +18,9 @@ const ILLEGAL_CHARS = /[<>"'&]/g;
 
 function parseRawText(raw: string): string[] {
   return raw
-    .split(/\n/)
-    .flatMap((line) => line.split(/[,，、\t ]{1,}/))
+    .split(/[\n,，、]+/)
     .map((w) => w.trim().replace(ILLEGAL_CHARS, ""))
-    .filter((w) => w.length > 0 && w.length <= 50 && !w.includes(" "));
+    .filter((w) => w.length > 0 && w.length <= 50);
 }
 
 function parseInput(raw: string): string[] {
@@ -36,9 +35,7 @@ function parseInput(raw: string): string[] {
       ) {
         return parsed
           .map((w: string) => w.trim().replace(ILLEGAL_CHARS, ""))
-          .filter(
-            (w: string) => w.length > 0 && w.length <= 50 && !w.includes(" "),
-          );
+          .filter((w: string) => w.length > 0 && w.length <= 50);
       }
     } catch {
       // fall through to text parsing
@@ -70,15 +67,9 @@ function computePreview(
         } catch {
           // fall through
         }
-        return trimmed
-          .split(/\n/)
-          .flatMap((l) => l.split(/[,，、\t ]{1,}/))
-          .filter((w) => w.trim());
+        return trimmed.split(/[\n,，、]+/).filter((w) => w.trim());
       })()
-    : trimmed
-        .split(/\n/)
-        .flatMap((l) => l.split(/[,，、\t ]{1,}/))
-        .filter((w) => w.trim());
+    : trimmed.split(/[\n,，、]+/).filter((w) => w.trim());
 
   const valid = parseInput(raw);
   const invalidCount = Math.max(
@@ -121,11 +112,7 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
     const handleAddWord = () => {
       const trimmedWord = newWord.trim();
       const sanitizedWord = trimmedWord.replace(ILLEGAL_CHARS, "");
-      if (
-        sanitizedWord &&
-        !sanitizedWord.includes(" ") &&
-        sanitizedWord.length <= 50
-      ) {
+      if (sanitizedWord && sanitizedWord.length <= 50) {
         if (customWords.includes(sanitizedWord)) {
           toast.error(
             t("settings.advanced.customWords.duplicate", {
@@ -228,7 +215,6 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
               onClick={handleAddWord}
               disabled={
                 !newWord.trim() ||
-                newWord.includes(" ") ||
                 newWord.trim().length > 50 ||
                 isUpdating("custom_words")
               }

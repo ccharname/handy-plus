@@ -681,7 +681,7 @@ impl ModelManager {
             ModelInfo {
                 id: "funasr-nano".to_string(),
                 name: "FunASR Nano (sherpa)".to_string(),
-                description: "Chinese SOTA compact model. Via sherpa-onnx.".to_string(),
+                description: "Chinese SOTA compact model. Via sherpa-onnx. 高准确率，无流式 partial（适合长录音/邮件）。".to_string(),
                 // The archive extracts to a directory named:
                 // sherpa-onnx-funasr-nano-int8-2025-12-30
                 filename: "sherpa-onnx-funasr-nano-int8-2025-12-30".to_string(),
@@ -737,7 +737,7 @@ impl ModelManager {
                     id: "apple-speech".to_string(),
                     name: "Apple Speech".to_string(),
                     description:
-                        "On-device dictation via Apple's Speech framework. macOS only, no download required."
+                        "On-device dictation via Apple's Speech framework. macOS only, no download required. 流式实时上屏，适合输入法场景。"
                             .to_string(),
                     filename: "".to_string(),
                     url: None,
@@ -751,7 +751,7 @@ impl ModelManager {
                     accuracy_score: 0.80,
                     speed_score: 0.90,
                     supports_translation: false,
-                    is_recommended: false,
+                    is_recommended: true,
                     supported_languages: apple_speech_languages,
                     supports_language_selection: true,
                     is_custom: false,

@@ -100,7 +100,7 @@ const RecordingOverlay: React.FC = () => {
       <div className="overlay-left">{getIcon()}</div>
 
       <div className="overlay-middle">
-        {state === "recording" && (
+        {state === "recording" && !partialText && (
           <div className="bars-container">
             {levels.map((v, i) => (
               <div
@@ -114,6 +114,9 @@ const RecordingOverlay: React.FC = () => {
               />
             ))}
           </div>
+        )}
+        {state === "recording" && partialText && (
+          <div className="partial-text">{partialText}</div>
         )}
         {state === "transcribing" && (
           <div className={partialText ? "partial-text" : "transcribing-text"}>

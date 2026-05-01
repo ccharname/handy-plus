@@ -84,7 +84,7 @@ const MatcherRow: React.FC<MatcherRowProps> = ({
 
   return (
     <div className="flex gap-2 items-center">
-      <div className="w-44 shrink-0">
+      <div className="shrink-0">
         <Dropdown
           options={matcherKindOptions}
           selectedValue={kind}
