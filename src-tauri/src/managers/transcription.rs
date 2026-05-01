@@ -460,9 +460,14 @@ impl TranscriptionManager {
             }
             EngineType::Sherpa(kind) => {
                 // Build the OfflineRecognizerConfig appropriate for each model family.
-                // All sherpa-onnx models run on CPU + ONNX Runtime (macOS uses CoreML
-                // accelerator automatically when available; no special flag needed).
+                // CPU + ONNX Runtime is the right default on Apple Silicon — sherpa-onnx
+                // issue #2910 shows the CoreML execution provider regresses RTF for
+                // Encoder+LLM models like FunASR-Nano (KV-cache fallback overhead),
+                // so we explicitly stay on CPU and bump threads to 4 (M-series perf
+                // cores) instead of the upstream default of 2.
                 let mut config = OfflineRecognizerConfig::default();
+                config.model_config.num_threads = 4;
+                config.model_config.provider = Some("cpu".to_string());
 
                 match &kind {
                     SherpaModelKind::SenseVoice => {
@@ -1024,8 +1029,34 @@ impl TranscriptionManager {
 /// SFSpeechRecognizer requires full BCP-47 tags (e.g. "en-US") while the rest of
 /// Handy uses short ISO 639-1 codes (e.g. "en"). This function bridges the two.
 pub fn map_to_bcp47(lang: &str) -> String {
+    if lang == "auto" {
+        // Apple Speech does not have a true "auto" locale. Inherit the macOS
+        // system language so a Chinese-system Mac actually transcribes Chinese
+        // instead of running everything through en-US.
+        let system_locale = tauri_plugin_os::locale().unwrap_or_default();
+        let lower = system_locale.replace('_', "-").to_lowercase();
+        let base = lower.split('-').next().unwrap_or("");
+        return match base {
+            "zh" => {
+                if lower.contains("hant") || lower.contains("tw") || lower.contains("hk") {
+                    "zh-TW".to_string()
+                } else {
+                    "zh-CN".to_string()
+                }
+            }
+            "ja" => "ja-JP".to_string(),
+            "ko" => "ko-KR".to_string(),
+            "fr" => "fr-FR".to_string(),
+            "de" => "de-DE".to_string(),
+            "es" => "es-ES".to_string(),
+            "pt" => "pt-BR".to_string(),
+            "ru" => "ru-RU".to_string(),
+            "it" => "it-IT".to_string(),
+            _ => "en-US".to_string(),
+        };
+    }
     match lang {
-        "auto" | "en" => "en-US".to_string(),
+        "en" => "en-US".to_string(),
         "zh" | "zh-Hans" => "zh-CN".to_string(),
         "zh-Hant" => "zh-TW".to_string(),
         "ja" => "ja-JP".to_string(),
