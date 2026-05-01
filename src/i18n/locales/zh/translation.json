@@ -355,7 +355,17 @@
         "placeholder": "添加词汇",
         "add": "添加",
         "remove": "删除 {{word}}",
-        "duplicate": "\"{{word}}\" 已存在"
+        "duplicate": "\"{{word}}\" 已存在",
+        "layerHint": "这些词将用于 (1) 强制替换音近字 (2) 提示模型解码",
+        "import": "导入",
+        "export": "导出",
+        "bulkImportTitle": "批量导入自定义词汇",
+        "bulkImportPlaceholder": "粘贴用换行或逗号分隔的词汇...",
+        "fromFile": "或从文件加载",
+        "preview": "新增 {{add}} · 重复 {{skip}} · 非法 {{invalid}}",
+        "confirmAdd": "全部添加",
+        "cancel": "取消",
+        "fileTypes": ".txt / .csv / .json"
       }
     },
     "postProcessing": {

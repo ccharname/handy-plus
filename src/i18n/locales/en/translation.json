@@ -355,7 +355,17 @@
         "placeholder": "Add a word",
         "add": "Add",
         "remove": "Remove {{word}}",
-        "duplicate": "\"{{word}}\" already exists"
+        "duplicate": "\"{{word}}\" already exists",
+        "layerHint": "These words are used for (1) fuzzy replacement after transcription (2) decoding bias hints",
+        "import": "Import",
+        "export": "Export",
+        "bulkImportTitle": "Bulk import custom words",
+        "bulkImportPlaceholder": "Paste words separated by newlines or commas...",
+        "fromFile": "Or load from file",
+        "preview": "{{add}} new · {{skip}} duplicate · {{invalid}} invalid",
+        "confirmAdd": "Add all",
+        "cancel": "Cancel",
+        "fileTypes": ".txt / .csv / .json"
       }
     },
     "postProcessing": {
