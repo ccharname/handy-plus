@@ -42,3 +42,7 @@ blob-report/
 
 # Nix build output
 result
+
+# Original pink icon backups (pre-blue redesign)
+src-tauri/icons/_pink_originals/
+src-tauri/resources/_pink_originals/
