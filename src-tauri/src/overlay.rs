@@ -192,10 +192,13 @@ fn is_mouse_within_monitor(
 
 /// Returns overlay position in logical coordinates (points on macOS).
 ///
-/// Uses monitor position/size directly rather than work_area(), which can
-/// return incorrect coordinates on macOS for monitors with negative positions.
-/// The per-platform OVERLAY_TOP_OFFSET / OVERLAY_BOTTOM_OFFSET constants
-/// already account for system chrome (menu bar, taskbar).
+/// For the bottom boundary we derive the Dock / taskbar height from the
+/// difference between `monitor.size()` and `work_area().size` so that the
+/// overlay always sits above the system chrome.  We intentionally avoid using
+/// `work_area().position` directly because on macOS, monitors with negative
+/// physical coordinates (e.g. a secondary display positioned to the left)
+/// can return incorrect work_area position values from tao/Tauri.  Using the
+/// *size* difference avoids that pitfall while still accounting for the Dock.
 ///
 /// We must use LogicalPosition (not PhysicalPosition) because Tauri/tao
 /// converts PhysicalPosition using the scale factor of the monitor the window
@@ -208,13 +211,35 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
     let monitor_width = monitor.size().width as f64 / scale;
     let monitor_height = monitor.size().height as f64 / scale;
 
+    // Compute the system-chrome height at the bottom (Dock on macOS, taskbar on
+    // Windows/Linux) by comparing full monitor height to work_area height.
+    // work_area() returns a &PhysicalRect directly (not Option).
+    // Clamped to [0, monitor_height] so a bogus work_area can't produce a
+    // negative offset.
+    let bottom_chrome_height: f64 = {
+        let wa = monitor.work_area();
+        let wa_height = wa.size.height as f64 / scale;
+        let wa_y = wa.position.y as f64 / scale;
+        // On macOS the work_area y is offset by the menu-bar height; subtract
+        // it from the full monitor height to get only the bottom chrome.
+        let top_chrome = (wa_y - monitor_y).max(0.0);
+        let bottom_chrome = monitor_height - top_chrome - wa_height;
+        // If work_area looks bogus (e.g. zero size or negative chrome), fall back.
+        if bottom_chrome > 0.0 && bottom_chrome < monitor_height {
+            bottom_chrome
+        } else {
+            OVERLAY_BOTTOM_OFFSET
+        }
+    };
+
     let settings = settings::get_settings(app_handle);
 
     let x = monitor_x + (monitor_width - OVERLAY_WIDTH) / 2.0;
     let y = match settings.overlay_position {
         OverlayPosition::Top => monitor_y + OVERLAY_TOP_OFFSET,
         OverlayPosition::Bottom | OverlayPosition::None => {
-            monitor_y + monitor_height - OVERLAY_HEIGHT - OVERLAY_BOTTOM_OFFSET
+            // Position overlay just above the Dock / taskbar with 20 px breathing room.
+            monitor_y + monitor_height - bottom_chrome_height - OVERLAY_HEIGHT - 20.0
         }
     };
 

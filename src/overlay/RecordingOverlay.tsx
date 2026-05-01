@@ -57,6 +57,7 @@ const RecordingOverlay: React.FC = () => {
         "transcription-partial",
         (event) => {
           const raw = event.payload.text;
+          console.log("[RecordingOverlay] transcription-partial:", raw);
           // Keep the trailing 80 chars so the most-recent words are always visible
           setPartialText(raw.length > 80 ? raw.slice(raw.length - 80) : raw);
         },

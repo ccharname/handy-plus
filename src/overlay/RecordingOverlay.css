@@ -41,7 +41,7 @@
 
 .bar {
   width: 6px;
-  background: #ffe5ee;
+  background: var(--color-logo-primary);
   max-height: 20px;
   border-radius: 2px;
   transition: height 80ms linear;
