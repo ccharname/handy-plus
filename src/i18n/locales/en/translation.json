@@ -555,6 +555,7 @@
       "pasteMethod": "Paste method override",
       "appendTrailingSpace": "Append trailing space",
       "autoSubmit": "Auto submit",
+      "howItWorksHint": "Power Mode auto-applies the Code and Claude Code profiles when those apps are frontmost; toggle others to add more scenes.",
       "tristate": {
         "inherit": "Inherit global",
         "on": "On",

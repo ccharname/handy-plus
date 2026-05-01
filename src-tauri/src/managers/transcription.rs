@@ -560,7 +560,12 @@ impl TranscriptionManager {
         Ok(())
     }
 
-    /// Kicks off the model loading in a background thread if it's not already loaded
+    /// Kicks off the model loading in a background thread if it's not already loaded.
+    ///
+    /// Implements a "best-effort + graceful fallback" strategy on macOS:
+    /// if the user's selected model is `funasr-nano` but it hasn't been downloaded
+    /// yet, we temporarily load `apple-speech` instead (without persisting the
+    /// change) and emit a `model-fallback` event so the frontend can surface a hint.
     pub fn initiate_model_load(&self) {
         let mut is_loading = self.is_loading.lock().unwrap();
         if *is_loading || self.is_model_loaded() {
@@ -571,7 +576,36 @@ impl TranscriptionManager {
         let self_clone = self.clone();
         thread::spawn(move || {
             let settings = get_settings(&self_clone.app_handle);
-            if let Err(e) = self_clone.load_model(&settings.selected_model) {
+            let mut model_to_load = settings.selected_model.clone();
+
+            // Fallback: if the preferred model is not yet downloaded, try apple-speech
+            // on macOS rather than hard-failing. The selection is NOT persisted —
+            // the user's preference is preserved and respected once they download it.
+            #[cfg(target_os = "macos")]
+            if model_to_load == "funasr-nano" {
+                let is_downloaded = self_clone
+                    .model_manager
+                    .get_model_info("funasr-nano")
+                    .map(|info| info.is_downloaded)
+                    .unwrap_or(false);
+
+                if !is_downloaded {
+                    info!(
+                        "funasr-nano not downloaded; falling back to apple-speech for this session"
+                    );
+                    model_to_load = "apple-speech".to_string();
+                    let _ = self_clone.app_handle.emit(
+                        "model-fallback",
+                        serde_json::json!({
+                            "preferred_model_id": "funasr-nano",
+                            "fallback_model_id": "apple-speech",
+                            "reason": "not_downloaded"
+                        }),
+                    );
+                }
+            }
+
+            if let Err(e) = self_clone.load_model(&model_to_load) {
                 error!("Failed to load model: {}", e);
             }
             let mut is_loading = self_clone.is_loading.lock().unwrap();
@@ -784,28 +818,82 @@ impl TranscriptionManager {
                         LoadedEngine::AppleSpeech { .. } => {
                             let bcp47 = map_to_bcp47(&validated_language);
                             let contextual: Vec<String> = settings.custom_words.clone();
+                            let require_on_device = settings.apple_speech_require_on_device;
+
+                            info!(
+                                "Apple Speech: locale={} require_on_device={}",
+                                bcp47, require_on_device
+                            );
+
+                            // Attempt 1: honour the user's require_on_device preference.
                             let partial_app_handle = partial_emit_handle.clone();
-                            crate::apple_speech::transcribe_with_partials(
+                            let bcp47_clone = bcp47.clone();
+                            let contextual_clone = contextual.clone();
+                            let first_result = crate::apple_speech::transcribe_with_partials(
                                 &audio,
                                 16000.0,
-                                &bcp47,
-                                &contextual,
-                                true,   // require_on_device
+                                &bcp47_clone,
+                                &contextual_clone,
+                                require_on_device,
                                 30_000, // 30s timeout
                                 move |text| {
+                                    debug!("Apple Speech partial: {}", text);
                                     let _ = partial_app_handle.emit(
                                         "transcription-partial",
                                         serde_json::json!({ "text": text }),
                                     );
                                 },
-                            )
-                            .map(|text| transcribe_rs::TranscriptionResult {
-                                text,
-                                segments: None,
-                            })
-                            .map_err(|e| {
-                                anyhow::anyhow!("Apple Speech transcription failed: {}", e)
-                            })
+                            );
+
+                            match first_result {
+                                Ok(text) => Ok(transcribe_rs::TranscriptionResult {
+                                    text,
+                                    segments: None,
+                                }),
+                                Err(ref e) if require_on_device => {
+                                    // On-device attempt failed (e.g. on-device model not
+                                    // downloaded in System Settings → Keyboard → Dictation).
+                                    // Retry without the on-device constraint so the network
+                                    // recogniser can serve as a transparent fallback.
+                                    warn!(
+                                        "Apple Speech on-device attempt failed ({}); \
+                                         retrying with network recognition",
+                                        e
+                                    );
+                                    let partial_app_handle2 = partial_emit_handle.clone();
+                                    crate::apple_speech::transcribe_with_partials(
+                                        &audio,
+                                        16000.0,
+                                        &bcp47,
+                                        &contextual,
+                                        false, // network fallback
+                                        30_000,
+                                        move |text| {
+                                            debug!("Apple Speech partial (network): {}", text);
+                                            let _ = partial_app_handle2.emit(
+                                                "transcription-partial",
+                                                serde_json::json!({ "text": text }),
+                                            );
+                                        },
+                                    )
+                                    .map(|text| transcribe_rs::TranscriptionResult {
+                                        text,
+                                        segments: None,
+                                    })
+                                    .map_err(|e2| {
+                                        error!("Apple Speech network fallback also failed: {}", e2);
+                                        anyhow::anyhow!(
+                                            "Apple Speech transcription failed \
+                                             (on-device and network both unavailable): {}",
+                                            e2
+                                        )
+                                    })
+                                }
+                                Err(e) => {
+                                    error!("Apple Speech transcription failed: {}", e);
+                                    Err(anyhow::anyhow!("Apple Speech transcription failed: {}", e))
+                                }
+                            }
                         }
                         #[cfg(not(target_os = "macos"))]
                         LoadedEngine::AppleSpeech { .. } => {

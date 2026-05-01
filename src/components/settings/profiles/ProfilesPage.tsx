@@ -596,6 +596,11 @@ export const ProfilesPage: React.FC = () => {
           </label>
         </div>
 
+        {/* How it works hint banner */}
+        <div className="mx-4 mb-2 px-3 py-2 rounded-md bg-logo-primary/10 text-xs text-mid-gray/80">
+          {t("settings.profiles.howItWorksHint")}
+        </div>
+
         {/* Foreground app detection status */}
         <div className="px-4 pb-3 flex items-center gap-2 text-xs text-mid-gray/60">
           <span

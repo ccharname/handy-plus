@@ -378,7 +378,7 @@ pub fn default_app_profiles() -> Vec<AppProfile> {
         AppProfile {
             id: "builtin_code".to_string(),
             name: "Code".to_string(),
-            enabled: false,
+            enabled: true,
             matchers: vec![
                 ProfileMatcher::BundleId {
                     value: "com.microsoft.VSCode".to_string(),
@@ -456,7 +456,7 @@ pub fn default_app_profiles() -> Vec<AppProfile> {
         AppProfile {
             id: "builtin_claude_code".to_string(),
             name: "Claude Code (terminal AI)".to_string(),
-            enabled: false,
+            enabled: true,
             matchers: vec![ProfileMatcher::WindowTitleSubstring {
                 value: "claude".to_string(),
             }],
@@ -585,10 +585,22 @@ pub struct AppSettings {
     pub power_mode_enabled: bool,
     #[serde(default = "default_app_profiles")]
     pub app_profiles: Vec<AppProfile>,
+    /// When true (default), Apple Speech first attempts on-device recognition.
+    /// If on-device recognition is unavailable (e.g. the language's dictation model
+    /// hasn't been downloaded in System Settings), it automatically retries with
+    /// network-based recognition. Set to false to skip the on-device attempt entirely.
+    #[serde(default = "default_apple_speech_require_on_device")]
+    pub apple_speech_require_on_device: bool,
 }
 
 fn default_model() -> String {
     "".to_string()
+}
+
+fn default_apple_speech_require_on_device() -> bool {
+    // Default: prefer on-device for privacy. The transcription path will automatically
+    // retry with network recognition if the on-device model is unavailable.
+    true
 }
 
 fn default_always_on_microphone() -> bool {
@@ -1004,6 +1016,7 @@ pub fn get_default_settings() -> AppSettings {
         extra_recording_buffer_ms: 0,
         power_mode_enabled: default_power_mode_enabled(),
         app_profiles: default_app_profiles(),
+        apple_speech_require_on_device: default_apple_speech_require_on_device(),
     }
 }
 

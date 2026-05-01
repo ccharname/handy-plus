@@ -669,7 +669,8 @@ impl ModelManager {
             },
         );
 
-        // FunASR-Nano (int8) — Chinese SOTA compact model (~1 GB)
+        // FunASR-Nano (int8) — Chinese SOTA compact model (~803 MB)
+        // URL verified 2026-05-01: HTTP 302→200, content-length=841730611
         let sherpa_funasr_nano_languages: Vec<String> = vec!["zh", "zh-Hans", "zh-Hant", "en"]
             .into_iter()
             .map(String::from)
@@ -690,7 +691,7 @@ impl ModelManager {
                 // TODO: compute SHA256 before release:
                 //   curl -L <url> | sha256sum
                 sha256: None,
-                size_mb: 900,
+                size_mb: 803,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,

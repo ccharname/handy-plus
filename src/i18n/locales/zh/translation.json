@@ -555,6 +555,7 @@
       "pasteMethod": "粘贴方式覆盖",
       "appendTrailingSpace": "追加尾部空格",
       "autoSubmit": "自动提交",
+      "howItWorksHint": "Power Mode 已默认启用 Code 和 Claude Code 两个情景；说话时检测到这些 App 会自动切换粘贴方式。其他情景需手动开启。",
       "tristate": {
         "inherit": "沿用全局",
         "on": "开",
