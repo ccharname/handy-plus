@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { RefreshCcw } from "lucide-react";
+import { RefreshCcw, ChevronUp, ChevronDown, X } from "lucide-react";
 import { commands } from "@/bindings";
 
 import { Alert } from "../../ui/Alert";
@@ -413,6 +413,142 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
   );
 };
 
+const PostProcessingChainComponent: React.FC = () => {
+  const { t } = useTranslation();
+  const { getSetting, updateSetting } = useSettings();
+
+  const prompts = getSetting("post_process_prompts") || [];
+  const chain = getSetting("post_process_chain");
+
+  // chain === null/undefined → disabled (single-prompt mode)
+  // chain === [] → enabled but empty
+  // chain === [...] → enabled with steps
+  const chainEnabled = chain !== null && chain !== undefined;
+  const steps: string[] = chainEnabled ? (chain as string[]) : [];
+
+  const promptOptions = prompts.map((p) => ({ value: p.id, label: p.name }));
+
+  const handleToggle = () => {
+    if (chainEnabled) {
+      updateSetting("post_process_chain", null);
+    } else {
+      updateSetting("post_process_chain", []);
+    }
+  };
+
+  const handleAddStep = () => {
+    updateSetting("post_process_chain", [...steps, ""]);
+  };
+
+  const handleStepChange = (idx: number, promptId: string) => {
+    const next = [...steps];
+    next[idx] = promptId;
+    updateSetting("post_process_chain", next);
+  };
+
+  const handleRemove = (idx: number) => {
+    const next = steps.filter((_, i) => i !== idx);
+    updateSetting("post_process_chain", next);
+  };
+
+  const handleMoveUp = (idx: number) => {
+    if (idx === 0) return;
+    const next = [...steps];
+    [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+    updateSetting("post_process_chain", next);
+  };
+
+  const handleMoveDown = (idx: number) => {
+    if (idx === steps.length - 1) return;
+    const next = [...steps];
+    [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+    updateSetting("post_process_chain", next);
+  };
+
+  return (
+    <SettingContainer
+      title={t("settings.postProcessing.chainSection")}
+      description={t("settings.postProcessing.chainEnabled")}
+      descriptionMode="tooltip"
+      layout="stacked"
+      grouped={true}
+    >
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="chain-enabled"
+            checked={chainEnabled}
+            onChange={handleToggle}
+            className="h-4 w-4 rounded border-mid-gray/30 accent-blue-500"
+          />
+          <label htmlFor="chain-enabled" className="text-sm cursor-pointer">
+            {t("settings.postProcessing.chainEnabled")}
+          </label>
+        </div>
+
+        {chainEnabled && (
+          <div className="space-y-2">
+            {steps.length === 0 ? (
+              <p className="text-sm text-mid-gray p-3 bg-mid-gray/5 rounded-md border border-mid-gray/20">
+                {t("settings.postProcessing.chainEmpty")}
+              </p>
+            ) : (
+              steps.map((stepId, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="text-xs text-mid-gray/70 w-12 shrink-0">
+                    {t("settings.postProcessing.chainStepLabel", { n: idx + 1 })}
+                  </span>
+                  <Dropdown
+                    selectedValue={stepId || null}
+                    options={promptOptions}
+                    onSelect={(value) => handleStepChange(idx, value ?? "")}
+                    placeholder={t("settings.postProcessing.prompts.selectPrompt")}
+                    className="flex-1"
+                  />
+                  <button
+                    onClick={() => handleMoveUp(idx)}
+                    disabled={idx === 0}
+                    aria-label={t("settings.postProcessing.chainMoveUp")}
+                    className="p-1 rounded hover:bg-mid-gray/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleMoveDown(idx)}
+                    disabled={idx === steps.length - 1}
+                    aria-label={t("settings.postProcessing.chainMoveDown")}
+                    className="p-1 rounded hover:bg-mid-gray/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleRemove(idx)}
+                    aria-label={t("settings.postProcessing.chainRemove")}
+                    className="p-1 rounded hover:bg-mid-gray/10 text-red-500"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))
+            )}
+            <Button
+              onClick={handleAddStep}
+              variant="secondary"
+              size="md"
+            >
+              {t("settings.postProcessing.chainAddStep")}
+            </Button>
+          </div>
+        )}
+      </div>
+    </SettingContainer>
+  );
+};
+
+export const PostProcessingChain = React.memo(PostProcessingChainComponent);
+PostProcessingChain.displayName = "PostProcessingChain";
+
 export const PostProcessingSettingsApi = React.memo(
   PostProcessingSettingsApiComponent,
 );
@@ -442,6 +578,10 @@ export const PostProcessingSettings: React.FC = () => {
 
       <SettingsGroup title={t("settings.postProcessing.prompts.title")}>
         <PostProcessingSettingsPrompts />
+      </SettingsGroup>
+
+      <SettingsGroup title={t("settings.postProcessing.chainSection")}>
+        <PostProcessingChain />
       </SettingsGroup>
     </div>
   );

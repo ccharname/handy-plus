@@ -364,6 +364,11 @@ pub struct AppProfile {
     pub paste_method: Option<PasteMethod>,
     pub append_trailing_space: Option<bool>,
     pub auto_submit: Option<bool>,
+    /// When set, transcription for this profile uses the given model id
+    /// instead of the global `selected_model`. Honoured only when
+    /// `profile_hot_swap_engine` is enabled in AppSettings.
+    #[serde(default)]
+    pub selected_model: Option<String>,
 }
 
 fn default_power_mode_enabled() -> bool {
@@ -406,6 +411,7 @@ pub fn default_app_profiles() -> Vec<AppProfile> {
             paste_method: Some(PasteMethod::Direct),
             append_trailing_space: Some(false),
             auto_submit: Some(false),
+            selected_model: None,
         },
         AppProfile {
             id: "builtin_chat".to_string(),
@@ -429,6 +435,7 @@ pub fn default_app_profiles() -> Vec<AppProfile> {
             paste_method: None,
             append_trailing_space: Some(true),
             auto_submit: Some(false),
+            selected_model: None,
         },
         AppProfile {
             id: "builtin_writing".to_string(),
@@ -452,6 +459,7 @@ pub fn default_app_profiles() -> Vec<AppProfile> {
             paste_method: None,
             append_trailing_space: Some(true),
             auto_submit: Some(false),
+            selected_model: None,
         },
         AppProfile {
             id: "builtin_claude_code".to_string(),
@@ -467,6 +475,7 @@ pub fn default_app_profiles() -> Vec<AppProfile> {
             paste_method: Some(PasteMethod::Direct),
             append_trailing_space: Some(false),
             auto_submit: Some(true),
+            selected_model: None,
         },
         AppProfile {
             id: "builtin_default_fallback".to_string(),
@@ -480,6 +489,7 @@ pub fn default_app_profiles() -> Vec<AppProfile> {
             paste_method: None,
             append_trailing_space: None,
             auto_submit: None,
+            selected_model: None,
         },
     ]
 }
@@ -585,12 +595,106 @@ pub struct AppSettings {
     pub power_mode_enabled: bool,
     #[serde(default = "default_app_profiles")]
     pub app_profiles: Vec<AppProfile>,
+    /// When true, the transcription pipeline honours each profile's
+    /// `selected_model` override and may hot-swap the loaded engine on
+    /// stop. Off by default — model swap costs 1-3s of latency, so users
+    /// must opt in.
+    #[serde(default)]
+    pub profile_hot_swap_engine: bool,
     /// When true (default), Apple Speech first attempts on-device recognition.
     /// If on-device recognition is unavailable (e.g. the language's dictation model
     /// hasn't been downloaded in System Settings), it automatically retries with
     /// network-based recognition. Set to false to skip the on-device attempt entirely.
     #[serde(default = "default_apple_speech_require_on_device")]
     pub apple_speech_require_on_device: bool,
+    /// Directory path where diary entries are written (e.g. ~/obsidian/diary).
+    /// None means the diary archival feature is disabled.
+    #[serde(default)]
+    pub diary_dir: Option<String>,
+    /// Keywords that trigger diary archival when the transcription starts with one.
+    /// Matching is case-insensitive and handles common CJK/Latin punctuation after the keyword.
+    #[serde(default = "default_diary_keywords")]
+    pub diary_keywords: Vec<String>,
+    /// Ordered list of prompt IDs to run sequentially after transcription.
+    /// When `Some(vec)` and non-empty, each step's output feeds the next.
+    /// When `None` or empty, falls back to `post_process_selected_prompt_id` (backward-compat).
+    #[serde(default)]
+    pub post_process_chain: Option<Vec<String>>,
+    /// When true (default), the CT-Transformer punctuation model is applied
+    /// to Chinese transcriptions from all ASR engines (Apple Speech, SenseVoice,
+    /// FunASR-Nano).  Set to false to disable the punctuation post-processing layer.
+    #[serde(default = "default_punc_zh_enabled")]
+    pub punc_zh_enabled: bool,
+    /// Hotwords bias score used when loading the sherpa-onnx SenseVoice path
+    /// (sense-voice-small-sherpa model). Maps to OfflineRecognizerConfig.hotwords_score.
+    /// Range: 0.5 – 5.0. Default: 2.0. Has no effect on the transcribe-rs SenseVoice path.
+    #[serde(default = "default_hotwords_boost")]
+    pub hotwords_boost: f32,
+    /// ID of the currently active ASR preset, or None when the user has detached
+    /// (i.e. manually changed one or more settings after applying a preset).
+    #[serde(default)]
+    pub active_preset_id: Option<String>,
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// ASR Presets
+// ────────────────────────────────────────────────────────────────────────────
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
+pub struct AsrPreset {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub icon: String,
+    pub model_id: String,
+    pub language: String,
+    pub punc_zh_enabled: bool,
+    pub require_post_process_chain: Option<Vec<String>>,
+    #[serde(default)]
+    pub require_apple_speech_on_device: Option<bool>,
+    #[serde(default)]
+    pub builtin: bool,
+}
+
+pub fn default_asr_presets() -> Vec<AsrPreset> {
+    vec![
+        AsrPreset {
+            id: "chinese_balanced".to_string(),
+            name: "Chinese Balanced".to_string(),
+            description: "SenseVoice + 中文标点 (CT-Punc)".to_string(),
+            icon: "🇨🇳".to_string(),
+            model_id: "sense-voice-int8".to_string(),
+            language: "zh-Hans".to_string(),
+            punc_zh_enabled: true,
+            require_post_process_chain: None,
+            require_apple_speech_on_device: None,
+            builtin: true,
+        },
+        AsrPreset {
+            id: "multilingual_offline".to_string(),
+            name: "Multilingual Offline".to_string(),
+            description: "FunASR-Nano，多语言离线".to_string(),
+            icon: "🌐".to_string(),
+            model_id: "funasr-nano".to_string(),
+            language: "auto".to_string(),
+            punc_zh_enabled: true,
+            require_post_process_chain: None,
+            require_apple_speech_on_device: None,
+            builtin: true,
+        },
+        AsrPreset {
+            id: "apple_native".to_string(),
+            name: "Apple Native".to_string(),
+            description: "Apple Speech + CT-Punc 标点修补".to_string(),
+            icon: "🍎".to_string(),
+            model_id: "apple-speech".to_string(),
+            language: "auto".to_string(),
+            punc_zh_enabled: true,
+            require_post_process_chain: None,
+            require_apple_speech_on_device: Some(true),
+            builtin: true,
+        },
+    ]
 }
 
 fn default_model() -> String {
@@ -830,8 +934,25 @@ fn default_whisper_gpu_device() -> i32 {
     -1 // auto
 }
 
+fn default_diary_keywords() -> Vec<String> {
+    vec![
+        "日记".to_string(),
+        "备忘".to_string(),
+        "diary".to_string(),
+        "memo".to_string(),
+    ]
+}
+
 fn default_typing_tool() -> TypingTool {
     TypingTool::Auto
+}
+
+fn default_punc_zh_enabled() -> bool {
+    true
+}
+
+fn default_hotwords_boost() -> f32 {
+    2.0
 }
 
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
@@ -1020,7 +1141,14 @@ pub fn get_default_settings() -> AppSettings {
         extra_recording_buffer_ms: 0,
         power_mode_enabled: default_power_mode_enabled(),
         app_profiles: default_app_profiles(),
+        profile_hot_swap_engine: false,
         apple_speech_require_on_device: default_apple_speech_require_on_device(),
+        diary_dir: None,
+        diary_keywords: default_diary_keywords(),
+        post_process_chain: None,
+        punc_zh_enabled: default_punc_zh_enabled(),
+        hotwords_boost: default_hotwords_boost(),
+        active_preset_id: None,
     }
 }
 

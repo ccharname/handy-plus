@@ -650,6 +650,33 @@ pub fn update_custom_words(app: AppHandle, words: Vec<String>) -> Result<(), Str
 
 #[tauri::command]
 #[specta::specta]
+pub fn set_post_process_chain(app: AppHandle, chain: Option<Vec<String>>) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.post_process_chain = chain;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_diary_dir(app: AppHandle, path: Option<String>) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.diary_dir = path;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_diary_keywords(app: AppHandle, keywords: Vec<String>) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.diary_keywords = keywords;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_word_correction_threshold_setting(
     app: AppHandle,
     threshold: f64,
@@ -1154,4 +1181,37 @@ pub async fn get_available_accelerators() -> crate::managers::transcription::Ava
     tauri::async_runtime::spawn_blocking(crate::managers::transcription::get_available_accelerators)
         .await
         .expect("get_available_accelerators panicked")
+}
+
+/// Enable or disable the CT-Transformer Chinese punctuation layer.
+#[tauri::command]
+#[specta::specta]
+pub fn set_punc_zh_enabled(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.punc_zh_enabled = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+/// Master switch that allows AppProfile.selected_model overrides to drive
+/// engine hot-swap. Off by default — swap costs 1-3s of latency on stop.
+#[tauri::command]
+#[specta::specta]
+pub fn set_profile_hot_swap_engine(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.profile_hot_swap_engine = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+/// Set the hotwords L2 bias score used when loading the sherpa-onnx SenseVoice model
+/// (sense-voice-small-sherpa). Maps to OfflineRecognizerConfig.hotwords_score.
+/// Recommended range: 0.5 – 5.0. Default: 2.0.
+#[tauri::command]
+#[specta::specta]
+pub fn set_hotwords_boost(app: AppHandle, boost: f32) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.hotwords_boost = boost;
+    settings::write_settings(&app, settings);
+    Ok(())
 }

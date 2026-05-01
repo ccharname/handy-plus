@@ -9,11 +9,19 @@ import type {
 } from "@/bindings";
 import { commands } from "@/bindings";
 
+// Keys that, when changed by the user, should detach the active ASR preset
+const ASR_PRESET_DETACH_KEYS: (keyof Settings)[] = [
+  "selected_model",
+  "selected_language",
+  "punc_zh_enabled",
+];
+
 interface SettingsStore {
   settings: Settings | null;
   defaultSettings: Settings | null;
   isLoading: boolean;
   isUpdating: Record<string, boolean>;
+  isApplyingPreset: boolean;
   audioDevices: AudioDevice[];
   outputDevices: AudioDevice[];
   customSounds: { start: boolean; stop: boolean };
@@ -37,6 +45,8 @@ interface SettingsStore {
   playTestSound: (soundType: "start" | "stop") => Promise<void>;
   checkCustomSounds: () => Promise<void>;
   setPostProcessProvider: (providerId: string) => Promise<void>;
+  applyAsrPreset: (presetId: string) => Promise<void>;
+  detachAsrPreset: () => Promise<void>;
   updatePostProcessSetting: (
     settingType: "base_url" | "api_key" | "model",
     providerId: string,
@@ -62,6 +72,7 @@ interface SettingsStore {
   setAudioDevices: (devices: AudioDevice[]) => void;
   setOutputDevices: (devices: AudioDevice[]) => void;
   setCustomSounds: (sounds: { start: boolean; stop: boolean }) => void;
+  setApplyingPreset: (applying: boolean) => void;
 }
 
 // Note: Default settings are now fetched from Rust via commands.getDefaultSettings()
@@ -155,6 +166,14 @@ const settingUpdaters: {
     commands.changeWhisperGpuDevice(value as number),
   extra_recording_buffer_ms: (value) =>
     commands.changeExtraRecordingBufferSetting(value as number),
+  diary_dir: (value) => commands.setDiaryDir(value as string | null),
+  diary_keywords: (value) => commands.setDiaryKeywords(value as string[]),
+  post_process_chain: (value) =>
+    commands.setPostProcessChain(value as string[] | null),
+  punc_zh_enabled: (value) => commands.setPuncZhEnabled(value as boolean),
+  hotwords_boost: (value) => commands.setHotwordsBoost(value as number),
+  profile_hot_swap_engine: (value) =>
+    commands.setProfileHotSwapEngine(value as boolean),
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -163,6 +182,7 @@ export const useSettingsStore = create<SettingsStore>()(
     defaultSettings: null,
     isLoading: true,
     isUpdating: {},
+    isApplyingPreset: false,
     audioDevices: [],
     outputDevices: [],
     customSounds: { start: false, stop: false },
@@ -179,6 +199,7 @@ export const useSettingsStore = create<SettingsStore>()(
     setAudioDevices: (audioDevices) => set({ audioDevices }),
     setOutputDevices: (outputDevices) => set({ outputDevices }),
     setCustomSounds: (customSounds) => set({ customSounds }),
+    setApplyingPreset: (isApplyingPreset) => set({ isApplyingPreset }),
 
     // Getters
     getSetting: (key) => get().settings?.[key],
@@ -274,7 +295,7 @@ export const useSettingsStore = create<SettingsStore>()(
       key: K,
       value: Settings[K],
     ) => {
-      const { settings, setUpdating } = get();
+      const { settings, setUpdating, isApplyingPreset } = get();
       const updateKey = String(key);
       const originalValue = settings?.[key];
 
@@ -284,6 +305,28 @@ export const useSettingsStore = create<SettingsStore>()(
         set((state) => ({
           settings: state.settings ? { ...state.settings, [key]: value } : null,
         }));
+
+        // If the user manually changes a preset-controlled field while a preset
+        // is active (and we are NOT in the middle of applying a preset), detach
+        // the preset so the "Active" badge is cleared.
+        if (
+          !isApplyingPreset &&
+          ASR_PRESET_DETACH_KEYS.includes(key as keyof Settings) &&
+          settings?.active_preset_id
+        ) {
+          try {
+            const detachResult = await commands.detachAsrPreset();
+            if (detachResult.status === "ok") {
+              set((state) => ({
+                settings: state.settings
+                  ? { ...state.settings, active_preset_id: null }
+                  : null,
+              }));
+            }
+          } catch (detachErr) {
+            console.error("Failed to detach ASR preset:", detachErr);
+          }
+        }
 
         const updater = settingUpdaters[key];
         if (updater) {
@@ -431,6 +474,46 @@ export const useSettingsStore = create<SettingsStore>()(
         }
       } finally {
         setUpdating(updateKey, false);
+      }
+    },
+
+    // Apply an ASR preset: writes all fields + loads model via backend command
+    applyAsrPreset: async (presetId: string) => {
+      const { setUpdating, refreshSettings, setApplyingPreset } = get();
+      const updateKey = "active_preset_id";
+
+      setUpdating(updateKey, true);
+      // Guard flag: prevent detach watcher from firing while we apply
+      setApplyingPreset(true);
+
+      try {
+        const result = await commands.applyAsrPreset(presetId);
+        if (result.status === "error") {
+          throw new Error(result.error);
+        }
+        // Refresh to pick up all changed fields (model, language, punc, etc.)
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to apply ASR preset:", error);
+        throw error;
+      } finally {
+        setApplyingPreset(false);
+        setUpdating(updateKey, false);
+      }
+    },
+
+    // Detach the active ASR preset (clears active_preset_id in settings)
+    detachAsrPreset: async () => {
+      const { refreshSettings } = get();
+      try {
+        const result = await commands.detachAsrPreset();
+        if (result.status === "error") {
+          throw new Error(result.error);
+        }
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to detach ASR preset:", error);
+        throw error;
       }
     },
 

@@ -9,6 +9,7 @@ import type {
   ProfileMatcher,
 } from "@/bindings";
 import { useSettings } from "../../../hooks/useSettings";
+import { useModelStore } from "../../../stores/modelStore";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { Button } from "../../ui/Button";
 import { Input } from "../../ui/Input";
@@ -129,6 +130,7 @@ interface ProfileCardProps {
   onDuplicate: () => void;
   providers: Array<{ id: string; label: string }>;
   prompts: Array<{ id: string; name: string }>;
+  models: Array<{ id: string; name: string }>;
 }
 
 const ProfileCard: React.FC<ProfileCardProps> = ({
@@ -138,6 +140,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
   onDuplicate,
   providers,
   prompts,
+  models,
 }) => {
   const { t } = useTranslation();
   const [overridesOpen, setOverridesOpen] = useState(false);
@@ -199,6 +202,11 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
   const promptOptions = [
     { value: "__inherit__", label: t("settings.profiles.inheritGlobal") },
     ...prompts.map((p) => ({ value: p.id, label: p.name })),
+  ];
+
+  const modelOptions = [
+    { value: "__inherit__", label: t("settings.profiles.inheritGlobal") },
+    ...models.map((m) => ({ value: m.id, label: m.name })),
   ];
 
   const [wordInput, setWordInput] = useState("");
@@ -298,6 +306,25 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
 
         {overridesOpen && (
           <div className="px-4 pb-4 space-y-3">
+            {/* ASR model (requires profile_hot_swap_engine global toggle) */}
+            <div>
+              <label className="text-xs text-mid-gray/60 mb-1 block">
+                {t("settings.profiles.selectedModel")}
+              </label>
+              <Dropdown
+                options={modelOptions}
+                selectedValue={profile.selected_model ?? "__inherit__"}
+                onSelect={(v) =>
+                  update({
+                    selected_model: v === "__inherit__" ? null : v,
+                  })
+                }
+              />
+              <p className="text-[10px] text-mid-gray/50 mt-1">
+                {t("settings.profiles.selectedModelHint")}
+              </p>
+            </div>
+
             {/* Paste method */}
             <div>
               <label className="text-xs text-mid-gray/60 mb-1 block">
@@ -477,6 +504,10 @@ export const ProfilesPage: React.FC = () => {
     id: p.id,
     name: p.name,
   }));
+  const allModels = useModelStore((s) => s.models);
+  const models = allModels
+    .filter((m) => m.is_downloaded)
+    .map((m) => ({ id: m.id, name: m.name }));
 
   const updateProfiles = useCallback(
     (newProfiles: AppProfile[]) => {
@@ -596,6 +627,29 @@ export const ProfilesPage: React.FC = () => {
           </label>
         </div>
 
+        {/* Hot-swap engine master toggle (off by default; costs 1-3s of model load) */}
+        <div className="flex items-center justify-between px-4 py-3 border-t border-mid-gray/10">
+          <div>
+            <p className="text-sm font-medium">
+              {t("settings.profiles.hotSwapEngineLabel")}
+            </p>
+            <p className="text-xs text-mid-gray/60 mt-0.5 max-w-md">
+              {t("settings.profiles.hotSwapEngineDescription")}
+            </p>
+          </div>
+          <label className="cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={settings?.profile_hot_swap_engine ?? false}
+              onChange={(e) =>
+                updateSetting("profile_hot_swap_engine", e.target.checked)
+              }
+            />
+            <div className="relative w-11 h-6 bg-mid-gray/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-logo-primary rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-background-ui"></div>
+          </label>
+        </div>
+
         {/* How it works hint banner */}
         <div className="mx-4 mb-2 px-3 py-2 rounded-md bg-logo-primary/10 text-xs text-mid-gray/80">
           {t("settings.profiles.howItWorksHint")}
@@ -630,6 +684,7 @@ export const ProfilesPage: React.FC = () => {
             onDuplicate={() => handleDuplicate(profile.id)}
             providers={providers}
             prompts={prompts}
+            models={models}
           />
         ))}
 

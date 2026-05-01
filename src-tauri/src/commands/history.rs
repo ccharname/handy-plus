@@ -68,6 +68,8 @@ pub async fn retry_history_entry_transcription(
     history_manager: State<'_, Arc<HistoryManager>>,
     transcription_manager: State<'_, Arc<TranscriptionManager>>,
     id: i64,
+    override_model: Option<String>,
+    override_language: Option<String>,
 ) -> Result<(), String> {
     let entry = history_manager
         .get_entry_by_id(id)
@@ -83,13 +85,44 @@ pub async fn retry_history_entry_transcription(
         return Err("Recording has no audio samples".to_string());
     }
 
-    transcription_manager.initiate_model_load();
+    // Determine if we need to temporarily swap the model.
+    // If override_model differs from the currently loaded model, reload it.
+    let current_model = transcription_manager.get_current_model();
+    let needs_model_swap = override_model
+        .as_deref()
+        .map(|m| current_model.as_deref() != Some(m))
+        .unwrap_or(false);
+
+    if needs_model_swap {
+        let target_model = override_model.clone().unwrap();
+        let tm_load = Arc::clone(&transcription_manager);
+        tauri::async_runtime::spawn_blocking(move || tm_load.load_model(&target_model))
+            .await
+            .map_err(|e| format!("Model load task panicked: {}", e))?
+            .map_err(|e| format!("Failed to load override model: {}", e))?;
+    } else {
+        transcription_manager.initiate_model_load();
+    }
 
     let tm = Arc::clone(&transcription_manager);
-    let transcription = tauri::async_runtime::spawn_blocking(move || tm.transcribe(samples))
-        .await
-        .map_err(|e| format!("Transcription task panicked: {}", e))?
-        .map_err(|e| e.to_string())?;
+    let lang_override = override_language.clone();
+    let transcription = tauri::async_runtime::spawn_blocking(move || {
+        tm.transcribe_with_language_override(samples, lang_override)
+    })
+    .await
+    .map_err(|e| format!("Transcription task panicked: {}", e))?
+    .map_err(|e| e.to_string())?;
+
+    // If we swapped the model for this retranscription, restore the original model.
+    if needs_model_swap {
+        if let Some(original) = current_model {
+            let tm_restore = Arc::clone(&transcription_manager);
+            tauri::async_runtime::spawn_blocking(move || tm_restore.load_model(&original))
+                .await
+                .map_err(|e| format!("Model restore task panicked: {}", e))?
+                .map_err(|e| format!("Failed to restore original model: {}", e))?;
+        }
+    }
 
     if transcription.is_empty() {
         return Err("Recording contains no speech".to_string());

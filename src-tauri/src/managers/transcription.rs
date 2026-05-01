@@ -328,8 +328,12 @@ impl TranscriptionManager {
                 return Err(anyhow::anyhow!(error_msg));
             }
             info!("Apple Speech engine ready (no model to load)");
+            // Resolve the default locale from the user's selected_language setting
+            // so future consumers (e.g. partial-result streaming) don't fall back
+            // to en-US on a Chinese / Japanese / etc. system.
+            let resolved_locale = map_to_bcp47(&get_settings(&self.app_handle).selected_language);
             let loaded_engine = LoadedEngine::AppleSpeech {
-                _default_locale: "en-US".to_string(),
+                _default_locale: resolved_locale,
             };
             {
                 let mut engine = self.lock_engine();
@@ -463,10 +467,15 @@ impl TranscriptionManager {
                 // CPU + ONNX Runtime is the right default on Apple Silicon — sherpa-onnx
                 // issue #2910 shows the CoreML execution provider regresses RTF for
                 // Encoder+LLM models like FunASR-Nano (KV-cache fallback overhead),
-                // so we explicitly stay on CPU and bump threads to 4 (M-series perf
-                // cores) instead of the upstream default of 2.
+                // so we explicitly stay on CPU. Probe physical parallelism and clamp
+                // to [4, 6] — upper bound stays below typical M-series efficiency-core
+                // crossover so onnx threads don't get scheduled onto E-cores.
+                let num_threads = std::thread::available_parallelism()
+                    .map(|n| n.get())
+                    .unwrap_or(4)
+                    .clamp(4, 6) as i32;
                 let mut config = OfflineRecognizerConfig::default();
-                config.model_config.num_threads = 4;
+                config.model_config.num_threads = num_threads;
                 config.model_config.provider = Some("cpu".to_string());
 
                 match &kind {
@@ -486,6 +495,42 @@ impl TranscriptionManager {
                         };
                         config.model_config.tokens =
                             Some(model_path.join("tokens.txt").to_string_lossy().into_owned());
+
+                        // Inject hotwords from settings.custom_words (L2 bias).
+                        // hotwords_file / hotwords_score live on OfflineRecognizerConfig
+                        // (top level), not inside OfflineSenseVoiceModelConfig.
+                        let settings = get_settings(&self.app_handle);
+                        if !settings.custom_words.is_empty() {
+                            match crate::portable::app_data_dir(&self.app_handle) {
+                                Ok(data_dir) => {
+                                    let hw_path = data_dir.join("sense_voice_hotwords.txt");
+                                    let contents = settings.custom_words.join("\n");
+                                    match std::fs::write(&hw_path, &contents) {
+                                        Ok(()) => {
+                                            config.hotwords_file =
+                                                Some(hw_path.to_string_lossy().into_owned());
+                                            config.hotwords_score = settings.hotwords_boost;
+                                            debug!(
+                                                "SenseVoice sherpa: hotwords_file={:?} score={}",
+                                                hw_path, settings.hotwords_boost
+                                            );
+                                        }
+                                        Err(e) => {
+                                            warn!(
+                                                "Failed to write sense_voice_hotwords.txt: {}; hotwords disabled",
+                                                e
+                                            );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to get app_data_dir for hotwords file: {}; hotwords disabled",
+                                        e
+                                    );
+                                }
+                            }
+                        }
                     }
                     SherpaModelKind::FunAsrNano => {
                         // The archive has encoder_adaptor.int8.onnx, embedding.int8.onnx,
@@ -596,6 +641,407 @@ impl TranscriptionManager {
         current_model.clone()
     }
 
+    /// Transcribe audio, optionally overriding the language from settings.
+    /// Pass `override_language = None` to use the language stored in settings.
+    pub fn transcribe_with_language_override(
+        &self,
+        audio: Vec<f32>,
+        override_language: Option<String>,
+    ) -> Result<String> {
+        #[cfg(debug_assertions)]
+        if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
+            return Err(anyhow::anyhow!(
+                "Simulated transcription failure (HANDY_FORCE_TRANSCRIPTION_FAILURE)"
+            ));
+        }
+
+        // Update last activity timestamp
+        self.touch_activity();
+
+        let st = std::time::Instant::now();
+
+        debug!("Audio vector length: {}", audio.len());
+
+        if audio.is_empty() {
+            debug!("Empty audio vector");
+            self.maybe_unload_immediately("empty audio");
+            return Ok(String::new());
+        }
+
+        // Check if model is loaded, if not try to load it
+        {
+            let mut is_loading = self.is_loading.lock().unwrap();
+            while *is_loading {
+                is_loading = self.loading_condvar.wait(is_loading).unwrap();
+            }
+
+            let engine_guard = self.lock_engine();
+            if engine_guard.is_none() {
+                return Err(anyhow::anyhow!("Model is not loaded for transcription."));
+            }
+        }
+
+        let settings = get_settings(&self.app_handle);
+
+        // Use override language if provided, otherwise fall back to settings.
+        let language_to_use =
+            override_language.unwrap_or_else(|| settings.selected_language.clone());
+
+        // Validate selected language against the model's supported languages.
+        let validated_language = if language_to_use == "auto" {
+            "auto".to_string()
+        } else {
+            let is_supported = self
+                .model_manager
+                .get_model_info(&settings.selected_model)
+                .map(|info| {
+                    info.supported_languages.is_empty()
+                        || info.supported_languages.contains(&language_to_use)
+                })
+                .unwrap_or(true);
+
+            if is_supported {
+                language_to_use.clone()
+            } else {
+                warn!(
+                    "Language '{}' not supported by current model, falling back to auto-detect",
+                    language_to_use
+                );
+                "auto".to_string()
+            }
+        };
+
+        let partial_emit_handle = self.app_handle.clone();
+
+        let result = {
+            let mut engine_guard = self.lock_engine();
+            let mut engine = match engine_guard.take() {
+                Some(e) => e,
+                None => {
+                    return Err(anyhow::anyhow!(
+                        "Model failed to load after auto-load attempt. Please check your model settings."
+                    ));
+                }
+            };
+            drop(engine_guard);
+
+            let transcribe_result = catch_unwind(AssertUnwindSafe(
+                || -> Result<transcribe_rs::TranscriptionResult> {
+                    self.do_transcribe(
+                        &mut engine,
+                        &audio,
+                        &validated_language,
+                        &settings,
+                        partial_emit_handle.clone(),
+                    )
+                },
+            ));
+
+            match transcribe_result {
+                Ok(inner_result) => {
+                    let mut engine_guard = self.lock_engine();
+                    *engine_guard = Some(engine);
+                    inner_result?
+                }
+                Err(panic_payload) => {
+                    let panic_msg = if let Some(s) = panic_payload.downcast_ref::<&str>() {
+                        s.to_string()
+                    } else if let Some(s) = panic_payload.downcast_ref::<String>() {
+                        s.clone()
+                    } else {
+                        "unknown panic".to_string()
+                    };
+                    error!(
+                        "Transcription engine panicked: {}. Model has been unloaded.",
+                        panic_msg
+                    );
+                    {
+                        let mut current_model = self
+                            .current_model_id
+                            .lock()
+                            .unwrap_or_else(|e| e.into_inner());
+                        *current_model = None;
+                    }
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "unloaded".to_string(),
+                            model_id: None,
+                            model_name: None,
+                            error: Some(format!("Engine panicked: {}", panic_msg)),
+                        },
+                    );
+                    return Err(anyhow::anyhow!(
+                        "Transcription engine panicked: {}. The model has been unloaded and will reload on next attempt.",
+                        panic_msg
+                    ));
+                }
+            }
+        };
+
+        let skip_word_correction = self
+            .model_manager
+            .get_model_info(&settings.selected_model)
+            .map(|info| {
+                matches!(
+                    info.engine_type,
+                    EngineType::Whisper | EngineType::AppleSpeech
+                )
+            })
+            .unwrap_or(false);
+
+        let corrected_result = if !settings.custom_words.is_empty() && !skip_word_correction {
+            apply_custom_words(
+                &result.text,
+                &settings.custom_words,
+                settings.word_correction_threshold,
+            )
+        } else {
+            result.text
+        };
+
+        let filtered_result = filter_transcription_output(
+            &corrected_result,
+            &settings.app_language,
+            &settings.custom_filler_words,
+        );
+
+        // Apply CT-Transformer Chinese punctuation when enabled and language is Chinese.
+        let final_result = apply_punc_zh_if_applicable(
+            filtered_result,
+            &validated_language,
+            &settings.app_language,
+            settings.punc_zh_enabled,
+            &self.app_handle,
+        );
+
+        let et = std::time::Instant::now();
+        info!(
+            "Transcription (with language override) completed in {}ms",
+            (et - st).as_millis()
+        );
+
+        if final_result.is_empty() {
+            info!("Transcription result is empty");
+        } else {
+            info!("Transcription result: {}", final_result);
+        }
+
+        self.maybe_unload_immediately("transcription");
+        Ok(final_result)
+    }
+
+    /// Internal helper: run the engine-specific transcription logic.
+    /// Called by both `transcribe` and `transcribe_with_language_override`.
+    #[allow(clippy::too_many_arguments)]
+    fn do_transcribe(
+        &self,
+        engine: &mut LoadedEngine,
+        audio: &[f32],
+        validated_language: &str,
+        settings: &crate::settings::AppSettings,
+        partial_emit_handle: AppHandle,
+    ) -> Result<transcribe_rs::TranscriptionResult> {
+        match engine {
+            LoadedEngine::Whisper(whisper_engine) => {
+                let whisper_language = if validated_language == "auto" {
+                    None
+                } else {
+                    let normalized =
+                        if validated_language == "zh-Hans" || validated_language == "zh-Hant" {
+                            "zh".to_string()
+                        } else {
+                            validated_language.to_string()
+                        };
+                    Some(normalized)
+                };
+                let params = WhisperInferenceParams {
+                    language: whisper_language,
+                    translate: settings.translate_to_english,
+                    initial_prompt: if settings.custom_words.is_empty() {
+                        None
+                    } else {
+                        Some(settings.custom_words.join(", "))
+                    },
+                    ..Default::default()
+                };
+                whisper_engine
+                    .transcribe_with(audio, &params)
+                    .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))
+            }
+            LoadedEngine::Parakeet(parakeet_engine) => {
+                let params = ParakeetParams {
+                    timestamp_granularity: Some(TimestampGranularity::Segment),
+                    ..Default::default()
+                };
+                parakeet_engine
+                    .transcribe_with(audio, &params)
+                    .map_err(|e| anyhow::anyhow!("Parakeet transcription failed: {}", e))
+            }
+            LoadedEngine::Moonshine(moonshine_engine) => moonshine_engine
+                .transcribe(audio, &TranscribeOptions::default())
+                .map_err(|e| anyhow::anyhow!("Moonshine transcription failed: {}", e)),
+            LoadedEngine::MoonshineStreaming(streaming_engine) => streaming_engine
+                .transcribe(audio, &TranscribeOptions::default())
+                .map_err(|e| anyhow::anyhow!("Moonshine streaming transcription failed: {}", e)),
+            LoadedEngine::SenseVoice(sense_voice_engine) => {
+                let language = match validated_language {
+                    "zh" | "zh-Hans" | "zh-Hant" => Some("zh".to_string()),
+                    "en" => Some("en".to_string()),
+                    "ja" => Some("ja".to_string()),
+                    "ko" => Some("ko".to_string()),
+                    "yue" => Some("yue".to_string()),
+                    _ => None,
+                };
+                let params = SenseVoiceParams {
+                    language,
+                    // ITN is handled downstream by itn_zh.rs;
+                    // disable here to prevent double-processing.
+                    use_itn: Some(false),
+                };
+                sense_voice_engine
+                    .transcribe_with(audio, &params)
+                    .map_err(|e| anyhow::anyhow!("SenseVoice transcription failed: {}", e))
+                    .map(|mut r| {
+                        // Strip SenseVoice meta/emotion/language tags
+                        // (e.g. <|HAPPY|>, <|zh|>, <|EMO_SAD|>) before
+                        // any further processing.
+                        r.text = crate::audio_toolkit::sense_voice_filter::strip_meta(&r.text);
+                        r
+                    })
+            }
+            LoadedEngine::GigaAM(gigaam_engine) => gigaam_engine
+                .transcribe(audio, &TranscribeOptions::default())
+                .map_err(|e| anyhow::anyhow!("GigaAM transcription failed: {}", e)),
+            LoadedEngine::Canary(canary_engine) => {
+                let lang = if validated_language == "auto" {
+                    None
+                } else {
+                    Some(validated_language.to_string())
+                };
+                let options = TranscribeOptions {
+                    language: lang,
+                    translate: settings.translate_to_english,
+                    ..Default::default()
+                };
+                canary_engine
+                    .transcribe(audio, &options)
+                    .map_err(|e| anyhow::anyhow!("Canary transcription failed: {}", e))
+            }
+            LoadedEngine::Cohere(cohere_engine) => {
+                let lang = if validated_language == "auto" {
+                    None
+                } else if validated_language == "zh-Hans" || validated_language == "zh-Hant" {
+                    Some("zh".to_string())
+                } else {
+                    Some(validated_language.to_string())
+                };
+                let options = TranscribeOptions {
+                    language: lang,
+                    ..Default::default()
+                };
+                cohere_engine
+                    .transcribe(audio, &options)
+                    .map_err(|e| anyhow::anyhow!("Cohere transcription failed: {}", e))
+            }
+            #[cfg(target_os = "macos")]
+            LoadedEngine::AppleSpeech { .. } => {
+                let bcp47 = map_to_bcp47(validated_language);
+                let contextual: Vec<String> = settings.custom_words.clone();
+                let require_on_device = settings.apple_speech_require_on_device;
+
+                info!(
+                    "Apple Speech: locale={} require_on_device={}",
+                    bcp47, require_on_device
+                );
+
+                let partial_app_handle = partial_emit_handle.clone();
+                let bcp47_clone = bcp47.clone();
+                let contextual_clone = contextual.clone();
+                let first_result = crate::apple_speech::transcribe_with_partials(
+                    audio,
+                    16000.0,
+                    &bcp47_clone,
+                    &contextual_clone,
+                    require_on_device,
+                    30_000,
+                    move |text| {
+                        debug!("Apple Speech partial: {}", text);
+                        let _ = partial_app_handle
+                            .emit("transcription-partial", serde_json::json!({ "text": text }));
+                    },
+                );
+
+                match first_result {
+                    Ok(text) => Ok(transcribe_rs::TranscriptionResult {
+                        text,
+                        segments: None,
+                    }),
+                    Err(ref e) if require_on_device => {
+                        warn!(
+                            "Apple Speech on-device attempt failed ({}); retrying with network recognition",
+                            e
+                        );
+                        let partial_app_handle2 = partial_emit_handle.clone();
+                        crate::apple_speech::transcribe_with_partials(
+                            audio,
+                            16000.0,
+                            &bcp47,
+                            &contextual,
+                            false,
+                            30_000,
+                            move |text| {
+                                debug!("Apple Speech partial (network): {}", text);
+                                let _ = partial_app_handle2.emit(
+                                    "transcription-partial",
+                                    serde_json::json!({ "text": text }),
+                                );
+                            },
+                        )
+                        .map(|text| transcribe_rs::TranscriptionResult {
+                            text,
+                            segments: None,
+                        })
+                        .map_err(|e2| {
+                            error!("Apple Speech network fallback also failed: {}", e2);
+                            anyhow::anyhow!(
+                                "Apple Speech transcription failed (on-device and network both unavailable): {}",
+                                e2
+                            )
+                        })
+                    }
+                    Err(e) => {
+                        error!("Apple Speech transcription failed: {}", e);
+                        Err(anyhow::anyhow!("Apple Speech transcription failed: {}", e))
+                    }
+                }
+            }
+            #[cfg(not(target_os = "macos"))]
+            LoadedEngine::AppleSpeech { .. } => {
+                Err(anyhow::anyhow!("Apple Speech is only available on macOS"))
+            }
+            LoadedEngine::Sherpa(session) => {
+                let sherpa_lang = match validated_language {
+                    "zh" | "zh-Hans" | "zh-Hant" => "zh",
+                    "en" => "en",
+                    "ja" => "ja",
+                    "ko" => "ko",
+                    "yue" => "yue",
+                    _ => "auto",
+                };
+                let stream = session.recognizer.create_stream();
+                stream.accept_waveform(16000, audio);
+                session.recognizer.decode(&stream);
+                let text = stream.get_result().map(|r| r.text).unwrap_or_default();
+                let _ = sherpa_lang;
+                Ok(transcribe_rs::TranscriptionResult {
+                    text,
+                    segments: None,
+                })
+            }
+        }
+    }
+
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
         #[cfg(debug_assertions)]
         if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
@@ -687,233 +1133,13 @@ impl TranscriptionManager {
 
             let transcribe_result = catch_unwind(AssertUnwindSafe(
                 || -> Result<transcribe_rs::TranscriptionResult> {
-                    match &mut engine {
-                        LoadedEngine::Whisper(whisper_engine) => {
-                            let whisper_language = if validated_language == "auto" {
-                                None
-                            } else {
-                                let normalized = if validated_language == "zh-Hans"
-                                    || validated_language == "zh-Hant"
-                                {
-                                    "zh".to_string()
-                                } else {
-                                    validated_language.clone()
-                                };
-                                Some(normalized)
-                            };
-
-                            let params = WhisperInferenceParams {
-                                language: whisper_language,
-                                translate: settings.translate_to_english,
-                                initial_prompt: if settings.custom_words.is_empty() {
-                                    None
-                                } else {
-                                    Some(settings.custom_words.join(", "))
-                                },
-                                ..Default::default()
-                            };
-
-                            whisper_engine
-                                .transcribe_with(&audio, &params)
-                                .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))
-                        }
-                        LoadedEngine::Parakeet(parakeet_engine) => {
-                            let params = ParakeetParams {
-                                timestamp_granularity: Some(TimestampGranularity::Segment),
-                                ..Default::default()
-                            };
-                            parakeet_engine
-                                .transcribe_with(&audio, &params)
-                                .map_err(|e| {
-                                    anyhow::anyhow!("Parakeet transcription failed: {}", e)
-                                })
-                        }
-                        LoadedEngine::Moonshine(moonshine_engine) => moonshine_engine
-                            .transcribe(&audio, &TranscribeOptions::default())
-                            .map_err(|e| anyhow::anyhow!("Moonshine transcription failed: {}", e)),
-                        LoadedEngine::MoonshineStreaming(streaming_engine) => streaming_engine
-                            .transcribe(&audio, &TranscribeOptions::default())
-                            .map_err(|e| {
-                                anyhow::anyhow!("Moonshine streaming transcription failed: {}", e)
-                            }),
-                        LoadedEngine::SenseVoice(sense_voice_engine) => {
-                            let language = match validated_language.as_str() {
-                                "zh" | "zh-Hans" | "zh-Hant" => Some("zh".to_string()),
-                                "en" => Some("en".to_string()),
-                                "ja" => Some("ja".to_string()),
-                                "ko" => Some("ko".to_string()),
-                                "yue" => Some("yue".to_string()),
-                                _ => None,
-                            };
-                            let params = SenseVoiceParams {
-                                language,
-                                use_itn: Some(true),
-                            };
-                            sense_voice_engine
-                                .transcribe_with(&audio, &params)
-                                .map_err(|e| {
-                                    anyhow::anyhow!("SenseVoice transcription failed: {}", e)
-                                })
-                        }
-                        LoadedEngine::GigaAM(gigaam_engine) => gigaam_engine
-                            .transcribe(&audio, &TranscribeOptions::default())
-                            .map_err(|e| anyhow::anyhow!("GigaAM transcription failed: {}", e)),
-                        LoadedEngine::Canary(canary_engine) => {
-                            let lang = if validated_language == "auto" {
-                                None
-                            } else {
-                                Some(validated_language.clone())
-                            };
-                            let options = TranscribeOptions {
-                                language: lang,
-                                translate: settings.translate_to_english,
-                                ..Default::default()
-                            };
-                            canary_engine
-                                .transcribe(&audio, &options)
-                                .map_err(|e| anyhow::anyhow!("Canary transcription failed: {}", e))
-                        }
-                        LoadedEngine::Cohere(cohere_engine) => {
-                            let lang = if validated_language == "auto" {
-                                None
-                            } else if validated_language == "zh-Hans"
-                                || validated_language == "zh-Hant"
-                            {
-                                Some("zh".to_string())
-                            } else {
-                                Some(validated_language.clone())
-                            };
-                            let options = TranscribeOptions {
-                                language: lang,
-                                ..Default::default()
-                            };
-                            cohere_engine
-                                .transcribe(&audio, &options)
-                                .map_err(|e| anyhow::anyhow!("Cohere transcription failed: {}", e))
-                        }
-                        #[cfg(target_os = "macos")]
-                        LoadedEngine::AppleSpeech { .. } => {
-                            let bcp47 = map_to_bcp47(&validated_language);
-                            let contextual: Vec<String> = settings.custom_words.clone();
-                            let require_on_device = settings.apple_speech_require_on_device;
-
-                            info!(
-                                "Apple Speech: locale={} require_on_device={}",
-                                bcp47, require_on_device
-                            );
-
-                            // Attempt 1: honour the user's require_on_device preference.
-                            let partial_app_handle = partial_emit_handle.clone();
-                            let bcp47_clone = bcp47.clone();
-                            let contextual_clone = contextual.clone();
-                            let first_result = crate::apple_speech::transcribe_with_partials(
-                                &audio,
-                                16000.0,
-                                &bcp47_clone,
-                                &contextual_clone,
-                                require_on_device,
-                                30_000, // 30s timeout
-                                move |text| {
-                                    debug!("Apple Speech partial: {}", text);
-                                    let _ = partial_app_handle.emit(
-                                        "transcription-partial",
-                                        serde_json::json!({ "text": text }),
-                                    );
-                                },
-                            );
-
-                            match first_result {
-                                Ok(text) => Ok(transcribe_rs::TranscriptionResult {
-                                    text,
-                                    segments: None,
-                                }),
-                                Err(ref e) if require_on_device => {
-                                    // On-device attempt failed (e.g. on-device model not
-                                    // downloaded in System Settings → Keyboard → Dictation).
-                                    // Retry without the on-device constraint so the network
-                                    // recogniser can serve as a transparent fallback.
-                                    warn!(
-                                        "Apple Speech on-device attempt failed ({}); \
-                                         retrying with network recognition",
-                                        e
-                                    );
-                                    let partial_app_handle2 = partial_emit_handle.clone();
-                                    crate::apple_speech::transcribe_with_partials(
-                                        &audio,
-                                        16000.0,
-                                        &bcp47,
-                                        &contextual,
-                                        false, // network fallback
-                                        30_000,
-                                        move |text| {
-                                            debug!("Apple Speech partial (network): {}", text);
-                                            let _ = partial_app_handle2.emit(
-                                                "transcription-partial",
-                                                serde_json::json!({ "text": text }),
-                                            );
-                                        },
-                                    )
-                                    .map(|text| transcribe_rs::TranscriptionResult {
-                                        text,
-                                        segments: None,
-                                    })
-                                    .map_err(|e2| {
-                                        error!("Apple Speech network fallback also failed: {}", e2);
-                                        anyhow::anyhow!(
-                                            "Apple Speech transcription failed \
-                                             (on-device and network both unavailable): {}",
-                                            e2
-                                        )
-                                    })
-                                }
-                                Err(e) => {
-                                    error!("Apple Speech transcription failed: {}", e);
-                                    Err(anyhow::anyhow!("Apple Speech transcription failed: {}", e))
-                                }
-                            }
-                        }
-                        #[cfg(not(target_os = "macos"))]
-                        LoadedEngine::AppleSpeech { .. } => {
-                            Err(anyhow::anyhow!("Apple Speech is only available on macOS"))
-                        }
-                        LoadedEngine::Sherpa(session) => {
-                            // Map the app language code to what sherpa-onnx expects.
-                            // SenseVoice accepts: "auto", "zh", "en", "ja", "ko", "yue".
-                            // FunASR-Nano uses its own language field in the config but
-                            // the stream-level API doesn't expose per-call language; the
-                            // model infers language automatically from audio content.
-                            let sherpa_lang = match validated_language.as_str() {
-                                "zh" | "zh-Hans" | "zh-Hant" => "zh",
-                                "en" => "en",
-                                "ja" => "ja",
-                                "ko" => "ko",
-                                "yue" => "yue",
-                                _ => "auto",
-                            };
-
-                            let stream = session.recognizer.create_stream();
-                            // sherpa-onnx expects 16 kHz mono f32 samples (same as Handy's
-                            // pipeline output).
-                            stream.accept_waveform(16000, &audio);
-                            session.recognizer.decode(&stream);
-
-                            let text = stream.get_result().map(|r| r.text).unwrap_or_default();
-
-                            // Override stream language for SenseVoice if a specific language
-                            // is selected (the config was set to "auto" at load time, which is
-                            // fine for FunASR-Nano; SenseVoice performs best with a hint).
-                            // NOTE: sherpa-onnx's OfflineStream does not expose a per-stream
-                            // language override in v1.13 — language is baked into the config.
-                            // If per-stream language selection is needed in the future, reload
-                            // the recognizer with the new language setting.
-                            let _ = sherpa_lang; // suppress unused warning; kept for future use
-
-                            Ok(transcribe_rs::TranscriptionResult {
-                                text,
-                                segments: None,
-                            })
-                        }
-                    }
+                    self.do_transcribe(
+                        &mut engine,
+                        &audio,
+                        &validated_language,
+                        &settings,
+                        partial_emit_handle.clone(),
+                    )
                 },
             ));
 
@@ -997,6 +1223,15 @@ impl TranscriptionManager {
             &settings.custom_filler_words,
         );
 
+        // Apply CT-Transformer Chinese punctuation when enabled and language is Chinese.
+        let final_result = apply_punc_zh_if_applicable(
+            filtered_result,
+            &validated_language,
+            &settings.app_language,
+            settings.punc_zh_enabled,
+            &self.app_handle,
+        );
+
         let et = std::time::Instant::now();
         let translation_note = if settings.translate_to_english {
             " (translated)"
@@ -1009,8 +1244,6 @@ impl TranscriptionManager {
             translation_note
         );
 
-        let final_result = filtered_result;
-
         if final_result.is_empty() {
             info!("Transcription result is empty");
         } else {
@@ -1020,6 +1253,64 @@ impl TranscriptionManager {
         self.maybe_unload_immediately("transcription");
 
         Ok(final_result)
+    }
+}
+
+/// Apply CT-Transformer Chinese punctuation restoration if the conditions are met.
+///
+/// Returns the punctuated text on success or `text` unchanged on any error/miss.
+/// Never panics — all errors are logged and gracefully skipped.
+fn apply_punc_zh_if_applicable(
+    text: String,
+    validated_language: &str,
+    app_language: &str,
+    punc_zh_enabled: bool,
+    app_handle: &tauri::AppHandle,
+) -> String {
+    if !punc_zh_enabled || text.is_empty() {
+        return text;
+    }
+
+    // Determine whether the *effective* language is Chinese.
+    // We check `validated_language` first (explicitly selected by user or model).
+    // When it is "auto" we fall back to `app_language`.
+    let lang_to_check = if validated_language == "auto" {
+        app_language
+    } else {
+        validated_language
+    };
+
+    let base_lang = lang_to_check
+        .split(&['-', '_'][..])
+        .next()
+        .unwrap_or(lang_to_check);
+
+    if base_lang != "zh" && lang_to_check != "yue" {
+        // Not Chinese — skip punctuation layer entirely
+        return text;
+    }
+
+    // Build path: <app_data_dir>/models/sherpa-onnx-punct-ct-transformer-zh-cn-2024-04-12
+    let model_dir = match crate::portable::app_data_dir(app_handle) {
+        Ok(d) => d
+            .join("models")
+            .join("sherpa-onnx-punct-ct-transformer-zh-cn-2024-04-12"),
+        Err(e) => {
+            warn!("punc_zh: cannot resolve app_data_dir: {}", e);
+            return text;
+        }
+    };
+
+    match crate::audio_toolkit::punc_zh::add_punctuation(&model_dir, &text) {
+        Ok(punctuated) => {
+            debug!("punc_zh: applied punctuation");
+            punctuated
+        }
+        Err(e) => {
+            // Model absent or inference failed — silently degrade
+            debug!("punc_zh: skipped ({})", e);
+            text
+        }
     }
 }
 

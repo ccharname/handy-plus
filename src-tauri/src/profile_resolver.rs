@@ -14,6 +14,10 @@ pub struct EffectiveSettings {
     pub paste_method: PasteMethod,
     pub append_trailing_space: bool,
     pub auto_submit: bool,
+    /// Resolved model id. Equals AppSettings.selected_model unless a matched
+    /// profile carries a `selected_model` override AND
+    /// `profile_hot_swap_engine` is enabled in AppSettings.
+    pub selected_model: String,
     /// Non-None when power mode matched a profile.
     pub matched_profile_id: Option<String>,
     pub matched_profile_name: Option<String>,
@@ -41,7 +45,7 @@ pub fn resolve_effective_settings(settings: &AppSettings) -> EffectiveSettings {
         .filter(|p| p.enabled)
         .find(|p| profile_matches(p, &fg))
     {
-        apply_profile(baseline, profile)
+        apply_profile(baseline, profile, settings.profile_hot_swap_engine)
     } else {
         baseline
     }
@@ -100,12 +104,24 @@ fn matcher_hits(matcher: &ProfileMatcher, fg: &ForegroundApp) -> bool {
     }
 }
 
-fn apply_profile(mut base: EffectiveSettings, profile: &AppProfile) -> EffectiveSettings {
+fn apply_profile(
+    mut base: EffectiveSettings,
+    profile: &AppProfile,
+    allow_engine_swap: bool,
+) -> EffectiveSettings {
     base.matched_profile_id = Some(profile.id.clone());
     base.matched_profile_name = Some(profile.name.clone());
 
     if let Some(lang) = &profile.selected_language {
         base.selected_language = lang.clone();
+    }
+
+    if allow_engine_swap {
+        if let Some(model_id) = &profile.selected_model {
+            if !model_id.is_empty() {
+                base.selected_model = model_id.clone();
+            }
+        }
     }
 
     // Merge custom_words_extra into the existing list, deduped.
@@ -147,6 +163,7 @@ fn baseline_from_settings(settings: &AppSettings) -> EffectiveSettings {
         paste_method: settings.paste_method,
         append_trailing_space: settings.append_trailing_space,
         auto_submit: settings.auto_submit,
+        selected_model: settings.selected_model.clone(),
         matched_profile_id: None,
         matched_profile_name: None,
     }

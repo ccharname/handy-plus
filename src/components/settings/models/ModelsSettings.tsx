@@ -7,6 +7,7 @@ import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
 import { LANGUAGES } from "@/lib/constants/languages.ts";
 import type { ModelInfo } from "@/bindings";
+import { AsrPresetCards } from "./AsrPresetCards";
 
 // check if model supports a language based on its supported_languages list
 const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
@@ -215,6 +216,15 @@ export const ModelsSettings: React.FC = () => {
           {t("settings.models.description")}
         </p>
       </div>
+
+      {/* ASR Preset Cards — quick-switch section */}
+      <AsrPresetCards />
+
+      {/* Advanced hint */}
+      <p className="text-xs text-text/40 -mt-2">
+        {t("settings.asrPresets.advancedHint")}
+      </p>
+
       {filteredModels.length > 0 ? (
         <div className="space-y-6">
           {/* Downloaded Models Section — header always visible so filter stays accessible */}

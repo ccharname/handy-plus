@@ -663,7 +663,38 @@ impl ModelManager {
                 speed_score: 0.93,
                 supports_translation: false,
                 is_recommended: false,
-                supported_languages: sherpa_sense_voice_languages,
+                supported_languages: sherpa_sense_voice_languages.clone(),
+                supports_language_selection: true,
+                is_custom: false,
+            },
+        );
+
+        // SenseVoice Small (int8) via sherpa-onnx — same archive as sense-voice-small,
+        // registered under a distinct id so settings can refer to it explicitly.
+        // This id is the canonical one for hotwords L2 bias support.
+        available_models.insert(
+            "sense-voice-small-sherpa".to_string(),
+            ModelInfo {
+                id: "sense-voice-small-sherpa".to_string(),
+                name: "SenseVoice (sherpa-onnx)".to_string(),
+                description: "与 sense-voice-small 相同模型，独立 model_id。支持 custom_words 热词 L2 偏置（hotwords_boost）。Via sherpa-onnx，~242 MB。".to_string(),
+                // Same directory as sense-voice-small
+                filename: "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17".to_string(),
+                url: Some(
+                    "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17.tar.bz2".to_string(),
+                ),
+                sha256: None,
+                size_mb: 242,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::Sherpa(SherpaModelKind::SenseVoice),
+                accuracy_score: 0.68,
+                speed_score: 0.93,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: sherpa_sense_voice_languages.clone(),
                 supports_language_selection: true,
                 is_custom: false,
             },

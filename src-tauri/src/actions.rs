@@ -64,31 +64,26 @@ fn build_system_prompt(prompt_template: &str) -> String {
     prompt_template.replace("${output}", "").trim().to_string()
 }
 
-async fn post_process_transcription(
+/// Run a single LLM post-processing step with an explicit prompt string.
+/// Returns `Some(text)` on success, `None` on hard failure (no output / provider error).
+async fn run_single_llm_step(
     settings: &AppSettings,
-    transcription: &str,
-    effective: Option<&EffectiveSettings>,
+    effective_provider_id: &str,
+    prompt: &str,
+    text_input: &str,
 ) -> Option<String> {
-    // Use effective overrides if available (Power Mode), otherwise use global settings.
-    let effective_provider_id = effective
-        .map(|e| e.post_process_provider_id.as_str())
-        .unwrap_or(&settings.post_process_provider_id);
-
     let provider = match settings
         .post_process_provider(effective_provider_id)
         .cloned()
     {
         Some(provider) => provider,
-        None => {
-            // Fallback to active provider
-            match settings.active_post_process_provider().cloned() {
-                Some(p) => p,
-                None => {
-                    debug!("Post-processing enabled but no provider is selected");
-                    return None;
-                }
+        None => match settings.active_post_process_provider().cloned() {
+            Some(p) => p,
+            None => {
+                debug!("Post-processing enabled but no provider is selected");
+                return None;
             }
-        }
+        },
     };
 
     let model = settings
@@ -104,34 +99,6 @@ async fn post_process_transcription(
         );
         return None;
     }
-
-    // Resolve which prompt to use: profile override > global setting
-    let effective_prompt_id = effective
-        .and_then(|e| e.post_process_selected_prompt_id.as_deref())
-        .or_else(|| settings.post_process_selected_prompt_id.as_deref());
-
-    let selected_prompt_id = match effective_prompt_id {
-        Some(id) => id.to_string(),
-        None => {
-            debug!("Post-processing skipped because no prompt is selected");
-            return None;
-        }
-    };
-
-    let prompt = match settings
-        .post_process_prompts
-        .iter()
-        .find(|prompt| prompt.id == selected_prompt_id)
-    {
-        Some(prompt) => prompt.prompt.clone(),
-        None => {
-            debug!(
-                "Post-processing skipped because prompt '{}' was not found",
-                selected_prompt_id
-            );
-            return None;
-        }
-    };
 
     if prompt.trim().is_empty() {
         debug!("Post-processing skipped because the selected prompt is empty");
@@ -168,8 +135,8 @@ async fn post_process_transcription(
     if provider.supports_structured_output {
         debug!("Using structured outputs for provider '{}'", provider.id);
 
-        let system_prompt = build_system_prompt(&prompt);
-        let user_content = transcription.to_string();
+        let system_prompt = build_system_prompt(prompt);
+        let user_content = text_input.to_string();
 
         // Handle Apple Intelligence separately since it uses native Swift APIs
         if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
@@ -283,7 +250,7 @@ async fn post_process_transcription(
     }
 
     // Legacy mode: Replace ${output} variable in the prompt with the actual text
-    let processed_prompt = prompt.replace("${output}", transcription);
+    let processed_prompt = prompt.replace("${output}", text_input);
     debug!("Processed prompt length: {} chars", processed_prompt.len());
 
     match crate::llm_client::send_chat_completion(
@@ -317,6 +284,114 @@ async fn post_process_transcription(
             );
             None
         }
+    }
+}
+
+async fn post_process_transcription(
+    settings: &AppSettings,
+    transcription: &str,
+    effective: Option<&EffectiveSettings>,
+) -> Option<String> {
+    // Use effective overrides if available (Power Mode), otherwise use global settings.
+    let effective_provider_id = effective
+        .map(|e| e.post_process_provider_id.as_str())
+        .unwrap_or(&settings.post_process_provider_id);
+
+    // Determine if we should use a chain or single-prompt mode.
+    // Chain mode: settings.post_process_chain is Some(vec) with at least one entry.
+    // Single-prompt mode: everything else (backward-compat).
+    let chain = settings
+        .post_process_chain
+        .as_deref()
+        .filter(|v| !v.is_empty());
+
+    if let Some(prompt_ids) = chain {
+        debug!("Post-process chain mode: {} step(s)", prompt_ids.len());
+        let mut current_text = transcription.to_string();
+
+        for (step_idx, prompt_id) in prompt_ids.iter().enumerate() {
+            // Look up the prompt template.
+            let prompt_template = match settings
+                .post_process_prompts
+                .iter()
+                .find(|p| &p.id == prompt_id)
+            {
+                Some(p) => p.prompt.clone(),
+                None => {
+                    warn!(
+                        "Chain step {}: prompt_id '{}' not found — skipping",
+                        step_idx + 1,
+                        prompt_id
+                    );
+                    continue;
+                }
+            };
+
+            match run_single_llm_step(
+                settings,
+                effective_provider_id,
+                &prompt_template,
+                &current_text,
+            )
+            .await
+            {
+                Some(result) => {
+                    debug!(
+                        "Chain step {} ('{}') succeeded. Output length: {} chars",
+                        step_idx + 1,
+                        prompt_id,
+                        result.len()
+                    );
+                    current_text = result;
+                }
+                None => {
+                    warn!(
+                        "Chain step {} ('{}') failed — skipping, keeping previous text",
+                        step_idx + 1,
+                        prompt_id
+                    );
+                    // skip this step: current_text unchanged
+                }
+            }
+        }
+
+        // Return Some only if the text actually changed (i.e. at least one step succeeded).
+        if current_text != transcription {
+            Some(current_text)
+        } else {
+            None
+        }
+    } else {
+        // ── Single-prompt mode (backward-compat) ──────────────────────────────
+        // Resolve which prompt to use: profile override > global setting
+        let effective_prompt_id = effective
+            .and_then(|e| e.post_process_selected_prompt_id.as_deref())
+            .or_else(|| settings.post_process_selected_prompt_id.as_deref());
+
+        let selected_prompt_id = match effective_prompt_id {
+            Some(id) => id.to_string(),
+            None => {
+                debug!("Post-processing skipped because no prompt is selected");
+                return None;
+            }
+        };
+
+        let prompt = match settings
+            .post_process_prompts
+            .iter()
+            .find(|prompt| prompt.id == selected_prompt_id)
+        {
+            Some(prompt) => prompt.prompt.clone(),
+            None => {
+                debug!(
+                    "Post-processing skipped because prompt '{}' was not found",
+                    selected_prompt_id
+                );
+                return None;
+            }
+        };
+
+        run_single_llm_step(settings, effective_provider_id, &prompt, transcription).await
     }
 }
 
@@ -370,6 +445,108 @@ pub(crate) struct ProcessedTranscription {
     pub post_process_prompt: Option<String>,
 }
 
+/// Try to archive `text` as a diary entry.
+///
+/// Returns `true` if a keyword was matched (regardless of whether the write
+/// succeeded — the caller always pastes the full text either way).
+pub(crate) fn maybe_archive_diary(settings: &crate::settings::AppSettings, text: &str) -> bool {
+    let diary_dir = match settings.diary_dir.as_deref() {
+        Some(d) if !d.is_empty() => d,
+        _ => return false,
+    };
+
+    // Trim whitespace before matching.
+    let trimmed = text.trim();
+
+    // Find which keyword (if any) is a prefix of the text, followed by optional
+    // punctuation (space, comma, period, CJK full-stop, CJK comma, colon, etc.).
+    let matched_keyword = settings.diary_keywords.iter().find_map(|kw| {
+        let lower_text = trimmed.to_lowercase();
+        let lower_kw = kw.to_lowercase();
+        if lower_text.starts_with(&lower_kw) {
+            let rest = &trimmed[lower_kw.len()..];
+            // Allow zero or more punctuation/separator chars between keyword and body.
+            let sep_len = rest
+                .chars()
+                .take_while(|c| {
+                    matches!(
+                        *c,
+                        ' ' | '\t'
+                            | ','
+                            | '，'
+                            | '。'
+                            | '.'
+                            | '、'
+                            | '：'
+                            | ':'
+                            | '!'
+                            | '！'
+                            | '？'
+                            | '?'
+                    )
+                })
+                .map(|c| c.len_utf8())
+                .sum::<usize>();
+            Some((kw.len(), lower_kw.len() + sep_len))
+        } else {
+            None
+        }
+    });
+
+    let body_offset = match matched_keyword {
+        Some((_, offset)) => offset,
+        None => return false,
+    };
+
+    let body = trimmed[body_offset..].trim();
+
+    // Expand leading ~ in the path.
+    let expanded_dir = if diary_dir.starts_with('~') {
+        match dirs_next::home_dir() {
+            Some(home) => home
+                .join(&diary_dir[2..]) // skip "~/"
+                .to_string_lossy()
+                .to_string(),
+            None => diary_dir.to_string(),
+        }
+    } else {
+        diary_dir.to_string()
+    };
+
+    let dir_path = std::path::Path::new(&expanded_dir);
+
+    if let Err(e) = std::fs::create_dir_all(dir_path) {
+        warn!("diary: failed to create directory {}: {}", expanded_dir, e);
+        return true; // keyword matched even though write failed
+    }
+
+    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+    let file_path = dir_path.join(format!("{}.md", today));
+
+    let time_str = chrono::Local::now().format("%H:%M").to_string();
+    let entry = format!("## {}\n{}\n\n", time_str, body);
+
+    use std::io::Write;
+    match std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&file_path)
+    {
+        Ok(mut f) => {
+            if let Err(e) = f.write_all(entry.as_bytes()) {
+                warn!("diary: failed to write entry to {:?}: {}", file_path, e);
+            } else {
+                debug!("diary: appended entry to {:?}", file_path);
+            }
+        }
+        Err(e) => {
+            warn!("diary: failed to open {:?}: {}", file_path, e);
+        }
+    }
+
+    true
+}
+
 pub(crate) async fn process_transcription_output(
     app: &AppHandle,
     transcription: &str,
@@ -414,6 +591,10 @@ pub(crate) async fn process_transcription_output(
     } else if final_text != transcription {
         post_processed_text = Some(final_text.clone());
     }
+
+    // Diary archival: runs on the raw transcription (before post-processing) so
+    // that the keyword is still present. The paste pipeline is not affected.
+    maybe_archive_diary(&settings, transcription);
 
     ProcessedTranscription {
         final_text,
@@ -560,9 +741,39 @@ impl ShortcutAction for TranscribeAction {
             // foreground app is still the one the user was dictating into.
             let effective = resolve_effective_settings(&get_settings(&ah));
             debug!(
-                "Power Mode resolved: profile={:?} lang={} paste={:?}",
-                effective.matched_profile_name, effective.selected_language, effective.paste_method
+                "Power Mode resolved: profile={:?} lang={} paste={:?} model={}",
+                effective.matched_profile_name,
+                effective.selected_language,
+                effective.paste_method,
+                effective.selected_model
             );
+
+            // Hot-swap the loaded engine if the resolved profile asked for a
+            // different model. Costs 1-3s while the new model loads, so this
+            // path is gated by `profile_hot_swap_engine` (off by default) and
+            // only fires when the global model differs from the resolved one.
+            {
+                let current = tm.get_current_model();
+                if current.as_deref() != Some(effective.selected_model.as_str()) {
+                    let target = effective.selected_model.clone();
+                    let tm_for_load = Arc::clone(&tm);
+                    match tauri::async_runtime::spawn_blocking(move || {
+                        tm_for_load.load_model(&target)
+                    })
+                    .await
+                    {
+                        Ok(Ok(())) => debug!(
+                            "Hot-swapped engine to '{}' for profile {:?}",
+                            effective.selected_model, effective.matched_profile_name
+                        ),
+                        Ok(Err(e)) => warn!(
+                            "Profile model swap to '{}' failed: {}; keeping current engine",
+                            effective.selected_model, e
+                        ),
+                        Err(e) => warn!("Profile model swap task panicked: {}", e),
+                    }
+                }
+            }
 
             // Clear any partial text from a previous session as soon as we enter
             // the transcribing state.

@@ -1,6 +1,7 @@
 use crate::managers::model::{ModelInfo, ModelManager};
 use crate::managers::transcription::{ModelStateEvent, TranscriptionManager};
 use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
+use futures_util::StreamExt;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
 
@@ -218,4 +219,142 @@ pub async fn cancel_download(
     model_manager
         .cancel_download(&model_id)
         .map_err(|e| e.to_string())
+}
+
+// ── CT-Transformer Chinese punctuation model ──────────────────────────────
+
+/// Directory name for the punctuation model (matches the extracted archive name).
+const PUNC_MODEL_DIR: &str = "sherpa-onnx-punct-ct-transformer-zh-cn-2024-04-12";
+
+/// Download URL for the punctuation model archive.
+const PUNC_MODEL_URL: &str =
+    "https://github.com/k2-fsa/sherpa-onnx/releases/download/punctuation-models/sherpa-onnx-punct-ct-transformer-zh-cn-2024-04-12.tar.bz2";
+
+/// Returns the path to the extracted punctuation model directory.
+fn punc_model_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    crate::portable::app_data_dir(app)
+        .map(|d| d.join("models").join(PUNC_MODEL_DIR))
+        .map_err(|e| e.to_string())
+}
+
+/// Returns `true` when the punctuation model directory exists and contains `model.onnx`.
+#[tauri::command]
+#[specta::specta]
+pub async fn is_punc_downloaded(app: AppHandle) -> bool {
+    match punc_model_dir(&app) {
+        Ok(dir) => crate::audio_toolkit::punc_zh::is_punc_model_present(&dir),
+        Err(_) => false,
+    }
+}
+
+/// Download and extract the CT-Transformer punctuation model archive.
+///
+/// Emits `punc-download-progress` events with `{ downloaded, total, percentage }`.
+/// Emits `punc-download-failed` on error.
+#[tauri::command]
+#[specta::specta]
+pub async fn download_punc_model(app: AppHandle) -> Result<(), String> {
+    use bzip2::read::BzDecoder;
+    use std::fs;
+    use std::io::Write;
+    use std::time::{Duration, Instant};
+    use tar::Archive;
+
+    let models_dir = crate::portable::app_data_dir(&app)
+        .map(|d| d.join("models"))
+        .map_err(|e| e.to_string())?;
+
+    fs::create_dir_all(&models_dir).map_err(|e| e.to_string())?;
+
+    let dest_dir = models_dir.join(PUNC_MODEL_DIR);
+    if crate::audio_toolkit::punc_zh::is_punc_model_present(&dest_dir) {
+        return Ok(());
+    }
+
+    let partial_path = models_dir.join(format!("{}.tar.bz2.partial", PUNC_MODEL_DIR));
+
+    let client = reqwest::Client::new();
+    let resume_from = if partial_path.exists() {
+        partial_path.metadata().map(|m| m.len()).unwrap_or(0)
+    } else {
+        0
+    };
+
+    let mut request = client.get(PUNC_MODEL_URL);
+    if resume_from > 0 {
+        request = request.header("Range", format!("bytes={}-", resume_from));
+    }
+
+    let response = request.send().await.map_err(|e| e.to_string())?;
+
+    if !response.status().is_success() && response.status() != reqwest::StatusCode::PARTIAL_CONTENT
+    {
+        let err = format!("HTTP {}", response.status());
+        let _ = app.emit("punc-download-failed", serde_json::json!({ "error": &err }));
+        return Err(err);
+    }
+
+    let total_size = resume_from + response.content_length().unwrap_or(0);
+    let mut downloaded = resume_from;
+    let mut stream = response.bytes_stream();
+
+    let mut file = if resume_from > 0 {
+        std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&partial_path)
+            .map_err(|e| e.to_string())?
+    } else {
+        std::fs::File::create(&partial_path).map_err(|e| e.to_string())?
+    };
+
+    let _ = app.emit(
+        "punc-download-progress",
+        serde_json::json!({ "downloaded": downloaded, "total": total_size, "percentage": 0.0 }),
+    );
+
+    let mut last_emit = Instant::now();
+    let throttle = Duration::from_millis(100);
+
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(|e| e.to_string())?;
+        file.write_all(&chunk).map_err(|e| e.to_string())?;
+        downloaded += chunk.len() as u64;
+
+        if last_emit.elapsed() >= throttle {
+            let pct = if total_size > 0 {
+                (downloaded as f64 / total_size as f64) * 100.0
+            } else {
+                0.0
+            };
+            let _ = app.emit(
+                "punc-download-progress",
+                serde_json::json!({ "downloaded": downloaded, "total": total_size, "percentage": pct }),
+            );
+            last_emit = Instant::now();
+        }
+    }
+
+    // Final progress
+    let _ = app.emit(
+        "punc-download-progress",
+        serde_json::json!({ "downloaded": downloaded, "total": total_size, "percentage": 100.0 }),
+    );
+    file.flush().map_err(|e| e.to_string())?;
+    drop(file);
+
+    // Extract .tar.bz2
+    let archive_file = std::fs::File::open(&partial_path).map_err(|e| e.to_string())?;
+    let bz2 = BzDecoder::new(archive_file);
+    let mut tar = Archive::new(bz2);
+    tar.unpack(&models_dir).map_err(|e| {
+        let msg = format!("Failed to extract punc model archive: {}", e);
+        let _ = app.emit("punc-download-failed", serde_json::json!({ "error": &msg }));
+        msg
+    })?;
+
+    // Clean up partial file
+    let _ = fs::remove_file(&partial_path);
+
+    Ok(())
 }

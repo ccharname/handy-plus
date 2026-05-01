@@ -362,6 +362,9 @@ pub fn run(cli_args: CliArgs) {
             shortcut::delete_post_process_prompt,
             shortcut::set_post_process_selected_prompt,
             shortcut::update_custom_words,
+            shortcut::set_post_process_chain,
+            shortcut::set_diary_dir,
+            shortcut::set_diary_keywords,
             shortcut::suspend_binding,
             shortcut::resume_binding,
             shortcut::change_mute_while_recording_setting,
@@ -434,6 +437,15 @@ pub fn run(cli_args: CliArgs) {
             commands::history::update_history_limit,
             commands::history::update_recording_retention_period,
             helpers::clamshell::is_laptop,
+            shortcut::set_punc_zh_enabled,
+            shortcut::set_hotwords_boost,
+            shortcut::set_profile_hot_swap_engine,
+            commands::models::is_punc_downloaded,
+            commands::models::download_punc_model,
+            commands::asr_presets::list_asr_presets,
+            commands::asr_presets::apply_asr_preset,
+            commands::asr_presets::detach_asr_preset,
+            commands::benchmark::run_asr_benchmark,
         ])
         .events(collect_events![managers::history::HistoryUpdatePayload,]);
 

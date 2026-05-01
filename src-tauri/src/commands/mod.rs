@@ -1,4 +1,6 @@
+pub mod asr_presets;
 pub mod audio;
+pub mod benchmark;
 pub mod history;
 pub mod models;
 pub mod transcription;
@@ -225,6 +227,7 @@ pub fn add_app_profile(
         paste_method: None,
         append_trailing_space: None,
         auto_submit: None,
+        selected_model: None,
     };
     settings.app_profiles.push(profile.clone());
     write_settings(&app, settings);

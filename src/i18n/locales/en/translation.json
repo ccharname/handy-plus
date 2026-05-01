@@ -93,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "A large, slower, but very accurate multilingual model."
+      },
+      "sense-voice-small-sherpa": {
+        "name": "SenseVoice (sherpa-onnx)",
+        "description": "Same model as SenseVoice Small, separate model ID. Supports hotwords L2 bias (hotwords_boost) from custom_words. Via sherpa-onnx, ~242 MB."
       }
     },
     "errors": {
@@ -196,6 +200,19 @@
       "pushToTalk": {
         "label": "Push To Talk",
         "description": "Hold to record, release to stop"
+      },
+      "diary": {
+        "title": "Diary Auto-Archive",
+        "description": "Automatically append transcriptions to a daily markdown file when they start with a trigger keyword.",
+        "dirLabel": "Diary Directory",
+        "dirPlaceholder": "~/obsidian/diary",
+        "dirDescription": "Path to the folder where daily diary files are written. Leave empty to disable.",
+        "browse": "Browse",
+        "keywordsLabel": "Trigger Keywords",
+        "keywordsDescription": "Transcriptions starting with one of these keywords (followed by optional punctuation) are archived.",
+        "keywordPlaceholder": "Add keyword...",
+        "addKeyword": "Add",
+        "removeKeyword": "Remove keyword"
       }
     },
     "models": {
@@ -255,6 +272,10 @@
       "lazyStreamClose": {
         "label": "Keep Mic Open Between Transcriptions",
         "description": "Keeps the microphone stream open for 30 seconds after recording stops, reducing latency for back-to-back transcriptions. May degrade Bluetooth audio quality while active."
+      },
+      "puncZh": {
+        "label": "Chinese Punctuation (CT-Transformer)",
+        "description": "Automatically add punctuation to Chinese transcriptions using the CT-Transformer model. Applies to all ASR engines (Apple Speech, SenseVoice, FunASR-Nano). Requires the punctuation model to be downloaded (~50 MB)."
       },
       "acceleration": {
         "whisper": {
@@ -427,7 +448,15 @@
         "cancel": "Cancel",
         "selectToEdit": "Select a prompt above to view and edit its details.",
         "createFirst": "Click 'Create New Prompt' above to create your first post-processing prompt."
-      }
+      },
+      "chainSection": "Prompt Chain",
+      "chainEnabled": "Use chain instead of single prompt",
+      "chainAddStep": "Add Step",
+      "chainEmpty": "Add at least one prompt",
+      "chainStepLabel": "Step {{n}}",
+      "chainMoveUp": "Move step up",
+      "chainMoveDown": "Move step down",
+      "chainRemove": "Remove step"
     },
     "history": {
       "title": "History",
@@ -442,7 +471,17 @@
       "retranscribe": "Re-transcribe",
       "retranscribeError": "Failed to re-transcribe. Please try again.",
       "transcribing": "Transcribing...",
-      "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon."
+      "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon.",
+      "retranscribeOptions": "Re-transcribe with options",
+      "retranscribeModal": {
+        "title": "Re-transcribe",
+        "modelLabel": "Model",
+        "modelPlaceholder": "Use current model",
+        "languageLabel": "Language",
+        "noDownloadedModels": "No downloaded models",
+        "runButton": "Re-transcribe",
+        "cancelButton": "Cancel"
+      }
     },
     "debug": {
       "title": "Debug",
@@ -555,6 +594,10 @@
       "pasteMethod": "Paste method override",
       "appendTrailingSpace": "Append trailing space",
       "autoSubmit": "Auto submit",
+      "selectedModel": "ASR model override",
+      "selectedModelHint": "Only honoured when 'Hot-swap engine' is enabled. Adds 1-3s of model-load latency on the first transcription per profile.",
+      "hotSwapEngineLabel": "Hot-swap engine per profile",
+      "hotSwapEngineDescription": "Allow profiles to swap to a different ASR model. Costs 1-3s of latency on switch — off by default.",
       "howItWorksHint": "Power Mode auto-applies the Code and Claude Code profiles when those apps are frontmost; toggle others to add more scenes.",
       "tristate": {
         "inherit": "Inherit global",
@@ -589,6 +632,28 @@
           "description": "High-performance inference of OpenAI's Whisper automatic speech recognition model",
           "details": "Handy uses Whisper.cpp for fast, local speech-to-text processing. Thanks to the amazing work by Georgi Gerganov and contributors."
         }
+      }
+    },
+    "asrPresets": {
+      "title": "ASR Presets",
+      "description": "Quick-switch between curated speech recognition setups.",
+      "advancedHint": "Or manually select a model below.",
+      "apply": "Apply",
+      "applyAndDownload": "Download & Apply",
+      "active": "Active",
+      "switching": "Switching...",
+      "customized": "Customized (preset detached)",
+      "chineseBalanced": {
+        "name": "Chinese Balanced",
+        "description": "SenseVoice with CT-Punc auto-punctuation. Best for Chinese-first users."
+      },
+      "multilingualOffline": {
+        "name": "Multilingual Offline",
+        "description": "FunASR-Nano supporting 8+ languages, fully offline."
+      },
+      "appleNative": {
+        "name": "Apple Native",
+        "description": "Apple Speech with CT-Punc punctuation patch. Lowest latency for short commands."
       }
     }
   },
