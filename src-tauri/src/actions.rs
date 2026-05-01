@@ -5,6 +5,7 @@ use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
+use crate::profile_resolver::{resolve_effective_settings, EffectiveSettings};
 use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
@@ -63,12 +64,30 @@ fn build_system_prompt(prompt_template: &str) -> String {
     prompt_template.replace("${output}", "").trim().to_string()
 }
 
-async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
-    let provider = match settings.active_post_process_provider().cloned() {
+async fn post_process_transcription(
+    settings: &AppSettings,
+    transcription: &str,
+    effective: Option<&EffectiveSettings>,
+) -> Option<String> {
+    // Use effective overrides if available (Power Mode), otherwise use global settings.
+    let effective_provider_id = effective
+        .map(|e| e.post_process_provider_id.as_str())
+        .unwrap_or(&settings.post_process_provider_id);
+
+    let provider = match settings
+        .post_process_provider(effective_provider_id)
+        .cloned()
+    {
         Some(provider) => provider,
         None => {
-            debug!("Post-processing enabled but no provider is selected");
-            return None;
+            // Fallback to active provider
+            match settings.active_post_process_provider().cloned() {
+                Some(p) => p,
+                None => {
+                    debug!("Post-processing enabled but no provider is selected");
+                    return None;
+                }
+            }
         }
     };
 
@@ -86,8 +105,13 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         return None;
     }
 
-    let selected_prompt_id = match &settings.post_process_selected_prompt_id {
-        Some(id) => id.clone(),
+    // Resolve which prompt to use: profile override > global setting
+    let effective_prompt_id = effective
+        .and_then(|e| e.post_process_selected_prompt_id.as_deref())
+        .or_else(|| settings.post_process_selected_prompt_id.as_deref());
+
+    let selected_prompt_id = match effective_prompt_id {
+        Some(id) => id.to_string(),
         None => {
             debug!("Post-processing skipped because no prompt is selected");
             return None;
@@ -350,27 +374,39 @@ pub(crate) async fn process_transcription_output(
     app: &AppHandle,
     transcription: &str,
     post_process: bool,
+    effective: &EffectiveSettings,
 ) -> ProcessedTranscription {
     let settings = get_settings(app);
+
+    // Use effective language for Chinese variant conversion
+    let mut effective_settings_for_variant = settings.clone();
+    effective_settings_for_variant.selected_language = effective.selected_language.clone();
+
     let mut final_text = transcription.to_string();
     let mut post_processed_text: Option<String> = None;
     let mut post_process_prompt: Option<String> = None;
 
-    if let Some(converted_text) = maybe_convert_chinese_variant(&settings, transcription).await {
+    if let Some(converted_text) =
+        maybe_convert_chinese_variant(&effective_settings_for_variant, transcription).await
+    {
         final_text = converted_text;
     }
 
     if post_process {
-        if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
+        if let Some(processed_text) =
+            post_process_transcription(&settings, &final_text, Some(effective)).await
+        {
             post_processed_text = Some(processed_text.clone());
             final_text = processed_text;
 
-            if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
-                if let Some(prompt) = settings
-                    .post_process_prompts
-                    .iter()
-                    .find(|prompt| &prompt.id == prompt_id)
-                {
+            // Determine which prompt was used (profile override > global setting)
+            let prompt_id = effective
+                .post_process_selected_prompt_id
+                .as_deref()
+                .or_else(|| settings.post_process_selected_prompt_id.as_deref());
+
+            if let Some(pid) = prompt_id {
+                if let Some(prompt) = settings.post_process_prompts.iter().find(|p| p.id == pid) {
                     post_process_prompt = Some(prompt.prompt.clone());
                 }
             }
@@ -520,6 +556,14 @@ impl ShortcutAction for TranscribeAction {
                 binding_id
             );
 
+            // Resolve Power Mode effective settings as early as possible, while the
+            // foreground app is still the one the user was dictating into.
+            let effective = resolve_effective_settings(&get_settings(&ah));
+            debug!(
+                "Power Mode resolved: profile={:?} lang={} paste={:?}",
+                effective.matched_profile_name, effective.selected_language, effective.paste_method
+            );
+
             // Clear any partial text from a previous session as soon as we enter
             // the transcribing state.
             let _ = ah.emit("transcription-partial-clear", ());
@@ -589,9 +633,13 @@ impl ShortcutAction for TranscribeAction {
                             if post_process {
                                 show_processing_overlay(&ah);
                             }
-                            let processed =
-                                process_transcription_output(&ah, &transcription, post_process)
-                                    .await;
+                            let processed = process_transcription_output(
+                                &ah,
+                                &transcription,
+                                post_process,
+                                &effective,
+                            )
+                            .await;
 
                             // Save to history if WAV was saved
                             if wav_saved {
@@ -613,8 +661,27 @@ impl ShortcutAction for TranscribeAction {
                                 let ah_clone = ah.clone();
                                 let paste_time = Instant::now();
                                 let final_text = processed.final_text;
+                                // Extract effective paste overrides for the closure.
+                                let eff_paste_method = effective
+                                    .matched_profile_name
+                                    .as_ref()
+                                    .map(|_| effective.paste_method);
+                                let eff_trailing_space = effective
+                                    .matched_profile_name
+                                    .as_ref()
+                                    .map(|_| effective.append_trailing_space);
+                                let eff_auto_submit = effective
+                                    .matched_profile_name
+                                    .as_ref()
+                                    .map(|_| effective.auto_submit);
                                 ah.run_on_main_thread(move || {
-                                    match utils::paste(final_text, ah_clone.clone()) {
+                                    match crate::clipboard::paste_with_overrides(
+                                        final_text,
+                                        ah_clone.clone(),
+                                        eff_paste_method,
+                                        eff_trailing_space,
+                                        eff_auto_submit,
+                                    ) {
                                         Ok(()) => debug!(
                                             "Text pasted successfully in {:?}",
                                             paste_time.elapsed()

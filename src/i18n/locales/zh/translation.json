@@ -14,6 +14,7 @@
     "advanced": "高级",
     "postProcessing": "后处理",
     "history": "历史记录",
+    "profiles": "情景模式",
     "debug": "调试",
     "about": "关于"
   },
@@ -517,6 +518,47 @@
       "recordingBuffer": {
         "title": "额外录音缓冲",
         "description": "放开按键后继续录音的额外时间（毫秒），以捕捉尾音。0 = 无额外缓冲。"
+      }
+    },
+    "profiles": {
+      "title": "按应用切换情景",
+      "enabledLabel": "启用情景模式",
+      "enabledDescription": "检测前台应用，命中匹配的情景后覆盖语言、粘贴方式和后处理。",
+      "detectedNow": "当前：{{app}}",
+      "noForeground": "未检测到前台应用",
+      "add": "新增情景",
+      "delete": "删除",
+      "duplicate": "复制",
+      "confirmDelete": "确认删除这个情景？",
+      "matchers": "匹配规则",
+      "matcherType": "匹配类型",
+      "matcherValue": "值",
+      "addMatcher": "添加规则",
+      "removeMatcher": "移除",
+      "matcher": {
+        "bundleId": "Bundle ID（macOS）",
+        "processName": "进程名",
+        "windowTitle": "窗口标题包含",
+        "disabled": "已禁用"
+      },
+      "overrides": "覆盖项",
+      "inheritGlobal": "沿用全局",
+      "matchedNow": "已匹配：{{name}}",
+      "noMatchedProfile": "未匹配到情景",
+      "profileEnabled": "已启用",
+      "profileName": "情景名称",
+      "language": "语言覆盖",
+      "customWordsExtra": "额外热词",
+      "customWordsExtraPlaceholder": "添加词汇",
+      "postProcessProvider": "后处理提供商覆盖",
+      "postProcessPrompt": "后处理提示词覆盖",
+      "pasteMethod": "粘贴方式覆盖",
+      "appendTrailingSpace": "追加尾部空格",
+      "autoSubmit": "自动提交",
+      "tristate": {
+        "inherit": "沿用全局",
+        "on": "开",
+        "off": "关"
       }
     },
     "about": {

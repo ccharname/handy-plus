@@ -14,6 +14,7 @@
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
+    "profiles": "Profiles",
     "debug": "Debug",
     "about": "About"
   },
@@ -517,6 +518,47 @@
       "recordingBuffer": {
         "title": "Extra Recording Buffer",
         "description": "Extra time (in milliseconds) to keep recording after you release the key, to capture trailing audio. 0 = no extra buffer."
+      }
+    },
+    "profiles": {
+      "title": "App-aware Profiles",
+      "enabledLabel": "Enable Power Mode",
+      "enabledDescription": "Detect the foreground app and apply the matching profile to override language, paste method, and post-processing.",
+      "detectedNow": "Right now: {{app}}",
+      "noForeground": "No foreground app detected",
+      "add": "Add Profile",
+      "delete": "Delete",
+      "duplicate": "Duplicate",
+      "confirmDelete": "Delete this profile?",
+      "matchers": "Matchers",
+      "matcherType": "Matcher type",
+      "matcherValue": "Value",
+      "addMatcher": "Add matcher",
+      "removeMatcher": "Remove",
+      "matcher": {
+        "bundleId": "Bundle ID (macOS)",
+        "processName": "Process name",
+        "windowTitle": "Window title contains",
+        "disabled": "Disabled"
+      },
+      "overrides": "Overrides",
+      "inheritGlobal": "Inherit global",
+      "matchedNow": "Matched: {{name}}",
+      "noMatchedProfile": "No profile matched",
+      "profileEnabled": "Enabled",
+      "profileName": "Profile name",
+      "language": "Language override",
+      "customWordsExtra": "Extra hot-words",
+      "customWordsExtraPlaceholder": "Add a word",
+      "postProcessProvider": "Post-process provider override",
+      "postProcessPrompt": "Post-process prompt override",
+      "pasteMethod": "Paste method override",
+      "appendTrailingSpace": "Append trailing space",
+      "autoSubmit": "Auto submit",
+      "tristate": {
+        "inherit": "Inherit global",
+        "on": "On",
+        "off": "Off"
       }
     },
     "about": {

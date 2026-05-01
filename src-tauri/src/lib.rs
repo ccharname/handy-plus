@@ -15,6 +15,7 @@ mod llm_client;
 mod managers;
 mod overlay;
 pub mod portable;
+mod profile_resolver;
 mod settings;
 mod shortcut;
 mod signal_handle;
@@ -393,6 +394,9 @@ pub fn run(cli_args: CliArgs) {
             commands::initialize_enigo,
             commands::initialize_shortcuts,
             commands::get_foreground_app,
+            commands::add_app_profile,
+            commands::delete_app_profile,
+            commands::duplicate_app_profile,
             commands::models::get_available_models,
             commands::models::get_model_info,
             commands::models::download_model,

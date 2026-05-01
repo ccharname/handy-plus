@@ -3,6 +3,8 @@ use crate::managers::{
     history::{HistoryManager, PaginatedHistory},
     transcription::TranscriptionManager,
 };
+use crate::profile_resolver::resolve_effective_settings;
+use crate::settings::get_settings;
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
@@ -93,8 +95,15 @@ pub async fn retry_history_entry_transcription(
         return Err("Recording contains no speech".to_string());
     }
 
-    let processed =
-        process_transcription_output(&app, &transcription, entry.post_process_requested).await;
+    // Re-transcription uses global settings (no Power Mode override for history retranscription).
+    let effective = resolve_effective_settings(&get_settings(&app));
+    let processed = process_transcription_output(
+        &app,
+        &transcription,
+        entry.post_process_requested,
+        &effective,
+    )
+    .await;
     history_manager
         .update_transcription(
             id,

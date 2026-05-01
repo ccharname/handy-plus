@@ -333,6 +333,154 @@ impl std::ops::DerefMut for SecretMap {
     }
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Power Mode: App-aware profiles
+// ────────────────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize, Type, Default)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum ProfileMatcher {
+    /// macOS bundle id (exact or wildcard suffix '*'); on Windows/Linux falls back to process name match
+    BundleId { value: String },
+    /// case-insensitive process executable name (without extension)
+    ProcessName { value: String },
+    /// case-insensitive substring match against window title
+    WindowTitleSubstring { value: String },
+    #[default]
+    Disabled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub struct AppProfile {
+    pub id: String,
+    pub name: String,
+    pub enabled: bool,
+    pub matchers: Vec<ProfileMatcher>,
+    pub selected_language: Option<String>,
+    #[serde(default)]
+    pub custom_words_extra: Vec<String>,
+    pub post_process_provider_id: Option<String>,
+    pub post_process_selected_prompt_id: Option<String>,
+    pub paste_method: Option<PasteMethod>,
+    pub append_trailing_space: Option<bool>,
+    pub auto_submit: Option<bool>,
+}
+
+fn default_power_mode_enabled() -> bool {
+    false
+}
+
+pub fn default_app_profiles() -> Vec<AppProfile> {
+    vec![
+        AppProfile {
+            id: "builtin_code".to_string(),
+            name: "Code".to_string(),
+            enabled: false,
+            matchers: vec![
+                ProfileMatcher::BundleId {
+                    value: "com.microsoft.VSCode".to_string(),
+                },
+                ProfileMatcher::BundleId {
+                    value: "com.todesktop.230313mzl4w4u92".to_string(),
+                },
+                ProfileMatcher::BundleId {
+                    value: "com.googlecode.iterm2".to_string(),
+                },
+                ProfileMatcher::BundleId {
+                    value: "com.apple.Terminal".to_string(),
+                },
+                ProfileMatcher::ProcessName {
+                    value: "Code".to_string(),
+                },
+                ProfileMatcher::ProcessName {
+                    value: "Cursor".to_string(),
+                },
+            ],
+            selected_language: None,
+            custom_words_extra: vec![],
+            post_process_provider_id: None,
+            post_process_selected_prompt_id: None,
+            paste_method: Some(PasteMethod::Direct),
+            append_trailing_space: Some(false),
+            auto_submit: Some(false),
+        },
+        AppProfile {
+            id: "builtin_chat".to_string(),
+            name: "Chat".to_string(),
+            enabled: false,
+            matchers: vec![
+                ProfileMatcher::BundleId {
+                    value: "com.tencent.xinWeChat".to_string(),
+                },
+                ProfileMatcher::BundleId {
+                    value: "com.apple.MobileSMS".to_string(),
+                },
+                ProfileMatcher::BundleId {
+                    value: "com.tinyspeck.slackmacgap".to_string(),
+                },
+            ],
+            selected_language: None,
+            custom_words_extra: vec![],
+            post_process_provider_id: None,
+            post_process_selected_prompt_id: None,
+            paste_method: None,
+            append_trailing_space: Some(true),
+            auto_submit: Some(false),
+        },
+        AppProfile {
+            id: "builtin_writing".to_string(),
+            name: "Writing".to_string(),
+            enabled: false,
+            matchers: vec![
+                ProfileMatcher::BundleId {
+                    value: "md.obsidian".to_string(),
+                },
+                ProfileMatcher::BundleId {
+                    value: "com.apple.mail".to_string(),
+                },
+                ProfileMatcher::BundleId {
+                    value: "com.microsoft.Word".to_string(),
+                },
+            ],
+            selected_language: None,
+            custom_words_extra: vec![],
+            post_process_provider_id: None,
+            post_process_selected_prompt_id: None,
+            paste_method: None,
+            append_trailing_space: Some(true),
+            auto_submit: Some(false),
+        },
+        AppProfile {
+            id: "builtin_claude_code".to_string(),
+            name: "Claude Code (terminal AI)".to_string(),
+            enabled: false,
+            matchers: vec![ProfileMatcher::WindowTitleSubstring {
+                value: "claude".to_string(),
+            }],
+            selected_language: None,
+            custom_words_extra: vec![],
+            post_process_provider_id: None,
+            post_process_selected_prompt_id: None,
+            paste_method: Some(PasteMethod::Direct),
+            append_trailing_space: Some(false),
+            auto_submit: Some(true),
+        },
+        AppProfile {
+            id: "builtin_default_fallback".to_string(),
+            name: "Default fallback (sample)".to_string(),
+            enabled: false,
+            matchers: vec![],
+            selected_language: None,
+            custom_words_extra: vec![],
+            post_process_provider_id: None,
+            post_process_selected_prompt_id: None,
+            paste_method: None,
+            append_trailing_space: None,
+            auto_submit: None,
+        },
+    ]
+}
+
 /* still handy for composing the initial JSON in the store ------------- */
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
@@ -430,6 +578,10 @@ pub struct AppSettings {
     pub whisper_gpu_device: i32,
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
+    #[serde(default = "default_power_mode_enabled")]
+    pub power_mode_enabled: bool,
+    #[serde(default = "default_app_profiles")]
+    pub app_profiles: Vec<AppProfile>,
 }
 
 fn default_model() -> String {
@@ -710,6 +862,17 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     changed
 }
 
+/// Ensure app_profiles is populated for users upgrading from a version before Power Mode.
+pub fn ensure_app_profiles_defaults(settings: &mut AppSettings) -> bool {
+    if settings.app_profiles.is_empty() {
+        debug!("app_profiles is empty; populating with built-in templates");
+        settings.app_profiles = default_app_profiles();
+        true
+    } else {
+        false
+    }
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -814,6 +977,8 @@ pub fn get_default_settings() -> AppSettings {
         ort_accelerator: OrtAcceleratorSetting::default(),
         whisper_gpu_device: default_whisper_gpu_device(),
         extra_recording_buffer_ms: 0,
+        power_mode_enabled: default_power_mode_enabled(),
+        app_profiles: default_app_profiles(),
     }
 }
 
@@ -884,7 +1049,9 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    if ensure_post_process_defaults(&mut settings) {
+    let mut changed = ensure_post_process_defaults(&mut settings);
+    changed |= ensure_app_profiles_defaults(&mut settings);
+    if changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 
@@ -908,7 +1075,9 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    if ensure_post_process_defaults(&mut settings) {
+    let mut changed = ensure_post_process_defaults(&mut settings);
+    changed |= ensure_app_profiles_defaults(&mut settings);
+    if changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 

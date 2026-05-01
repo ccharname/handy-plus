@@ -195,3 +195,82 @@ pub fn initialize_shortcuts(app: AppHandle) -> Result<(), String> {
 pub fn get_foreground_app() -> Option<crate::foreground::ForegroundApp> {
     crate::foreground::current_foreground_app()
 }
+
+/// Add a new empty app profile and return it.
+#[tauri::command]
+#[specta::specta]
+pub fn add_app_profile(
+    app: tauri::AppHandle,
+    name: String,
+) -> Result<crate::settings::AppProfile, String> {
+    let mut settings = get_settings(&app);
+    // Generate a unique id using timestamp + profile count as simple unique suffix.
+    let id = format!(
+        "profile_{}_{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis(),
+        settings.app_profiles.len()
+    );
+    let profile = crate::settings::AppProfile {
+        id: id.clone(),
+        name,
+        enabled: false,
+        matchers: vec![],
+        selected_language: None,
+        custom_words_extra: vec![],
+        post_process_provider_id: None,
+        post_process_selected_prompt_id: None,
+        paste_method: None,
+        append_trailing_space: None,
+        auto_submit: None,
+    };
+    settings.app_profiles.push(profile.clone());
+    write_settings(&app, settings);
+    Ok(profile)
+}
+
+/// Delete an app profile by id.
+#[tauri::command]
+#[specta::specta]
+pub fn delete_app_profile(app: tauri::AppHandle, profile_id: String) -> Result<(), String> {
+    let mut settings = get_settings(&app);
+    let before = settings.app_profiles.len();
+    settings.app_profiles.retain(|p| p.id != profile_id);
+    if settings.app_profiles.len() == before {
+        return Err(format!("Profile '{}' not found", profile_id));
+    }
+    write_settings(&app, settings);
+    Ok(())
+}
+
+/// Duplicate an app profile (new id, name gets " (copy)" suffix).
+#[tauri::command]
+#[specta::specta]
+pub fn duplicate_app_profile(
+    app: tauri::AppHandle,
+    profile_id: String,
+) -> Result<crate::settings::AppProfile, String> {
+    let mut settings = get_settings(&app);
+    let src = settings
+        .app_profiles
+        .iter()
+        .find(|p| p.id == profile_id)
+        .ok_or_else(|| format!("Profile '{}' not found", profile_id))?
+        .clone();
+    let new_id = format!(
+        "profile_{}_{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis(),
+        settings.app_profiles.len()
+    );
+    let mut new_profile = src;
+    new_profile.id = new_id;
+    new_profile.name = format!("{} (copy)", new_profile.name);
+    settings.app_profiles.push(new_profile.clone());
+    write_settings(&app, settings);
+    Ok(new_profile)
+}
