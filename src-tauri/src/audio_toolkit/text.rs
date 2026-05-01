@@ -316,7 +316,15 @@ pub fn filter_transcription_output(
     filtered = MULTI_SPACE_PATTERN.replace_all(&filtered, " ").to_string();
 
     // Trim leading/trailing whitespace
-    filtered.trim().to_string()
+    let trimmed = filtered.trim().to_string();
+
+    // Apply Chinese ITN for zh* languages (zh, zh-CN, zh-TW, …)
+    let base_lang = lang.split(&['-', '_'][..]).next().unwrap_or(lang);
+    if base_lang == "zh" {
+        crate::audio_toolkit::itn_zh::normalize(&trimmed)
+    } else {
+        trimmed
+    }
 }
 
 #[cfg(test)]
