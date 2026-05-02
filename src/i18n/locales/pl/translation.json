@@ -15,7 +15,8 @@
     "postProcessing": "Postproces",
     "history": "Historia",
     "debug": "Debugowanie",
-    "about": "O programie"
+    "about": "O programie",
+    "profiles": "Profile"
   },
   "onboarding": {
     "subtitle": "Aby rozpocząć, wybierz model transkrypcji",
@@ -92,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "Duży, wolniejszy, ale bardzo dokładny model wielojęzyczny."
+      },
+      "sense-voice-small-sherpa": {
+        "description": "Ten sam model co SenseVoice Small, osobne ID modelu. Obsługuje bias L2 hotwords (hotwords_boost) z custom_words. Przez sherpa-onnx, ~242 MB.",
+        "name": "SenseVoice (sherpa-onnx)"
       }
     },
     "errors": {
@@ -213,6 +218,19 @@
       "pushToTalk": {
         "label": "Push To Talk",
         "description": "Przytrzymaj, aby nagrywać, puść, aby zatrzymać"
+      },
+      "diary": {
+        "addKeyword": "Dodaj",
+        "browse": "Przeglądaj",
+        "description": "Automatycznie dołącza transkrypcje do codziennego pliku markdown, gdy zaczynają się od słowa kluczowego wyzwalacza.",
+        "dirDescription": "Ścieżka do folderu, w którym zapisywane są codzienne pliki dziennika. Pozostaw puste, aby wyłączyć.",
+        "dirLabel": "Katalog dziennika",
+        "dirPlaceholder": "~/obsidian/diary",
+        "keywordPlaceholder": "Dodaj słowo kluczowe...",
+        "keywordsDescription": "Transkrypcje zaczynające się od jednego z tych słów kluczowych (po których może następować interpunkcja) są archiwizowane.",
+        "keywordsLabel": "Słowa kluczowe wyzwalacze",
+        "removeKeyword": "Usuń słowo kluczowe",
+        "title": "Auto-archiwizacja dziennika"
       }
     },
     "sound": {
@@ -355,7 +373,29 @@
         "placeholder": "Dodaj słowo",
         "add": "Dodaj",
         "remove": "Usuń {{word}}",
-        "duplicate": "\"{{word}}\" już istnieje"
+        "duplicate": "\"{{word}}\" już istnieje",
+        "bulkImportPlaceholder": "Wklej słowa oddzielone nową linią lub przecinkami...",
+        "bulkImportTitle": "Masowy import słów niestandardowych",
+        "cancel": "Anuluj",
+        "confirmAdd": "Dodaj wszystkie",
+        "export": "Eksportuj",
+        "fileTypes": ".txt / .csv / .json",
+        "fromFile": "Lub wczytaj z pliku",
+        "import": "Importuj",
+        "layerHint": "Te słowa są używane do (1) rozmytego zastępowania po transkrypcji (2) wskazówek biasu dekodowania",
+        "preview": "{{add}} nowych · {{skip}} duplikatów · {{invalid}} nieprawidłowych"
+      },
+      "puncZh": {
+        "cancel": "Anuluj",
+        "description": "Automatycznie dodaje interpunkcję do chińskich transkrypcji przy użyciu modelu CT-Transformer. Dotyczy wszystkich silników ASR (Apple Speech, SenseVoice, FunASR-Nano). Wymaga pobrania modelu interpunkcji (~50 MB).",
+        "download": "Pobierz model",
+        "label": "Chińska interpunkcja (CT-Transformer)",
+        "modelDownloading": "Pobieranie modelu interpunkcji...",
+        "modelFailed": "Pobieranie nie powiodło się: {{error}}",
+        "modelMissing": "Model nie pobrany — chińska interpunkcja zostanie pominięta.",
+        "modelReady": "Model gotowy (76 MB)",
+        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
+        "retry": "Ponów"
       }
     },
     "postProcessing": {
@@ -416,7 +456,15 @@
         "cancel": "Anuluj",
         "selectToEdit": "Wybierz prompt powyżej, aby zobaczyć i edytować jego szczegóły.",
         "createFirst": "Kliknij 'Utwórz nowy prompt' powyżej, aby utworzyć pierwszy prompt postprocessingu."
-      }
+      },
+      "chainAddStep": "Dodaj krok",
+      "chainEmpty": "Dodaj co najmniej jeden prompt",
+      "chainEnabled": "Użyj łańcucha zamiast pojedynczego promptu",
+      "chainMoveDown": "Przesuń krok w dół",
+      "chainMoveUp": "Przesuń krok w górę",
+      "chainRemove": "Usuń krok",
+      "chainSection": "Łańcuch promptów",
+      "chainStepLabel": "Krok {{n}}"
     },
     "history": {
       "title": "Historia",
@@ -431,7 +479,17 @@
       "retranscribe": "Transkrybuj ponownie",
       "retranscribeError": "Nie udało się ponownie transkrybować. Spróbuj ponownie.",
       "transcribing": "Transkrybuję...",
-      "transcriptionFailed": "Transkrypcja nie powiodła się. Możesz transkrybować ponownie za pomocą ikony ponowienia."
+      "transcriptionFailed": "Transkrypcja nie powiodła się. Możesz transkrybować ponownie za pomocą ikony ponowienia.",
+      "retranscribeModal": {
+        "cancelButton": "Anuluj",
+        "languageLabel": "Język",
+        "modelLabel": "Model",
+        "modelPlaceholder": "Użyj bieżącego modelu",
+        "noDownloadedModels": "Brak pobranych modeli",
+        "runButton": "Ponowna transkrypcja",
+        "title": "Ponowna transkrypcja"
+      },
+      "retranscribeOptions": "Ponowna transkrypcja z opcjami"
     },
     "debug": {
       "title": "Debugowanie",
@@ -536,6 +594,91 @@
           "description": "Wydajne wykonywanie modelu rozpoznawania mowy Whisper od OpenAI",
           "details": "Handy używa Whisper.cpp do szybkiego, lokalnego przetwarzania mowy na tekst. Dzięki niesamowitej pracy Georgi Gerganova i współtwórców."
         }
+      },
+      "fork": {
+        "description": "To jest Handy+, fork społecznościowy utrzymywany przez @ccharname. Zobacz link upstream dla oryginalnego projektu.",
+        "forkLabel": "handy-plus by @ccharname",
+        "title": "Fork",
+        "viewFork": "Zobacz fork na GitHub",
+        "viewUpstream": "Zobacz upstream (cjpais/Handy)"
+      }
+    },
+    "asrPresets": {
+      "active": "Aktywny",
+      "advancedHint": "Lub ręcznie wybierz model poniżej.",
+      "appleNative": {
+        "description": "Apple Speech z łatką interpunkcji CT-Punc. Najniższe opóźnienie dla krótkich poleceń.",
+        "name": "Apple Native"
+      },
+      "apply": "Zastosuj",
+      "applyAndDownload": "Pobierz i zastosuj",
+      "chineseBalanced": {
+        "description": "SenseVoice z automatyczną interpunkcją CT-Punc. Najlepszy dla użytkowników chińskiego.",
+        "name": "Chiński zrównoważony"
+      },
+      "customized": "Dostosowany (preset odłączony)",
+      "description": "Szybkie przełączanie między wyselekcjonowanymi konfiguracjami rozpoznawania mowy.",
+      "multilingualOffline": {
+        "description": "FunASR-Nano obsługujący 8+ języków, w pełni offline.",
+        "name": "Wielojęzyczny offline"
+      },
+      "switching": "Przełączanie...",
+      "title": "Presety ASR"
+    },
+    "profiles": {
+      "add": "Dodaj profil",
+      "addMatcher": "Dodaj dopasowacz",
+      "appendTrailingSpace": "Dodaj spację na końcu",
+      "autoSubmit": "Automatyczne wysyłanie",
+      "chainStepsCount": "Łańcuch {{count}} kroków",
+      "confirmDelete": "Usunąć ten profil?",
+      "customWordsCount": "{{count}} hot-words",
+      "customWordsExtra": "Dodatkowe hot-words",
+      "customWordsExtraPlaceholder": "Dodaj słowo",
+      "delete": "Usuń",
+      "detectedNow": "Teraz: {{app}}",
+      "duplicate": "Duplikuj",
+      "enabledDescription": "Wykrywa aplikację na pierwszym planie i stosuje pasujący profil, aby nadpisać język, metodę wklejania i postprzetwarzanie.",
+      "enabledLabel": "Włącz Power Mode",
+      "hotSwapEngineDescription": "Pozwala profilom przełączać się na inny model ASR. Dodaje 1–3 s opóźnienia przy przełączaniu — domyślnie wyłączone.",
+      "hotSwapEngineLabel": "Hot-swap silnika dla profilu",
+      "howItWorksHint": "Power Mode automatycznie stosuje profile Code i Claude Code, gdy te aplikacje są na pierwszym planie; włącz inne, aby dodać więcej scen.",
+      "inheritGlobal": "Dziedzicz globalne",
+      "language": "Zastąpienie języka",
+      "matchedNow": "Dopasowano: {{name}}",
+      "matcher": {
+        "bundleId": "Bundle ID (macOS)",
+        "disabled": "Wyłączony",
+        "processName": "Nazwa procesu",
+        "windowTitle": "Tytuł okna zawiera"
+      },
+      "matcherType": "Typ dopasowacza",
+      "matcherValue": "Wartość",
+      "matchers": "Dopasowacze",
+      "noForeground": "Nie wykryto aplikacji na pierwszym planie",
+      "noMatchedProfile": "Brak pasującego profilu",
+      "noOverrides": "Brak zastąpień — dziedziczy ustawienia globalne",
+      "overrides": "Zastąpienia",
+      "pasteMethod": "Zastąpienie metody wklejania",
+      "postProcessChain": "Zastąpienie łańcucha postprzetwarzania",
+      "postProcessChainDisabled": "wyłączone",
+      "postProcessChainHint": "Zastąp łańcuch promptów postprzetwarzania dla tego profilu. Pusta lista wyłącza tryb łańcucha.",
+      "postProcessChainReset": "× resetuj",
+      "postProcessPrompt": "Zastąpienie promptu postprzetwarzania",
+      "postProcessProvider": "Zastąpienie dostawcy postprzetwarzania",
+      "profileEnabled": "Włączony",
+      "profileName": "Nazwa profilu",
+      "puncZhEnabled": "Zastąpienie chińskiej interpunkcji (CT-Punc)",
+      "removeMatcher": "Usuń",
+      "selectedModel": "Zastąpienie modelu ASR",
+      "selectedModelHint": "Honorowane tylko gdy 'Hot-swap silnika' jest włączony. Dodaje 1–3 s opóźnienia ładowania modelu przy pierwszej transkrypcji dla profilu.",
+      "selectedPreset": "Zastąpienie presetu ASR",
+      "selectedPresetHint": "Zastosuj preset ASR gdy ten profil jest aktywny. Wpływa na język i ustawienia CT-Punc.",
+      "title": "Profile świadome aplikacji",
+      "tristate": {
+        "inherit": "Dziedzicz globalne",
+        "off": "Wyłącz",
+        "on": "Włącz"
       }
     }
   },
@@ -608,5 +751,9 @@
   "overlay": {
     "transcribing": "Transkrypcja...",
     "processing": "Przetwarzanie..."
+  },
+  "toast": {
+    "puncMissingDescription": "Apple Speech i SenseVoice nie będą generować chińskiej interpunkcji dopóki model CT-Punc nie zostanie pobrany. Otwórz Ustawienia → Zaawansowane aby pobrać.",
+    "puncMissingTitle": "Model chińskiej interpunkcji nie pobrany"
   }
 }

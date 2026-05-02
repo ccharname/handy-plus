@@ -15,7 +15,8 @@
     "postProcessing": "Nachbearbeitung",
     "history": "Verlauf",
     "debug": "Debug",
-    "about": "Info"
+    "about": "Info",
+    "profiles": "Profile"
   },
   "onboarding": {
     "subtitle": "Wähle ein Transkriptionsmodell, um loszulegen",
@@ -92,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "Ein großes, langsameres, aber sehr genaues mehrsprachiges Modell."
+      },
+      "sense-voice-small-sherpa": {
+        "description": "Dasselbe Modell wie SenseVoice Small, separate Modell-ID. Unterstützt Hotwords L2-Bias (hotwords_boost) aus custom_words. Via sherpa-onnx, ~242 MB.",
+        "name": "SenseVoice (sherpa-onnx)"
       }
     },
     "errors": {
@@ -213,6 +218,19 @@
       "pushToTalk": {
         "label": "Push-to-Talk",
         "description": "Gedrückt halten zum Aufnehmen, loslassen zum Stoppen"
+      },
+      "diary": {
+        "addKeyword": "Hinzufügen",
+        "browse": "Durchsuchen",
+        "description": "Transkriptionen automatisch an eine tägliche Markdown-Datei anhängen, wenn sie mit einem Auslöser-Schlüsselwort beginnen.",
+        "dirDescription": "Pfad zum Ordner, in dem tägliche Tagebuchdateien geschrieben werden. Leer lassen zum Deaktivieren.",
+        "dirLabel": "Tagebuch-Verzeichnis",
+        "dirPlaceholder": "~/obsidian/diary",
+        "keywordPlaceholder": "Schlüsselwort hinzufügen...",
+        "keywordsDescription": "Transkriptionen, die mit einem dieser Schlüsselwörter beginnen (gefolgt von optionaler Interpunktion), werden archiviert.",
+        "keywordsLabel": "Auslöser-Schlüsselwörter",
+        "removeKeyword": "Schlüsselwort entfernen",
+        "title": "Tagebuch-Autoarchivierung"
       }
     },
     "sound": {
@@ -355,7 +373,29 @@
         "placeholder": "Wort hinzufügen",
         "add": "Hinzufügen",
         "remove": "{{word}} entfernen",
-        "duplicate": "\"{{word}}\" existiert bereits"
+        "duplicate": "\"{{word}}\" existiert bereits",
+        "bulkImportPlaceholder": "Wörter durch Zeilenumbrüche oder Kommas getrennt einfügen...",
+        "bulkImportTitle": "Benutzerdefinierte Wörter massenimportieren",
+        "cancel": "Abbrechen",
+        "confirmAdd": "Alle hinzufügen",
+        "export": "Exportieren",
+        "fileTypes": ".txt / .csv / .json",
+        "fromFile": "Oder aus Datei laden",
+        "import": "Importieren",
+        "layerHint": "Diese Wörter werden verwendet für (1) unscharfe Ersetzung nach der Transkription (2) Dekodierungs-Bias-Hinweise",
+        "preview": "{{add}} neu · {{skip}} doppelt · {{invalid}} ungültig"
+      },
+      "puncZh": {
+        "cancel": "Abbrechen",
+        "description": "Fügt automatisch Satzzeichen zu chinesischen Transkriptionen hinzu, mithilfe des CT-Transformer-Modells. Gilt für alle ASR-Engines (Apple Speech, SenseVoice, FunASR-Nano). Erfordert das Interpunktionsmodell (~50 MB).",
+        "download": "Modell herunterladen",
+        "label": "Chinesische Interpunktion (CT-Transformer)",
+        "modelDownloading": "Interpunktionsmodell wird heruntergeladen...",
+        "modelFailed": "Download fehlgeschlagen: {{error}}",
+        "modelMissing": "Modell nicht heruntergeladen — chinesische Interpunktion wird übersprungen.",
+        "modelReady": "Modell bereit (76 MB)",
+        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
+        "retry": "Erneut versuchen"
       }
     },
     "postProcessing": {
@@ -416,7 +456,15 @@
         "cancel": "Abbrechen",
         "selectToEdit": "Wähle oben einen Prompt aus, um dessen Details anzuzeigen und zu bearbeiten.",
         "createFirst": "Klicke oben auf 'Neuen Prompt erstellen', um deinen ersten Nachbearbeitungs-Prompt zu erstellen."
-      }
+      },
+      "chainAddStep": "Schritt hinzufügen",
+      "chainEmpty": "Mindestens einen Prompt hinzufügen",
+      "chainEnabled": "Kette statt einzelnem Prompt verwenden",
+      "chainMoveDown": "Schritt nach unten verschieben",
+      "chainMoveUp": "Schritt nach oben verschieben",
+      "chainRemove": "Schritt entfernen",
+      "chainSection": "Prompt-Kette",
+      "chainStepLabel": "Schritt {{n}}"
     },
     "history": {
       "title": "Verlauf",
@@ -431,7 +479,17 @@
       "retranscribe": "Erneut transkribieren",
       "retranscribeError": "Erneute Transkription fehlgeschlagen. Bitte versuche es erneut.",
       "transcribing": "Transkribiere...",
-      "transcriptionFailed": "Transkription fehlgeschlagen. Du kannst über das Wiederholen-Symbol erneut transkribieren."
+      "transcriptionFailed": "Transkription fehlgeschlagen. Du kannst über das Wiederholen-Symbol erneut transkribieren.",
+      "retranscribeModal": {
+        "cancelButton": "Abbrechen",
+        "languageLabel": "Sprache",
+        "modelLabel": "Modell",
+        "modelPlaceholder": "Aktuelles Modell verwenden",
+        "noDownloadedModels": "Keine heruntergeladenen Modelle",
+        "runButton": "Neu transkribieren",
+        "title": "Neu transkribieren"
+      },
+      "retranscribeOptions": "Mit Optionen neu transkribieren"
     },
     "debug": {
       "title": "Debug",
@@ -536,6 +594,91 @@
           "description": "Hochleistungs-Inferenz des Whisper-Spracherkennungsmodells von OpenAI",
           "details": "Handy verwendet Whisper.cpp für schnelle, lokale Sprach-zu-Text-Verarbeitung. Dank an Georgi Gerganov und die Mitwirkenden für ihre großartige Arbeit."
         }
+      },
+      "fork": {
+        "description": "Dies ist Handy+, ein Community-Fork, gepflegt von @ccharname. Siehe den Upstream-Link für das Originalprojekt.",
+        "forkLabel": "handy-plus von @ccharname",
+        "title": "Fork",
+        "viewFork": "Fork auf GitHub ansehen",
+        "viewUpstream": "Upstream ansehen (cjpais/Handy)"
+      }
+    },
+    "asrPresets": {
+      "active": "Aktiv",
+      "advancedHint": "Oder manuell ein Modell unten auswählen.",
+      "appleNative": {
+        "description": "Apple Speech mit CT-Punc-Interpunktionspatch. Geringste Latenz für kurze Befehle.",
+        "name": "Apple Native"
+      },
+      "apply": "Anwenden",
+      "applyAndDownload": "Herunterladen & Anwenden",
+      "chineseBalanced": {
+        "description": "SenseVoice mit CT-Punc automatischer Interpunktion. Optimal für chinesisch-orientierte Benutzer.",
+        "name": "Chinesisch Ausgewogen"
+      },
+      "customized": "Angepasst (Preset getrennt)",
+      "description": "Schnelles Wechseln zwischen kuratierten Spracherkennungs-Setups.",
+      "multilingualOffline": {
+        "description": "FunASR-Nano unterstützt 8+ Sprachen, vollständig offline.",
+        "name": "Mehrsprachig Offline"
+      },
+      "switching": "Wechsle...",
+      "title": "ASR Presets"
+    },
+    "profiles": {
+      "add": "Profil hinzufügen",
+      "addMatcher": "Matcher hinzufügen",
+      "appendTrailingSpace": "Abschluss-Leerzeichen anhängen",
+      "autoSubmit": "Automatisch senden",
+      "chainStepsCount": "{{count}}-Schritte-Kette",
+      "confirmDelete": "Dieses Profil löschen?",
+      "customWordsCount": "{{count}} Hot-Words",
+      "customWordsExtra": "Zusätzliche Hot-Words",
+      "customWordsExtraPlaceholder": "Wort hinzufügen",
+      "delete": "Löschen",
+      "detectedNow": "Jetzt: {{app}}",
+      "duplicate": "Duplizieren",
+      "enabledDescription": "Die Vordergrund-App erkennen und das passende Profil anwenden, um Sprache, Einfügemethode und Nachbearbeitung zu überschreiben.",
+      "enabledLabel": "Power Mode aktivieren",
+      "hotSwapEngineDescription": "Ermöglicht Profilen, zu einem anderen ASR-Modell zu wechseln. Verursacht 1–3 s Latenz beim Wechsel — standardmäßig deaktiviert.",
+      "hotSwapEngineLabel": "Engine per Profil hot-swappen",
+      "howItWorksHint": "Power Mode wendet die Code- und Claude Code-Profile automatisch an, wenn diese Apps im Vordergrund sind; andere umschalten, um weitere Szenen hinzuzufügen.",
+      "inheritGlobal": "Global erben",
+      "language": "Sprachüberschreibung",
+      "matchedNow": "Übereinstimmung: {{name}}",
+      "matcher": {
+        "bundleId": "Bundle ID (macOS)",
+        "disabled": "Deaktiviert",
+        "processName": "Prozessname",
+        "windowTitle": "Fenstertitel enthält"
+      },
+      "matcherType": "Matcher-Typ",
+      "matcherValue": "Wert",
+      "matchers": "Matcher",
+      "noForeground": "Keine Vordergrund-App erkannt",
+      "noMatchedProfile": "Kein Profil übereinstimmend",
+      "noOverrides": "Keine Überschreibungen — erbt globale Einstellungen",
+      "overrides": "Überschreibungen",
+      "pasteMethod": "Einfügemethoden-Überschreibung",
+      "postProcessChain": "Nachbearbeitungs-Ketten-Überschreibung",
+      "postProcessChainDisabled": "deaktiviert",
+      "postProcessChainHint": "Den Nachbearbeitungs-Prompt-Chain für dieses Profil überschreiben. Leere Liste deaktiviert den Kettenmodus.",
+      "postProcessChainReset": "× zurücksetzen",
+      "postProcessPrompt": "Nachbearbeitungs-Prompt-Überschreibung",
+      "postProcessProvider": "Nachbearbeitungs-Anbieter-Überschreibung",
+      "profileEnabled": "Aktiviert",
+      "profileName": "Profilname",
+      "puncZhEnabled": "Chinesische Interpunktion (CT-Punc) Überschreibung",
+      "removeMatcher": "Entfernen",
+      "selectedModel": "ASR-Modell-Überschreibung",
+      "selectedModelHint": "Wird nur beachtet, wenn 'Engine hot-swappen' aktiviert ist. Fügt beim ersten Transkriptionsjob pro Profil 1–3 s Modell-Ladelatenz hinzu.",
+      "selectedPreset": "ASR-Preset-Überschreibung",
+      "selectedPresetHint": "Ein ASR-Preset anwenden, wenn dieses Profil aktiv ist. Beeinflusst Sprache und CT-Punc-Einstellungen.",
+      "title": "App-bewusste Profile",
+      "tristate": {
+        "inherit": "Global erben",
+        "off": "Aus",
+        "on": "An"
       }
     }
   },
@@ -608,5 +751,9 @@
   "overlay": {
     "transcribing": "Transkribiere...",
     "processing": "Verarbeite..."
+  },
+  "toast": {
+    "puncMissingDescription": "Apple Speech und SenseVoice erzeugen keine chinesische Interpunktion, bis das CT-Punc-Modell heruntergeladen wurde. Einstellungen → Erweitert öffnen zum Herunterladen.",
+    "puncMissingTitle": "Chinesisches Interpunktionsmodell nicht heruntergeladen"
   }
 }

@@ -93,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "大型模型，速度较慢，但多语言识别非常准确。"
+      },
+      "sense-voice-small-sherpa": {
+        "description": "与 SenseVoice Small 相同的模型，独立模型 ID。支持来自 custom_words 的热词 L2 偏置（hotwords_boost）。通过 sherpa-onnx，约 242 MB。",
+        "name": "SenseVoice（sherpa-onnx）"
       }
     },
     "errors": {
@@ -214,6 +218,19 @@
       "pushToTalk": {
         "label": "按住说话",
         "description": "按住录制，松开停止"
+      },
+      "diary": {
+        "addKeyword": "添加",
+        "browse": "浏览",
+        "description": "当转录内容以触发关键词开头时，自动追加到每日 Markdown 文件。",
+        "dirDescription": "每日日记文件写入的文件夹路径。留空则禁用。",
+        "dirLabel": "日记目录",
+        "dirPlaceholder": "~/obsidian/diary",
+        "keywordPlaceholder": "添加关键词...",
+        "keywordsDescription": "以这些关键词之一开头（后跟可选标点）的转录内容将被归档。",
+        "keywordsLabel": "触发关键词",
+        "removeKeyword": "删除关键词",
+        "title": "日记自动归档"
       }
     },
     "sound": {
@@ -367,6 +384,18 @@
         "confirmAdd": "全部添加",
         "cancel": "取消",
         "fileTypes": ".txt / .csv / .json"
+      },
+      "puncZh": {
+        "cancel": "取消",
+        "description": "使用 CT-Transformer 模型自动为中文转录添加标点符号。适用于所有 ASR 引擎（Apple Speech、SenseVoice、FunASR-Nano）。需要下载标点模型（约 50 MB）。",
+        "download": "下载模型",
+        "label": "中文标点（CT-Transformer）",
+        "modelDownloading": "正在下载标点模型...",
+        "modelFailed": "下载失败：{{error}}",
+        "modelMissing": "模型未下载 — 中文标点将被跳过。",
+        "modelReady": "模型已就绪（76 MB）",
+        "progressText": "{{percentage}}%（{{downloaded}} / {{total}}）",
+        "retry": "重试"
       }
     },
     "postProcessing": {
@@ -427,7 +456,15 @@
         "cancel": "取消",
         "selectToEdit": "选择上方的提示词以查看和编辑其详细信息。",
         "createFirst": "点击上方的「创建新提示词」来创建您的第一个后处理提示词。"
-      }
+      },
+      "chainAddStep": "添加步骤",
+      "chainEmpty": "至少添加一个提示词",
+      "chainEnabled": "使用链式提示词替代单个提示词",
+      "chainMoveDown": "步骤下移",
+      "chainMoveUp": "步骤上移",
+      "chainRemove": "删除步骤",
+      "chainSection": "提示词链",
+      "chainStepLabel": "步骤 {{n}}"
     },
     "history": {
       "title": "历史记录",
@@ -442,7 +479,17 @@
       "retranscribe": "重新转录",
       "retranscribeError": "重新转录失败。请重试。",
       "transcribing": "转录中...",
-      "transcriptionFailed": "转录失败。您可以使用重试图标重新转录。"
+      "transcriptionFailed": "转录失败。您可以使用重试图标重新转录。",
+      "retranscribeModal": {
+        "cancelButton": "取消",
+        "languageLabel": "语言",
+        "modelLabel": "模型",
+        "modelPlaceholder": "使用当前模型",
+        "noDownloadedModels": "无已下载模型",
+        "runButton": "重新转录",
+        "title": "重新转录"
+      },
+      "retranscribeOptions": "带选项重新转录"
     },
     "debug": {
       "title": "调试",
@@ -560,7 +607,21 @@
         "inherit": "沿用全局",
         "on": "开",
         "off": "关"
-      }
+      },
+      "chainStepsCount": "{{count}} 步链",
+      "customWordsCount": "{{count}} 个热词",
+      "hotSwapEngineDescription": "允许配置文件切换到不同的 ASR 模型。切换时有 1–3 秒延迟 — 默认关闭。",
+      "hotSwapEngineLabel": "按配置文件热切换引擎",
+      "noOverrides": "无覆盖 — 继承全局设置",
+      "postProcessChain": "后处理链覆盖",
+      "postProcessChainDisabled": "已禁用",
+      "postProcessChainHint": "覆盖此配置文件的后处理提示词链。空列表将禁用链式模式。",
+      "postProcessChainReset": "× 重置",
+      "puncZhEnabled": "中文标点（CT-Punc）覆盖",
+      "selectedModel": "ASR 模型覆盖",
+      "selectedModelHint": "仅在启用「热切换引擎」时生效。每个配置文件首次转录时会增加 1–3 秒的模型加载延迟。",
+      "selectedPreset": "ASR 预设覆盖",
+      "selectedPresetHint": "在此配置文件激活时应用 ASR 预设。影响语言和 CT-Punc 设置。"
     },
     "about": {
       "title": "关于",
@@ -589,7 +650,36 @@
           "description": "OpenAI Whisper 自动语音识别模型的高性能推理",
           "details": "Handy 使用 Whisper.cpp 进行快速的本地语音转文字处理。感谢 Georgi Gerganov 和贡献者们的出色工作。"
         }
+      },
+      "fork": {
+        "description": "这是 Handy+，由 @ccharname 维护的社区分支。原始项目请见上游链接。",
+        "forkLabel": "@ccharname 的 handy-plus",
+        "title": "Fork",
+        "viewFork": "在 GitHub 查看 Fork",
+        "viewUpstream": "查看上游（cjpais/Handy）"
       }
+    },
+    "asrPresets": {
+      "active": "当前使用",
+      "advancedHint": "或在下方手动选择模型。",
+      "appleNative": {
+        "description": "搭载 CT-Punc 标点补丁的 Apple Speech，短指令延迟最低。",
+        "name": "Apple 原生"
+      },
+      "apply": "应用",
+      "applyAndDownload": "下载并应用",
+      "chineseBalanced": {
+        "description": "带 CT-Punc 自动标点的 SenseVoice，最适合以中文为主的用户。",
+        "name": "中文均衡"
+      },
+      "customized": "已自定义（预设已解绑）",
+      "description": "快速切换精选语音识别配置。",
+      "multilingualOffline": {
+        "description": "FunASR-Nano 支持 8 种以上语言，完全离线。",
+        "name": "多语言离线"
+      },
+      "switching": "切换中...",
+      "title": "ASR 预设"
     }
   },
   "footer": {
@@ -661,5 +751,9 @@
   "overlay": {
     "transcribing": "正在转录...",
     "processing": "处理中..."
+  },
+  "toast": {
+    "puncMissingDescription": "在下载 CT-Punc 模型前，Apple Speech 和 SenseVoice 不会生成中文标点。请打开设置 → 高级进行下载。",
+    "puncMissingTitle": "中文标点模型未下载"
   }
 }

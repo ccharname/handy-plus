@@ -15,7 +15,8 @@
     "history": "السجل",
     "debug": "تصحيح الأخطاء",
     "about": "حول",
-    "models": "النماذج"
+    "models": "النماذج",
+    "profiles": "الملفات الشخصية"
   },
   "onboarding": {
     "subtitle": "للبدء، اختر نموذج التفريغ الصوتي",
@@ -92,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "نموذج كبير وأبطأ، لكنه دقيق جداً ومتعدد اللغات."
+      },
+      "sense-voice-small-sherpa": {
+        "description": "نفس نموذج SenseVoice Small، معرّف نموذج منفصل. يدعم تحيّز L2 للكلمات الساخنة (hotwords_boost) من custom_words. عبر sherpa-onnx، ~242 ميغابايت.",
+        "name": "SenseVoice (sherpa-onnx)"
       }
     },
     "errors": {
@@ -191,6 +196,19 @@
       "pushToTalk": {
         "label": "اضغط للتحدث",
         "description": "استمر في الضغط للتسجيل، واترك للتوقف"
+      },
+      "diary": {
+        "addKeyword": "إضافة",
+        "browse": "استعراض",
+        "description": "إلحاق النسخ تلقائيًا بملف ماركداون يومي عند بدئه بكلمة مفتاحية محفِّزة.",
+        "dirDescription": "مسار المجلد الذي تُكتب فيه ملفات اليومية. اتركه فارغًا للتعطيل.",
+        "dirLabel": "مجلد اليوميات",
+        "dirPlaceholder": "~/obsidian/diary",
+        "keywordPlaceholder": "أضف كلمة مفتاحية...",
+        "keywordsDescription": "يُؤرشف النص المنسوخ الذي يبدأ بإحدى هذه الكلمات المفتاحية (متبوعةً بعلامة ترقيم اختيارية).",
+        "keywordsLabel": "الكلمات المفتاحية المحفِّزة",
+        "removeKeyword": "حذف الكلمة المفتاحية",
+        "title": "أرشفة اليوميات تلقائيًا"
       }
     },
     "sound": {
@@ -333,7 +351,29 @@
         "placeholder": "أضف كلمة",
         "add": "إضافة",
         "remove": "إزالة {{word}}",
-        "duplicate": "\"{{word}}\" موجود بالفعل"
+        "duplicate": "\"{{word}}\" موجود بالفعل",
+        "bulkImportPlaceholder": "الصق كلمات مفصولة بأسطر جديدة أو فواصل...",
+        "bulkImportTitle": "استيراد كلمات مخصصة بالجملة",
+        "cancel": "إلغاء",
+        "confirmAdd": "إضافة الكل",
+        "export": "تصدير",
+        "fileTypes": ".txt / .csv / .json",
+        "fromFile": "أو تحميل من ملف",
+        "import": "استيراد",
+        "layerHint": "تُستخدم هذه الكلمات لـ (1) الاستبدال التقريبي بعد النسخ (2) تلميحات التحيّز في فك التشفير",
+        "preview": "{{add}} جديدة · {{skip}} مكررة · {{invalid}} غير صالحة"
+      },
+      "puncZh": {
+        "cancel": "إلغاء",
+        "description": "إضافة علامات الترقيم تلقائيًا إلى النسخ الصينية باستخدام نموذج CT-Transformer. يُطبَّق على جميع محركات ASR (Apple Speech, SenseVoice, FunASR-Nano). يتطلب تنزيل نموذج الترقيم (~50 ميغابايت).",
+        "download": "تنزيل النموذج",
+        "label": "ترقيم صيني (CT-Transformer)",
+        "modelDownloading": "جارٍ تنزيل نموذج الترقيم...",
+        "modelFailed": "فشل التنزيل: {{error}}",
+        "modelMissing": "النموذج غير محمَّل — سيتم تخطي ترقيم الصينية.",
+        "modelReady": "النموذج جاهز (76 ميغابايت)",
+        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
+        "retry": "إعادة المحاولة"
       }
     },
     "postProcessing": {
@@ -394,7 +434,15 @@
         "cancel": "إلغاء",
         "selectToEdit": ".اختر مطالبة أعلاه لعرض وتعديل تفاصيلها",
         "createFirst": ".انقر على 'إنشاء مطالبة جديدة' أعلاه لإنشاء أول مطالبة معالجة لاحقة لك"
-      }
+      },
+      "chainAddStep": "إضافة خطوة",
+      "chainEmpty": "أضف موجّهًا واحدًا على الأقل",
+      "chainEnabled": "استخدام سلسلة بدلًا من موجّه واحد",
+      "chainMoveDown": "تحريك الخطوة لأسفل",
+      "chainMoveUp": "تحريك الخطوة لأعلى",
+      "chainRemove": "حذف الخطوة",
+      "chainSection": "سلسلة الموجّهات",
+      "chainStepLabel": "الخطوة {{n}}"
     },
     "history": {
       "title": "السجل",
@@ -409,7 +457,17 @@
       "retranscribe": "إعادة النسخ",
       "retranscribeError": "فشلت إعادة النسخ. يرجى المحاولة مرة أخرى.",
       "transcribing": "جارٍ النسخ...",
-      "transcriptionFailed": "فشل النسخ. يمكنك إعادة النسخ باستخدام أيقونة إعادة المحاولة."
+      "transcriptionFailed": "فشل النسخ. يمكنك إعادة النسخ باستخدام أيقونة إعادة المحاولة.",
+      "retranscribeModal": {
+        "cancelButton": "إلغاء",
+        "languageLabel": "اللغة",
+        "modelLabel": "النموذج",
+        "modelPlaceholder": "استخدام النموذج الحالي",
+        "noDownloadedModels": "لا توجد نماذج محمَّلة",
+        "runButton": "إعادة النسخ",
+        "title": "إعادة النسخ"
+      },
+      "retranscribeOptions": "إعادة النسخ مع الخيارات"
     },
     "debug": {
       "title": "تصحيح الأخطاء",
@@ -514,6 +572,13 @@
           "description": "استنتاج عالي الأداء لنموذج التعرف التلقائي على الكلام Whisper من OpenAI",
           "details": ".يستخدم Handy برنامج Whisper.cpp لمعالجة سريعة ومحلية لتحويل الكلام إلى نص. شكراً للعمل الرائع الذي قام به Georgi Gerganov والمساهمون"
         }
+      },
+      "fork": {
+        "description": "هذا هو Handy+، نسخة مجتمعية يصونها @ccharname. راجع رابط المصدر الأصلي للمشروع الأساسي.",
+        "forkLabel": "handy-plus بواسطة @ccharname",
+        "title": "نسخة مشتقة",
+        "viewFork": "عرض النسخة المشتقة على GitHub",
+        "viewUpstream": "عرض المصدر الأصلي (cjpais/Handy)"
       }
     },
     "modelSettings": {
@@ -537,6 +602,84 @@
         "allLanguages": "جميع اللغات"
       },
       "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر."
+    },
+    "asrPresets": {
+      "active": "نشط",
+      "advancedHint": "أو اختر نموذجًا يدويًا أدناه.",
+      "appleNative": {
+        "description": "Apple Speech مع تصحيح ترقيم CT-Punc. أقل تأخير للأوامر القصيرة.",
+        "name": "Apple النيتف"
+      },
+      "apply": "تطبيق",
+      "applyAndDownload": "تنزيل وتطبيق",
+      "chineseBalanced": {
+        "description": "SenseVoice مع ترقيم تلقائي CT-Punc. الأنسب لمستخدمي الصينية.",
+        "name": "صيني متوازن"
+      },
+      "customized": "مخصص (الإعداد المسبق منفصل)",
+      "description": "تبديل سريع بين إعدادات التعرف على الكلام المنتقاة.",
+      "multilingualOffline": {
+        "description": "FunASR-Nano يدعم 8+ لغات، بالكامل دون اتصال.",
+        "name": "متعدد اللغات دون اتصال"
+      },
+      "switching": "جارٍ التبديل...",
+      "title": "إعدادات ASR المسبقة"
+    },
+    "profiles": {
+      "add": "إضافة ملف تعريف",
+      "addMatcher": "إضافة مطابِق",
+      "appendTrailingSpace": "إضافة مسافة في النهاية",
+      "autoSubmit": "إرسال تلقائي",
+      "chainStepsCount": "سلسلة {{count}} خطوات",
+      "confirmDelete": "حذف هذا الملف الشخصي؟",
+      "customWordsCount": "{{count}} كلمات ساخنة",
+      "customWordsExtra": "كلمات ساخنة إضافية",
+      "customWordsExtraPlaceholder": "أضف كلمة",
+      "delete": "حذف",
+      "detectedNow": "الآن: {{app}}",
+      "duplicate": "تكرار",
+      "enabledDescription": "اكتشاف التطبيق في المقدمة وتطبيق الملف الشخصي المطابق لتجاوز اللغة وطريقة اللصق ومعالجة ما بعد النسخ.",
+      "enabledLabel": "تفعيل وضع Power Mode",
+      "hotSwapEngineDescription": "السماح للملفات الشخصية بالتبديل إلى نموذج ASR مختلف. يضيف 1-3 ثوانٍ من التأخير عند التبديل — مُعطَّل افتراضيًا.",
+      "hotSwapEngineLabel": "تبديل المحرك فوريًا لكل ملف شخصي",
+      "howItWorksHint": "يُطبِّق وضع Power Mode ملفي Code وClaude Code تلقائيًا عند كونهما في المقدمة؛ فعِّل الآخرين لإضافة المزيد من المشاهد.",
+      "inheritGlobal": "وراثة الإعدادات العامة",
+      "language": "تجاوز اللغة",
+      "matchedNow": "مطابق: {{name}}",
+      "matcher": {
+        "bundleId": "Bundle ID (macOS)",
+        "disabled": "معطَّل",
+        "processName": "اسم العملية",
+        "windowTitle": "عنوان النافذة يحتوي"
+      },
+      "matcherType": "نوع المطابِق",
+      "matcherValue": "القيمة",
+      "matchers": "المطابِقات",
+      "noForeground": "لم يُكتشف تطبيق في المقدمة",
+      "noMatchedProfile": "لا يوجد ملف شخصي مطابق",
+      "noOverrides": "لا تجاوزات — وراثة الإعدادات العامة",
+      "overrides": "التجاوزات",
+      "pasteMethod": "تجاوز طريقة اللصق",
+      "postProcessChain": "تجاوز سلسلة ما بعد المعالجة",
+      "postProcessChainDisabled": "معطَّل",
+      "postProcessChainHint": "تجاوز سلسلة موجّهات ما بعد المعالجة لهذا الملف الشخصي. القائمة الفارغة تُعطِّل وضع السلسلة.",
+      "postProcessChainReset": "× إعادة تعيين",
+      "postProcessPrompt": "تجاوز موجّه ما بعد المعالجة",
+      "postProcessProvider": "تجاوز مزوِّد ما بعد المعالجة",
+      "profileEnabled": "مفعَّل",
+      "profileName": "اسم الملف الشخصي",
+      "puncZhEnabled": "تجاوز الترقيم الصيني (CT-Punc)",
+      "removeMatcher": "حذف",
+      "selectedModel": "تجاوز نموذج ASR",
+      "selectedModelHint": "يُحترَم فقط عند تفعيل 'تبديل المحرك فوريًا'. يضيف 1-3 ثوانٍ من تأخير تحميل النموذج عند النسخ الأول لكل ملف شخصي.",
+      "selectedPreset": "تجاوز إعداد ASR المسبق",
+      "selectedPresetHint": "تطبيق إعداد ASR مسبق عند تنشيط هذا الملف الشخصي. يؤثر على اللغة وإعدادات CT-Punc.",
+      "title": "ملفات شخصية واعية بالتطبيقات",
+      "tristate": {
+        "inherit": "وراثة الإعدادات العامة",
+        "off": "إيقاف",
+        "on": "تشغيل"
+      }
     }
   },
   "footer": {
@@ -608,5 +751,9 @@
   "overlay": {
     "transcribing": "...جاري التفريغ",
     "processing": "...جاري المعالجة"
+  },
+  "toast": {
+    "puncMissingDescription": "لن يُنتج Apple Speech وSenseVoice ترقيمًا صينيًا حتى يتم تنزيل نموذج CT-Punc. افتح الإعدادات ← متقدم للتنزيل.",
+    "puncMissingTitle": "نموذج الترقيم الصيني غير محمَّل"
   }
 }

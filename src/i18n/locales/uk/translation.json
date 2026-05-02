@@ -15,7 +15,8 @@
     "postProcessing": "Постобробка",
     "history": "Історія",
     "debug": "Дебаг",
-    "about": "Інфо"
+    "about": "Інфо",
+    "profiles": "Профілі"
   },
   "onboarding": {
     "subtitle": "Для початку оберіть модель транскрипції",
@@ -92,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "Велика, повільніша, але дуже точна багатомовна модель."
+      },
+      "sense-voice-small-sherpa": {
+        "description": "Та ж модель, що й SenseVoice Small, окремий ID моделі. Підтримує зміщення L2 гарячих слів (hotwords_boost) з custom_words. Через sherpa-onnx, ~242 МБ.",
+        "name": "SenseVoice (sherpa-onnx)"
       }
     },
     "errors": {
@@ -195,6 +200,19 @@
       "pushToTalk": {
         "label": "Утримувати для запису (Push To Talk)",
         "description": "Утримуйте для запису, відпустіть для зупинки"
+      },
+      "diary": {
+        "addKeyword": "Додати",
+        "browse": "Огляд",
+        "description": "Автоматично додає транскрипції до щоденного markdown-файлу, якщо вони починаються з ключового слова-тригера.",
+        "dirDescription": "Шлях до папки, де записуються щоденні файли щоденника. Залиште порожнім для вимкнення.",
+        "dirLabel": "Папка щоденника",
+        "dirPlaceholder": "~/obsidian/diary",
+        "keywordPlaceholder": "Додати ключове слово...",
+        "keywordsDescription": "Транскрипції, що починаються з одного з цих ключових слів (за яким може слідувати знак пунктуації), архівуються.",
+        "keywordsLabel": "Ключові слова-тригери",
+        "removeKeyword": "Видалити ключове слово",
+        "title": "Автоархівування щоденника"
       }
     },
     "models": {
@@ -355,7 +373,29 @@
         "placeholder": "Додати слово",
         "add": "Додати",
         "remove": "Видалити {{word}}",
-        "duplicate": "\"{{word}}\" вже існує"
+        "duplicate": "\"{{word}}\" вже існує",
+        "bulkImportPlaceholder": "Вставте слова, розділені новими рядками або комами...",
+        "bulkImportTitle": "Масовий імпорт власних слів",
+        "cancel": "Скасувати",
+        "confirmAdd": "Додати всі",
+        "export": "Експорт",
+        "fileTypes": ".txt / .csv / .json",
+        "fromFile": "Або завантажити з файлу",
+        "import": "Імпорт",
+        "layerHint": "Ці слова використовуються для (1) нечіткої заміни після транскрипції (2) підказок зміщення при декодуванні",
+        "preview": "{{add}} нових · {{skip}} дублів · {{invalid}} недійсних"
+      },
+      "puncZh": {
+        "cancel": "Скасувати",
+        "description": "Автоматично додає розділові знаки до китайських транскрипцій за допомогою моделі CT-Transformer. Застосовується до всіх ASR-рушіїв (Apple Speech, SenseVoice, FunASR-Nano). Потребує завантаження моделі пунктуації (~50 МБ).",
+        "download": "Завантажити модель",
+        "label": "Китайська пунктуація (CT-Transformer)",
+        "modelDownloading": "Завантаження моделі пунктуації...",
+        "modelFailed": "Завантаження не вдалось: {{error}}",
+        "modelMissing": "Модель не завантажена — китайську пунктуацію буде пропущено.",
+        "modelReady": "Модель готова (76 МБ)",
+        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
+        "retry": "Повторити"
       }
     },
     "postProcessing": {
@@ -416,7 +456,15 @@
         "cancel": "Скасувати",
         "selectToEdit": "Оберіть промпт вище для перегляду та редагування його деталей.",
         "createFirst": "Натисніть «Створити новий промпт» вище, щоб створити ваш перший промпт постобробки."
-      }
+      },
+      "chainAddStep": "Додати крок",
+      "chainEmpty": "Додайте хоча б один промпт",
+      "chainEnabled": "Використовувати ланцюжок замість одного промпту",
+      "chainMoveDown": "Перемістити крок вниз",
+      "chainMoveUp": "Перемістити крок вгору",
+      "chainRemove": "Видалити крок",
+      "chainSection": "Ланцюжок промптів",
+      "chainStepLabel": "Крок {{n}}"
     },
     "history": {
       "title": "Історія",
@@ -431,7 +479,17 @@
       "retranscribe": "Перетранскрибувати",
       "retranscribeError": "Не вдалося перетранскрибувати. Будь ласка, спробуйте ще раз.",
       "transcribing": "Транскрибування...",
-      "transcriptionFailed": "Транскрипція не вдалася. Ви можете перетранскрибувати за допомогою іконки повтору."
+      "transcriptionFailed": "Транскрипція не вдалася. Ви можете перетранскрибувати за допомогою іконки повтору.",
+      "retranscribeModal": {
+        "cancelButton": "Скасувати",
+        "languageLabel": "Мова",
+        "modelLabel": "Модель",
+        "modelPlaceholder": "Використати поточну модель",
+        "noDownloadedModels": "Немає завантажених моделей",
+        "runButton": "Перетранскрибувати",
+        "title": "Перетранскрибувати"
+      },
+      "retranscribeOptions": "Перетранскрибувати з параметрами"
     },
     "debug": {
       "title": "Дебаг",
@@ -536,6 +594,91 @@
           "description": "Високопродуктивний інференс моделі автоматичного розпізнавання мовлення Whisper від OpenAI",
           "details": "Handy використовує Whisper.cpp для швидкої локальної обробки мовлення в текст. Дякуємо за чудову роботу Георгію Герганову та контриб'юторам."
         }
+      },
+      "fork": {
+        "description": "Це Handy+, форк спільноти, що підтримується @ccharname. Дивіться посилання upstream для оригінального проєкту.",
+        "forkLabel": "handy-plus від @ccharname",
+        "title": "Форк",
+        "viewFork": "Відкрити форк на GitHub",
+        "viewUpstream": "Відкрити upstream (cjpais/Handy)"
+      }
+    },
+    "asrPresets": {
+      "active": "Активний",
+      "advancedHint": "Або оберіть модель вручну нижче.",
+      "appleNative": {
+        "description": "Apple Speech з патчем пунктуації CT-Punc. Мінімальна затримка для коротких команд.",
+        "name": "Apple Native"
+      },
+      "apply": "Застосувати",
+      "applyAndDownload": "Завантажити та застосувати",
+      "chineseBalanced": {
+        "description": "SenseVoice з автоматичною пунктуацією CT-Punc. Оптимально для користувачів китайської мови.",
+        "name": "Китайський збалансований"
+      },
+      "customized": "Налаштовано (пресет відв'язано)",
+      "description": "Швидке перемикання між відібраними конфігураціями розпізнавання мови.",
+      "multilingualOffline": {
+        "description": "FunASR-Nano підтримує 8+ мов, повністю офлайн.",
+        "name": "Багатомовний офлайн"
+      },
+      "switching": "Перемикання...",
+      "title": "Пресети ASR"
+    },
+    "profiles": {
+      "add": "Додати профіль",
+      "addMatcher": "Додати зіставник",
+      "appendTrailingSpace": "Додати пробіл наприкінці",
+      "autoSubmit": "Автовідправка",
+      "chainStepsCount": "Ланцюжок із {{count}} кроків",
+      "confirmDelete": "Видалити цей профіль?",
+      "customWordsCount": "{{count}} гарячих слів",
+      "customWordsExtra": "Додаткові гарячі слова",
+      "customWordsExtraPlaceholder": "Додати слово",
+      "delete": "Видалити",
+      "detectedNow": "Зараз: {{app}}",
+      "duplicate": "Дублювати",
+      "enabledDescription": "Визначає додаток на передньому плані та застосовує відповідний профіль для перевизначення мови, методу вставки та постобробки.",
+      "enabledLabel": "Увімкнути Power Mode",
+      "hotSwapEngineDescription": "Дозволяє профілям перемикатися на іншу модель ASR. Додає 1–3 с затримки при перемиканні — за замовчуванням вимкнено.",
+      "hotSwapEngineLabel": "Гаряча заміна рушія для профілю",
+      "howItWorksHint": "Power Mode автоматично застосовує профілі Code та Claude Code, коли ці програми на передньому плані; увімкніть інші для додавання сцен.",
+      "inheritGlobal": "Успадкувати глобальні",
+      "language": "Перевизначення мови",
+      "matchedNow": "Збіг: {{name}}",
+      "matcher": {
+        "bundleId": "Bundle ID (macOS)",
+        "disabled": "Вимкнено",
+        "processName": "Ім'я процесу",
+        "windowTitle": "Заголовок вікна містить"
+      },
+      "matcherType": "Тип зіставника",
+      "matcherValue": "Значення",
+      "matchers": "Зіставники",
+      "noForeground": "Додаток на передньому плані не виявлено",
+      "noMatchedProfile": "Немає відповідного профілю",
+      "noOverrides": "Немає перевизначень — успадковуються глобальні налаштування",
+      "overrides": "Перевизначення",
+      "pasteMethod": "Перевизначення методу вставки",
+      "postProcessChain": "Перевизначення ланцюжка постобробки",
+      "postProcessChainDisabled": "вимкнено",
+      "postProcessChainHint": "Перевизначте ланцюжок промптів постобробки для цього профілю. Порожній список вимкне режим ланцюжка.",
+      "postProcessChainReset": "× скинути",
+      "postProcessPrompt": "Перевизначення промпту постобробки",
+      "postProcessProvider": "Перевизначення постачальника постобробки",
+      "profileEnabled": "Увімкнено",
+      "profileName": "Назва профілю",
+      "puncZhEnabled": "Перевизначення китайської пунктуації (CT-Punc)",
+      "removeMatcher": "Видалити",
+      "selectedModel": "Перевизначення моделі ASR",
+      "selectedModelHint": "Враховується лише при увімкненому 'Гарячому обміні рушія'. Додає 1–3 с затримки завантаження моделі при першій транскрипції для профілю.",
+      "selectedPreset": "Перевизначення пресету ASR",
+      "selectedPresetHint": "Застосувати пресет ASR, коли цей профіль активний. Впливає на мову та налаштування CT-Punc.",
+      "title": "Профілі за додатками",
+      "tristate": {
+        "inherit": "Успадкувати глобальні",
+        "off": "Вимк",
+        "on": "Увімк"
       }
     }
   },
@@ -608,5 +751,9 @@
   "overlay": {
     "transcribing": "Обробка...",
     "processing": "Постобробка..."
+  },
+  "toast": {
+    "puncMissingDescription": "Apple Speech та SenseVoice не генеруватимуть китайську пунктуацію до завантаження моделі CT-Punc. Відкрийте Налаштування → Додатково для завантаження.",
+    "puncMissingTitle": "Модель китайської пунктуації не завантажена"
   }
 }

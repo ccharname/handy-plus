@@ -15,7 +15,8 @@
     "postProcessing": "後処理",
     "history": "履歴",
     "debug": "デバッグ",
-    "about": "概要"
+    "about": "概要",
+    "profiles": "プロファイル"
   },
   "onboarding": {
     "subtitle": "開始するには、文字起こしモデルを選択してください",
@@ -92,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "大型で低速ですが、非常に高精度な多言語モデル。"
+      },
+      "sense-voice-small-sherpa": {
+        "description": "SenseVoice Smallと同じモデルですが、別のモデルIDです。custom_wordsからホットワードL2バイアス（hotwords_boost）をサポート。sherpa-onnx経由、~242 MB。",
+        "name": "SenseVoice（sherpa-onnx）"
       }
     },
     "errors": {
@@ -213,6 +218,19 @@
       "pushToTalk": {
         "label": "プッシュトゥトーク",
         "description": "押し続けて録音、離して停止"
+      },
+      "diary": {
+        "addKeyword": "追加",
+        "browse": "参照",
+        "description": "トリガーキーワードで始まる文字起こしを日次markdownファイルに自動追記します。",
+        "dirDescription": "日次日記ファイルが書き込まれるフォルダのパス。無効にするには空白のままにしてください。",
+        "dirLabel": "日記ディレクトリ",
+        "dirPlaceholder": "~/obsidian/diary",
+        "keywordPlaceholder": "キーワードを追加...",
+        "keywordsDescription": "これらのキーワード（オプションの句読点が続く）のいずれかで始まる文字起こしはアーカイブされます。",
+        "keywordsLabel": "トリガーキーワード",
+        "removeKeyword": "キーワードを削除",
+        "title": "日記自動アーカイブ"
       }
     },
     "sound": {
@@ -355,7 +373,29 @@
         "placeholder": "単語を追加",
         "add": "追加",
         "remove": "{{word}}を削除",
-        "duplicate": "「{{word}}」は既に存在します"
+        "duplicate": "「{{word}}」は既に存在します",
+        "bulkImportPlaceholder": "改行またはカンマ区切りで単語を貼り付けてください...",
+        "bulkImportTitle": "カスタム単語の一括インポート",
+        "cancel": "キャンセル",
+        "confirmAdd": "すべて追加",
+        "export": "エクスポート",
+        "fileTypes": ".txt / .csv / .json",
+        "fromFile": "またはファイルから読み込む",
+        "import": "インポート",
+        "layerHint": "これらの単語は（1）文字起こし後のファジー置換、（2）デコードバイアスヒントに使用されます",
+        "preview": "{{add}}件新規 · {{skip}}件重複 · {{invalid}}件無効"
+      },
+      "puncZh": {
+        "cancel": "キャンセル",
+        "description": "CT-Transformerモデルを使用して中国語の文字起こしに自動的に句読点を追加します。すべてのASRエンジン（Apple Speech、SenseVoice、FunASR-Nano）に適用されます。句読点モデルのダウンロードが必要です（~50 MB）。",
+        "download": "モデルをダウンロード",
+        "label": "中国語句読点（CT-Transformer）",
+        "modelDownloading": "句読点モデルをダウンロード中...",
+        "modelFailed": "ダウンロード失敗：{{error}}",
+        "modelMissing": "モデル未ダウンロード — 中国語句読点はスキップされます。",
+        "modelReady": "モデル準備完了（76 MB）",
+        "progressText": "{{percentage}}%（{{downloaded}} / {{total}}）",
+        "retry": "再試行"
       }
     },
     "postProcessing": {
@@ -416,7 +456,15 @@
         "cancel": "キャンセル",
         "selectToEdit": "上からプロンプトを選択して、詳細を表示・編集します。",
         "createFirst": "上の「新しいプロンプトを作成」をクリックして、最初の後処理プロンプトを作成してください。"
-      }
+      },
+      "chainAddStep": "ステップを追加",
+      "chainEmpty": "少なくとも1つのプロンプトを追加してください",
+      "chainEnabled": "単一プロンプトの代わりにチェーンを使用",
+      "chainMoveDown": "ステップを下に移動",
+      "chainMoveUp": "ステップを上に移動",
+      "chainRemove": "ステップを削除",
+      "chainSection": "プロンプトチェーン",
+      "chainStepLabel": "ステップ {{n}}"
     },
     "history": {
       "title": "履歴",
@@ -431,7 +479,17 @@
       "retranscribe": "再文字起こし",
       "retranscribeError": "再文字起こしに失敗しました。もう一度お試しください。",
       "transcribing": "文字起こし中...",
-      "transcriptionFailed": "文字起こしに失敗しました。リトライアイコンを使用して再文字起こしできます。"
+      "transcriptionFailed": "文字起こしに失敗しました。リトライアイコンを使用して再文字起こしできます。",
+      "retranscribeModal": {
+        "cancelButton": "キャンセル",
+        "languageLabel": "言語",
+        "modelLabel": "モデル",
+        "modelPlaceholder": "現在のモデルを使用",
+        "noDownloadedModels": "ダウンロード済みモデルなし",
+        "runButton": "再文字起こし",
+        "title": "再文字起こし"
+      },
+      "retranscribeOptions": "オプション付きで再文字起こし"
     },
     "debug": {
       "title": "デバッグ",
@@ -536,6 +594,91 @@
           "description": "OpenAIのWhisper自動音声認識モデルの高性能推論",
           "details": "Handyは高速でローカルな音声からテキストへの変換にWhisper.cppを使用しています。Georgi Gerganov氏と貢献者の皆様の素晴らしい仕事に感謝します。"
         }
+      },
+      "fork": {
+        "description": "これはHandy+で、@ccharnameによって維持されているコミュニティフォークです。元のプロジェクトはupstreamリンクをご覧ください。",
+        "forkLabel": "@ccharnameによるhandy-plus",
+        "title": "フォーク",
+        "viewFork": "GitHubでフォークを見る",
+        "viewUpstream": "upstreamを見る（cjpais/Handy）"
+      }
+    },
+    "asrPresets": {
+      "active": "アクティブ",
+      "advancedHint": "または下からモデルを手動で選択してください。",
+      "appleNative": {
+        "description": "CT-Punc句読点パッチを適用したApple Speech。短いコマンドの低遅延に最適。",
+        "name": "Apple Native"
+      },
+      "apply": "適用",
+      "applyAndDownload": "ダウンロードして適用",
+      "chineseBalanced": {
+        "description": "CT-Punc自動句読点付きSenseVoice。中国語ユーザーに最適。",
+        "name": "中国語バランス"
+      },
+      "customized": "カスタマイズ済み（プリセット切り離し済み）",
+      "description": "厳選された音声認識設定を素早く切り替えます。",
+      "multilingualOffline": {
+        "description": "FunASR-Nanoは8以上の言語をサポート、完全オフライン。",
+        "name": "多言語オフライン"
+      },
+      "switching": "切り替え中...",
+      "title": "ASRプリセット"
+    },
+    "profiles": {
+      "add": "プロファイルを追加",
+      "addMatcher": "マッチャーを追加",
+      "appendTrailingSpace": "末尾にスペースを追加",
+      "autoSubmit": "自動送信",
+      "chainStepsCount": "{{count}}ステップチェーン",
+      "confirmDelete": "このプロファイルを削除しますか？",
+      "customWordsCount": "{{count}}件のホットワード",
+      "customWordsExtra": "追加ホットワード",
+      "customWordsExtraPlaceholder": "単語を追加",
+      "delete": "削除",
+      "detectedNow": "現在: {{app}}",
+      "duplicate": "複製",
+      "enabledDescription": "前面アプリを検出し、言語・貼り付け方法・後処理をオーバーライドする対応プロファイルを適用します。",
+      "enabledLabel": "Power Modeを有効にする",
+      "hotSwapEngineDescription": "プロファイルが別のASRモデルに切り替えられるようにします。切り替え時に1〜3秒の遅延が発生します — デフォルトでオフ。",
+      "hotSwapEngineLabel": "プロファイルごとのエンジンホットスワップ",
+      "howItWorksHint": "Power ModeはCodeとClaude Codeプロファイルを対応するアプリが前面にある時に自動適用します。他のプロファイルを有効にしてシーンを追加できます。",
+      "inheritGlobal": "グローバルを継承",
+      "language": "言語オーバーライド",
+      "matchedNow": "一致: {{name}}",
+      "matcher": {
+        "bundleId": "Bundle ID（macOS）",
+        "disabled": "無効",
+        "processName": "プロセス名",
+        "windowTitle": "ウィンドウタイトルを含む"
+      },
+      "matcherType": "マッチャータイプ",
+      "matcherValue": "値",
+      "matchers": "マッチャー",
+      "noForeground": "前面アプリが検出されません",
+      "noMatchedProfile": "一致するプロファイルなし",
+      "noOverrides": "オーバーライドなし — グローバル設定を継承",
+      "overrides": "オーバーライド",
+      "pasteMethod": "貼り付け方法オーバーライド",
+      "postProcessChain": "後処理チェーンオーバーライド",
+      "postProcessChainDisabled": "無効",
+      "postProcessChainHint": "このプロファイルの後処理プロンプトチェーンをオーバーライドします。空のリストはチェーンモードを無効にします。",
+      "postProcessChainReset": "× リセット",
+      "postProcessPrompt": "後処理プロンプトオーバーライド",
+      "postProcessProvider": "後処理プロバイダーオーバーライド",
+      "profileEnabled": "有効",
+      "profileName": "プロファイル名",
+      "puncZhEnabled": "中国語句読点（CT-Punc）オーバーライド",
+      "removeMatcher": "削除",
+      "selectedModel": "ASRモデルオーバーライド",
+      "selectedModelHint": "「エンジンホットスワップ」が有効な場合のみ有効です。プロファイルごとに最初の文字起こし時に1〜3秒のモデル読み込み遅延が追加されます。",
+      "selectedPreset": "ASRプリセットオーバーライド",
+      "selectedPresetHint": "このプロファイルがアクティブな時にASRプリセットを適用します。言語とCT-Punc設定に影響します。",
+      "title": "アプリ対応プロファイル",
+      "tristate": {
+        "inherit": "グローバルを継承",
+        "off": "オフ",
+        "on": "オン"
       }
     }
   },
@@ -608,5 +751,9 @@
   "overlay": {
     "transcribing": "文字起こし中...",
     "processing": "処理中..."
+  },
+  "toast": {
+    "puncMissingDescription": "CT-Puncモデルがダウンロードされるまで、Apple SpeechとSenseVoiceは中国語句読点を生成しません。設定→詳細設定を開いてダウンロードしてください。",
+    "puncMissingTitle": "中国語句読点モデルが未ダウンロード"
   }
 }

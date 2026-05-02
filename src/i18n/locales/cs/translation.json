@@ -15,7 +15,8 @@
     "postProcessing": "Následné zpracování",
     "history": "Historie",
     "debug": "Ladění",
-    "about": "O aplikaci"
+    "about": "O aplikaci",
+    "profiles": "Profily"
   },
   "onboarding": {
     "subtitle": "Pro začátek vyberte model pro přepis",
@@ -92,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "Velký, pomalejší, ale velmi přesný vícejazyčný model."
+      },
+      "sense-voice-small-sherpa": {
+        "description": "Stejný model jako SenseVoice Small, samostatné ID modelu. Podporuje hotwords L2 bias (hotwords_boost) z custom_words. Přes sherpa-onnx, ~242 MB.",
+        "name": "SenseVoice (sherpa-onnx)"
       }
     },
     "errors": {
@@ -213,6 +218,19 @@
       "pushToTalk": {
         "label": "Stisk a mluv",
         "description": "Podržte pro nahrávání, uvolněte pro zastavení"
+      },
+      "diary": {
+        "addKeyword": "Přidat",
+        "browse": "Procházet",
+        "description": "Automaticky přidává přepisy do denního markdown souboru, pokud začínají spouštěcím klíčovým slovem.",
+        "dirDescription": "Cesta ke složce, kam se zapisují denní soubory deníku. Nechte prázdné pro vypnutí.",
+        "dirLabel": "Složka deníku",
+        "dirPlaceholder": "~/obsidian/diary",
+        "keywordPlaceholder": "Přidat klíčové slovo...",
+        "keywordsDescription": "Přepisy začínající jedním z těchto klíčových slov (následovaným volitelnou interpunkcí) jsou archivovány.",
+        "keywordsLabel": "Spouštěcí klíčová slova",
+        "removeKeyword": "Odebrat klíčové slovo",
+        "title": "Automatická archivace deníku"
       }
     },
     "sound": {
@@ -355,7 +373,29 @@
         "placeholder": "Přidat slovo",
         "add": "Přidat",
         "remove": "Odebrat {{word}}",
-        "duplicate": "\"{{word}}\" již existuje"
+        "duplicate": "\"{{word}}\" již existuje",
+        "bulkImportPlaceholder": "Vložte slova oddělená novými řádky nebo čárkami...",
+        "bulkImportTitle": "Hromadný import vlastních slov",
+        "cancel": "Zrušit",
+        "confirmAdd": "Přidat vše",
+        "export": "Exportovat",
+        "fileTypes": ".txt / .csv / .json",
+        "fromFile": "Nebo načíst ze souboru",
+        "import": "Importovat",
+        "layerHint": "Tato slova se používají pro (1) přibližné nahrazení po přepisu (2) nápovědy k biasu dekódování",
+        "preview": "{{add}} nových · {{skip}} duplicitních · {{invalid}} neplatných"
+      },
+      "puncZh": {
+        "cancel": "Zrušit",
+        "description": "Automaticky přidává interpunkci do čínských přepisů pomocí modelu CT-Transformer. Platí pro všechny ASR enginy (Apple Speech, SenseVoice, FunASR-Nano). Vyžaduje stažení modelu interpunkce (~50 MB).",
+        "download": "Stáhnout model",
+        "label": "Čínská interpunkce (CT-Transformer)",
+        "modelDownloading": "Stahování modelu interpunkce...",
+        "modelFailed": "Stažení selhalo: {{error}}",
+        "modelMissing": "Model nestažen — čínská interpunkce bude přeskočena.",
+        "modelReady": "Model připraven (76 MB)",
+        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
+        "retry": "Zkusit znovu"
       }
     },
     "postProcessing": {
@@ -416,7 +456,15 @@
         "cancel": "Zrušit",
         "selectToEdit": "Vyberte výše prompt, abyste zobrazili a upravili jeho podrobnosti.",
         "createFirst": "Klikněte nahoře na 'Vytvořit nový prompt' a vytvořte svůj první prompt pro následné zpracování."
-      }
+      },
+      "chainAddStep": "Přidat krok",
+      "chainEmpty": "Přidejte alespoň jeden prompt",
+      "chainEnabled": "Použít řetěz místo jediného promptu",
+      "chainMoveDown": "Přesunout krok dolů",
+      "chainMoveUp": "Přesunout krok nahoru",
+      "chainRemove": "Odebrat krok",
+      "chainSection": "Řetěz promptů",
+      "chainStepLabel": "Krok {{n}}"
     },
     "history": {
       "title": "Historie",
@@ -431,7 +479,17 @@
       "retranscribe": "Přepsat znovu",
       "retranscribeError": "Opětovný přepis se nezdařil. Zkuste to prosím znovu.",
       "transcribing": "Přepisuji...",
-      "transcriptionFailed": "Přepis selhal. Můžete zkusit přepis znovu pomocí ikony opakování."
+      "transcriptionFailed": "Přepis selhal. Můžete zkusit přepis znovu pomocí ikony opakování.",
+      "retranscribeModal": {
+        "cancelButton": "Zrušit",
+        "languageLabel": "Jazyk",
+        "modelLabel": "Model",
+        "modelPlaceholder": "Použít aktuální model",
+        "noDownloadedModels": "Žádné stažené modely",
+        "runButton": "Přepsat znovu",
+        "title": "Přepsat znovu"
+      },
+      "retranscribeOptions": "Přepsat znovu s možnostmi"
     },
     "debug": {
       "title": "Ladění",
@@ -536,6 +594,91 @@
           "description": "Vysoce výkonné inferenční zpracování modelu automatického rozpoznávání řeči Whisper od OpenAI",
           "details": "Handy používá Whisper.cpp pro rychlé lokální zpracování řeči na text. Díky skvělé práci Georgiho Gerganova a přispěvatelů."
         }
+      },
+      "fork": {
+        "description": "Toto je Handy+, komunitní fork udržovaný @ccharname. Odkaz na upstream naleznete pro původní projekt.",
+        "forkLabel": "handy-plus od @ccharname",
+        "title": "Fork",
+        "viewFork": "Zobrazit fork na GitHubu",
+        "viewUpstream": "Zobrazit upstream (cjpais/Handy)"
+      }
+    },
+    "asrPresets": {
+      "active": "Aktivní",
+      "advancedHint": "Nebo níže ručně vyberte model.",
+      "appleNative": {
+        "description": "Apple Speech s opravou interpunkce CT-Punc. Nejnižší latence pro krátké příkazy.",
+        "name": "Apple Native"
+      },
+      "apply": "Použít",
+      "applyAndDownload": "Stáhnout a použít",
+      "chineseBalanced": {
+        "description": "SenseVoice s automatickou interpunkcí CT-Punc. Nejlepší pro uživatele čínštiny.",
+        "name": "Čínský vyvážený"
+      },
+      "customized": "Přizpůsobeno (preset odpojen)",
+      "description": "Rychlé přepínání mezi vybranými nastaveními rozpoznávání řeči.",
+      "multilingualOffline": {
+        "description": "FunASR-Nano podporující 8+ jazyků, plně offline.",
+        "name": "Vícejazyčný offline"
+      },
+      "switching": "Přepínání...",
+      "title": "Předvolby ASR"
+    },
+    "profiles": {
+      "add": "Přidat profil",
+      "addMatcher": "Přidat matcher",
+      "appendTrailingSpace": "Přidat mezeru na konci",
+      "autoSubmit": "Automatické odeslání",
+      "chainStepsCount": "Řetěz {{count}} kroků",
+      "confirmDelete": "Smazat tento profil?",
+      "customWordsCount": "{{count}} hot-words",
+      "customWordsExtra": "Další hot-words",
+      "customWordsExtraPlaceholder": "Přidat slovo",
+      "delete": "Smazat",
+      "detectedNow": "Teď: {{app}}",
+      "duplicate": "Duplikovat",
+      "enabledDescription": "Zjistí aplikaci v popředí a použije odpovídající profil pro přepsání jazyka, metody vkládání a následného zpracování.",
+      "enabledLabel": "Aktivovat Power Mode",
+      "hotSwapEngineDescription": "Umožňuje profilům přepnout na jiný ASR model. Přidává 1–3 s latence při přepnutí — ve výchozím nastavení vypnuto.",
+      "hotSwapEngineLabel": "Hot-swap engine pro profil",
+      "howItWorksHint": "Power Mode automaticky aplikuje profily Code a Claude Code, když jsou tyto aplikace v popředí; zapněte ostatní pro přidání dalších scén.",
+      "inheritGlobal": "Zdědit globální",
+      "language": "Přepsání jazyka",
+      "matchedNow": "Nalezena shoda: {{name}}",
+      "matcher": {
+        "bundleId": "Bundle ID (macOS)",
+        "disabled": "Zakázáno",
+        "processName": "Název procesu",
+        "windowTitle": "Název okna obsahuje"
+      },
+      "matcherType": "Typ matcheru",
+      "matcherValue": "Hodnota",
+      "matchers": "Matchery",
+      "noForeground": "Žádná aplikace v popředí nebyla zjištěna",
+      "noMatchedProfile": "Žádný odpovídající profil",
+      "noOverrides": "Žádná přepsání — dědí globální nastavení",
+      "overrides": "Přepsání",
+      "pasteMethod": "Přepsání metody vkládání",
+      "postProcessChain": "Přepsání řetězu následného zpracování",
+      "postProcessChainDisabled": "zakázáno",
+      "postProcessChainHint": "Přepište řetěz promptů následného zpracování pro tento profil. Prázdný seznam zakáže režim řetězu.",
+      "postProcessChainReset": "× resetovat",
+      "postProcessPrompt": "Přepsání promptu následného zpracování",
+      "postProcessProvider": "Přepsání poskytovatele následného zpracování",
+      "profileEnabled": "Povoleno",
+      "profileName": "Název profilu",
+      "puncZhEnabled": "Přepsání čínské interpunkce (CT-Punc)",
+      "removeMatcher": "Odebrat",
+      "selectedModel": "Přepsání ASR modelu",
+      "selectedModelHint": "Respektováno pouze při aktivovaném 'Hot-swap engine'. Přidává 1–3 s latence načítání modelu při první transkripci pro profil.",
+      "selectedPreset": "Přepsání předvolby ASR",
+      "selectedPresetHint": "Použijte předvolbu ASR, když je tento profil aktivní. Ovlivňuje jazyk a nastavení CT-Punc.",
+      "title": "Profily zaměřené na aplikace",
+      "tristate": {
+        "inherit": "Zdědit globální",
+        "off": "Vypnuto",
+        "on": "Zapnuto"
       }
     }
   },
@@ -608,5 +751,9 @@
   "overlay": {
     "transcribing": "Přepisuji...",
     "processing": "Zpracovávám..."
+  },
+  "toast": {
+    "puncMissingDescription": "Apple Speech a SenseVoice nebudou generovat čínskou interpunkci, dokud nebude stažen model CT-Punc. Otevřete Nastavení → Pokročilé pro stažení.",
+    "puncMissingTitle": "Model čínské interpunkce není stažen"
   }
 }

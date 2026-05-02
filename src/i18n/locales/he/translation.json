@@ -15,7 +15,8 @@
     "postProcessing": "עיבוד משלים",
     "history": "היסטוריה",
     "debug": "ניפוי שגיאות",
-    "about": "אודות"
+    "about": "אודות",
+    "profiles": "פרופילים"
   },
   "onboarding": {
     "subtitle": "כדי להתחיל, בחר מודל תמלול",
@@ -92,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "מודל גדול, איטי יותר, אך מדויק מאוד ורב-לשוני."
+      },
+      "sense-voice-small-sherpa": {
+        "description": "אותו מודל כמו SenseVoice Small, מזהה מודל נפרד. תומך בהטיית L2 למילים חמות (hotwords_boost) מ-custom_words. דרך sherpa-onnx, ~242 MB.",
+        "name": "SenseVoice (sherpa-onnx)"
       }
     },
     "errors": {
@@ -195,6 +200,19 @@
       "pushToTalk": {
         "label": "לחץ כדי לדבר",
         "description": "החזק כדי להקליט, שחרר כדי לעצור"
+      },
+      "diary": {
+        "addKeyword": "הוסף",
+        "browse": "עיין",
+        "description": "מוסיף תמלולים אוטומטית לקובץ markdown יומי כאשר הם מתחילים במילת מפתח מפעילה.",
+        "dirDescription": "נתיב לתיקייה שבה נכתבים קבצי היומן היומי. השאר ריק להשבתה.",
+        "dirLabel": "תיקיית יומן",
+        "dirPlaceholder": "~/obsidian/diary",
+        "keywordPlaceholder": "הוסף מילת מפתח...",
+        "keywordsDescription": "תמלולים המתחילים באחת ממילות המפתח האלה (ואחריהן סימן פיסוק אופציונלי) מאורכבים.",
+        "keywordsLabel": "מילות מפתח מפעילות",
+        "removeKeyword": "הסר מילת מפתח",
+        "title": "ארכוב יומן אוטומטי"
       }
     },
     "models": {
@@ -355,7 +373,29 @@
         "placeholder": "הוסף מילה",
         "add": "הוסף",
         "remove": "הסר את {{word}}",
-        "duplicate": "\"{{word}}\" כבר קיימת"
+        "duplicate": "\"{{word}}\" כבר קיימת",
+        "bulkImportPlaceholder": "הדבק מילים מופרדות בשורות חדשות או פסיקים...",
+        "bulkImportTitle": "ייבוא מסיבי של מילים מותאמות אישית",
+        "cancel": "ביטול",
+        "confirmAdd": "הוסף הכל",
+        "export": "ייצוא",
+        "fileTypes": ".txt / .csv / .json",
+        "fromFile": "או טען מקובץ",
+        "import": "ייבוא",
+        "layerHint": "מילים אלה משמשות ל-(1) החלפה מטושטשת לאחר תמלול (2) רמזי הטיית פענוח",
+        "preview": "{{add}} חדשות · {{skip}} כפולות · {{invalid}} לא חוקיות"
+      },
+      "puncZh": {
+        "cancel": "ביטול",
+        "description": "מוסיף פיסוק אוטומטית לתמלולים בסינית באמצעות מודל CT-Transformer. חל על כל מנועי ASR (Apple Speech, SenseVoice, FunASR-Nano). מצריך הורדת מודל הפיסוק (~50 MB).",
+        "download": "הורד מודל",
+        "label": "פיסוק סינית (CT-Transformer)",
+        "modelDownloading": "מוריד מודל פיסוק...",
+        "modelFailed": "ההורדה נכשלה: {{error}}",
+        "modelMissing": "המודל לא הורד — פיסוק סינית ידולג.",
+        "modelReady": "המודל מוכן (76 MB)",
+        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
+        "retry": "נסה שוב"
       }
     },
     "postProcessing": {
@@ -416,7 +456,15 @@
         "cancel": "ביטול",
         "selectToEdit": "בחר פרומפט למעלה כדי לצפות בפרטים שלו ולערוך אותם.",
         "createFirst": "לחץ על 'צור פרומפט חדש' למעלה כדי ליצור את פרומפט העיבוד הראשון שלך."
-      }
+      },
+      "chainAddStep": "הוסף שלב",
+      "chainEmpty": "הוסף לפחות פרומפט אחד",
+      "chainEnabled": "השתמש בשרשרת במקום פרומפט יחיד",
+      "chainMoveDown": "הזז שלב למטה",
+      "chainMoveUp": "הזז שלב למעלה",
+      "chainRemove": "הסר שלב",
+      "chainSection": "שרשרת פרומפטים",
+      "chainStepLabel": "שלב {{n}}"
     },
     "history": {
       "title": "היסטוריה",
@@ -431,7 +479,17 @@
       "retranscribe": "תמלל מחדש",
       "retranscribeError": "תמלול מחדש נכשל. נסה שוב.",
       "transcribing": "מתמלל...",
-      "transcriptionFailed": "התמלול נכשל. אפשר לתמלל מחדש באמצעות אייקון הניסיון החוזר."
+      "transcriptionFailed": "התמלול נכשל. אפשר לתמלל מחדש באמצעות אייקון הניסיון החוזר.",
+      "retranscribeModal": {
+        "cancelButton": "ביטול",
+        "languageLabel": "שפה",
+        "modelLabel": "מודל",
+        "modelPlaceholder": "השתמש במודל הנוכחי",
+        "noDownloadedModels": "אין מודלים שהורדו",
+        "runButton": "תמלל מחדש",
+        "title": "תמלול מחדש"
+      },
+      "retranscribeOptions": "תמלל מחדש עם אפשרויות"
     },
     "debug": {
       "title": "ניפוי שגיאות",
@@ -536,6 +594,91 @@
           "description": "הסקה מהירה לביצועים גבוהים עבור מודל זיהוי הדיבור Whisper של OpenAI",
           "details": "Handy משתמש ב-Whisper.cpp לתמלול מהיר ומקומי. תודה לעבודה המדהימה של Georgi Gerganov וכל התורמים."
         }
+      },
+      "fork": {
+        "description": "זהו Handy+, פורק קהילתי המתוחזק על ידי @ccharname. ראה את קישור ה-upstream לפרויקט המקורי.",
+        "forkLabel": "handy-plus מאת @ccharname",
+        "title": "פורק",
+        "viewFork": "צפה בפורק ב-GitHub",
+        "viewUpstream": "צפה ב-upstream (cjpais/Handy)"
+      }
+    },
+    "asrPresets": {
+      "active": "פעיל",
+      "advancedHint": "או בחר מודל ידנית למטה.",
+      "appleNative": {
+        "description": "Apple Speech עם תיקון פיסוק CT-Punc. השהייה הנמוכה ביותר לפקודות קצרות.",
+        "name": "Apple Native"
+      },
+      "apply": "החל",
+      "applyAndDownload": "הורד והחל",
+      "chineseBalanced": {
+        "description": "SenseVoice עם פיסוק אוטומטי CT-Punc. הטוב ביותר למשתמשי סינית.",
+        "name": "סינית מאוזנת"
+      },
+      "customized": "מותאם אישית (preset מנותק)",
+      "description": "מעבר מהיר בין הגדרות זיהוי דיבור נבחרות.",
+      "multilingualOffline": {
+        "description": "FunASR-Nano תומך ב-8+ שפות, לחלוטין אופליין.",
+        "name": "רב-לשוני אופליין"
+      },
+      "switching": "מחליף...",
+      "title": "הגדרות מוקדמות ASR"
+    },
+    "profiles": {
+      "add": "הוסף פרופיל",
+      "addMatcher": "הוסף מתאם",
+      "appendTrailingSpace": "הוסף רווח בסוף",
+      "autoSubmit": "שליחה אוטומטית",
+      "chainStepsCount": "שרשרת {{count}} שלבים",
+      "confirmDelete": "למחוק פרופיל זה?",
+      "customWordsCount": "{{count}} מילים חמות",
+      "customWordsExtra": "מילים חמות נוספות",
+      "customWordsExtraPlaceholder": "הוסף מילה",
+      "delete": "מחק",
+      "detectedNow": "כרגע: {{app}}",
+      "duplicate": "שכפל",
+      "enabledDescription": "מזהה את האפליקציה בחזית ומחיל את הפרופיל התואם לעקוף שפה, שיטת הדבקה ועיבוד לאחר.",
+      "enabledLabel": "הפעל Power Mode",
+      "hotSwapEngineDescription": "מאפשר לפרופילים לעבור למודל ASR אחר. מוסיף 1-3 שניות השהייה במעבר — כבוי כברירת מחדל.",
+      "hotSwapEngineLabel": "החלפת מנוע hot-swap לפי פרופיל",
+      "howItWorksHint": "Power Mode מחיל אוטומטית את פרופילי Code ו-Claude Code כאשר האפליקציות האלה בחזית; הפעל אחרים להוספת סצנות נוספות.",
+      "inheritGlobal": "ירש גלובלי",
+      "language": "דריסת שפה",
+      "matchedNow": "נמצאה התאמה: {{name}}",
+      "matcher": {
+        "bundleId": "Bundle ID (macOS)",
+        "disabled": "מושבת",
+        "processName": "שם תהליך",
+        "windowTitle": "כותרת חלון מכילה"
+      },
+      "matcherType": "סוג מתאם",
+      "matcherValue": "ערך",
+      "matchers": "מתאמים",
+      "noForeground": "לא זוהתה אפליקציה בחזית",
+      "noMatchedProfile": "אין פרופיל תואם",
+      "noOverrides": "אין דריסות — יורש הגדרות גלובליות",
+      "overrides": "דריסות",
+      "pasteMethod": "דריסת שיטת הדבקה",
+      "postProcessChain": "דריסת שרשרת עיבוד לאחר",
+      "postProcessChainDisabled": "מושבת",
+      "postProcessChainHint": "דרוס את שרשרת הפרומפטים לעיבוד לאחר עבור פרופיל זה. רשימה ריקה משביתה את מצב השרשרת.",
+      "postProcessChainReset": "× איפוס",
+      "postProcessPrompt": "דריסת פרומפט עיבוד לאחר",
+      "postProcessProvider": "דריסת ספק עיבוד לאחר",
+      "profileEnabled": "מופעל",
+      "profileName": "שם פרופיל",
+      "puncZhEnabled": "דריסת פיסוק סינית (CT-Punc)",
+      "removeMatcher": "הסר",
+      "selectedModel": "דריסת מודל ASR",
+      "selectedModelHint": "מכובד רק כאשר 'hot-swap מנוע' מופעל. מוסיף 1-3 שניות השהייה בטעינת מודל בתמלול הראשון לפי פרופיל.",
+      "selectedPreset": "דריסת preset ASR",
+      "selectedPresetHint": "החל preset ASR כאשר פרופיל זה פעיל. משפיע על שפה והגדרות CT-Punc.",
+      "title": "פרופילים מודעי אפליקציות",
+      "tristate": {
+        "inherit": "ירש גלובלי",
+        "off": "כבוי",
+        "on": "פעיל"
       }
     }
   },
@@ -608,5 +751,9 @@
   "overlay": {
     "transcribing": "מתמלל...",
     "processing": "מעבד..."
+  },
+  "toast": {
+    "puncMissingDescription": "Apple Speech ו-SenseVoice לא יפיקו פיסוק סינית עד שמודל CT-Punc יורד. פתח הגדרות ← מתקדם להורדה.",
+    "puncMissingTitle": "מודל פיסוק סינית לא הורד"
   }
 }

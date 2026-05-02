@@ -15,7 +15,8 @@
     "postProcessing": "後處理",
     "history": "歷史紀錄",
     "debug": "偵錯",
-    "about": "關於"
+    "about": "關於",
+    "profiles": "設定檔"
   },
   "onboarding": {
     "subtitle": "首先，請選擇一種模型",
@@ -92,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "大型模型，速度較慢，但多語言辨識非常準確。"
+      },
+      "sense-voice-small-sherpa": {
+        "description": "與 SenseVoice Small 相同的模型，獨立模型 ID。支援來自 custom_words 的熱詞 L2 偏置（hotwords_boost）。透過 sherpa-onnx，約 242 MB。",
+        "name": "SenseVoice（sherpa-onnx）"
       }
     },
     "errors": {
@@ -195,6 +200,19 @@
       "pushToTalk": {
         "label": "按住說話",
         "description": "按住錄製，放開停止"
+      },
+      "diary": {
+        "addKeyword": "新增",
+        "browse": "瀏覽",
+        "description": "當轉錄內容以觸發關鍵字開頭時，自動附加到每日 Markdown 檔案。",
+        "dirDescription": "每日日記檔案寫入的資料夾路徑。留空則停用。",
+        "dirLabel": "日記目錄",
+        "dirPlaceholder": "~/obsidian/diary",
+        "keywordPlaceholder": "新增關鍵字...",
+        "keywordsDescription": "以這些關鍵字之一開頭（後接可選標點）的轉錄內容將被封存。",
+        "keywordsLabel": "觸發關鍵字",
+        "removeKeyword": "移除關鍵字",
+        "title": "日記自動封存"
       }
     },
     "models": {
@@ -355,7 +373,29 @@
         "placeholder": "新增詞彙",
         "add": "新增",
         "remove": "刪除 {{word}}",
-        "duplicate": "「{{word}}」已存在"
+        "duplicate": "「{{word}}」已存在",
+        "bulkImportPlaceholder": "貼上以換行或逗號分隔的詞彙...",
+        "bulkImportTitle": "批次匯入自訂詞彙",
+        "cancel": "取消",
+        "confirmAdd": "全部新增",
+        "export": "匯出",
+        "fileTypes": ".txt / .csv / .json",
+        "fromFile": "或從檔案載入",
+        "import": "匯入",
+        "layerHint": "這些詞彙用於（1）轉錄後的模糊替換（2）解碼偏置提示",
+        "preview": "{{add}} 個新增 · {{skip}} 個重複 · {{invalid}} 個無效"
+      },
+      "puncZh": {
+        "cancel": "取消",
+        "description": "使用 CT-Transformer 模型自動為中文轉錄添加標點符號。適用於所有 ASR 引擎（Apple Speech、SenseVoice、FunASR-Nano）。需要下載標點模型（約 50 MB）。",
+        "download": "下載模型",
+        "label": "中文標點（CT-Transformer）",
+        "modelDownloading": "正在下載標點模型...",
+        "modelFailed": "下載失敗：{{error}}",
+        "modelMissing": "模型未下載 — 中文標點將被略過。",
+        "modelReady": "模型已就緒（76 MB）",
+        "progressText": "{{percentage}}%（{{downloaded}} / {{total}}）",
+        "retry": "重試"
       }
     },
     "postProcessing": {
@@ -416,7 +456,15 @@
         "cancel": "取消",
         "selectToEdit": "選擇上方的提示詞以檢視和編輯其詳細資訊",
         "createFirst": "點選上方的「建立新提示詞」來建立您的第一個後處理提示詞"
-      }
+      },
+      "chainAddStep": "新增步驟",
+      "chainEmpty": "至少新增一個提示詞",
+      "chainEnabled": "使用鏈式提示詞替代單一提示詞",
+      "chainMoveDown": "步驟下移",
+      "chainMoveUp": "步驟上移",
+      "chainRemove": "刪除步驟",
+      "chainSection": "提示詞鏈",
+      "chainStepLabel": "步驟 {{n}}"
     },
     "history": {
       "title": "歷史紀錄",
@@ -431,7 +479,17 @@
       "retranscribe": "重新轉錄",
       "retranscribeError": "重新轉錄失敗，請重試。",
       "transcribing": "轉錄中...",
-      "transcriptionFailed": "轉錄失敗。您可以使用重試圖示重新轉錄。"
+      "transcriptionFailed": "轉錄失敗。您可以使用重試圖示重新轉錄。",
+      "retranscribeModal": {
+        "cancelButton": "取消",
+        "languageLabel": "語言",
+        "modelLabel": "模型",
+        "modelPlaceholder": "使用目前模型",
+        "noDownloadedModels": "無已下載模型",
+        "runButton": "重新轉錄",
+        "title": "重新轉錄"
+      },
+      "retranscribeOptions": "帶選項重新轉錄"
     },
     "debug": {
       "title": "偵錯",
@@ -536,6 +594,91 @@
           "description": "針對 OpenAI Whisper 自動語音識別模型的高效能推理引擎",
           "details": "Handy 使用 Whisper.cpp 進行快速的本機語音轉文字處理。感謝 Georgi Gerganov 和貢獻者們的傑出工作"
         }
+      },
+      "fork": {
+        "description": "這是 Handy+，由 @ccharname 維護的社群分支。原始專案請見上游連結。",
+        "forkLabel": "@ccharname 的 handy-plus",
+        "title": "Fork",
+        "viewFork": "在 GitHub 查看 Fork",
+        "viewUpstream": "查看上游（cjpais/Handy）"
+      }
+    },
+    "asrPresets": {
+      "active": "使用中",
+      "advancedHint": "或在下方手動選擇模型。",
+      "appleNative": {
+        "description": "搭載 CT-Punc 標點修補的 Apple Speech，短指令延遲最低。",
+        "name": "Apple 原生"
+      },
+      "apply": "套用",
+      "applyAndDownload": "下載並套用",
+      "chineseBalanced": {
+        "description": "帶 CT-Punc 自動標點的 SenseVoice，最適合以中文為主的使用者。",
+        "name": "中文均衡"
+      },
+      "customized": "已自訂（預設已解除綁定）",
+      "description": "快速切換精選語音辨識設定。",
+      "multilingualOffline": {
+        "description": "FunASR-Nano 支援 8 種以上語言，完全離線。",
+        "name": "多語言離線"
+      },
+      "switching": "切換中...",
+      "title": "ASR 預設"
+    },
+    "profiles": {
+      "add": "新增設定檔",
+      "addMatcher": "新增比對器",
+      "appendTrailingSpace": "附加尾端空格",
+      "autoSubmit": "自動提交",
+      "chainStepsCount": "{{count}} 步驟鏈",
+      "confirmDelete": "刪除此設定檔？",
+      "customWordsCount": "{{count}} 個熱詞",
+      "customWordsExtra": "額外熱詞",
+      "customWordsExtraPlaceholder": "新增詞彙",
+      "delete": "刪除",
+      "detectedNow": "目前：{{app}}",
+      "duplicate": "複製",
+      "enabledDescription": "偵測前景應用程式，套用對應設定檔以覆寫語言、貼上方式及後處理設定。",
+      "enabledLabel": "啟用增強模式",
+      "hotSwapEngineDescription": "允許設定檔切換至不同的 ASR 模型。切換時有 1–3 秒延遲 — 預設關閉。",
+      "hotSwapEngineLabel": "按設定檔熱切換引擎",
+      "howItWorksHint": "增強模式會在對應應用程式處於前景時自動套用 Code 和 Claude Code 設定檔；開啟其他設定檔可新增更多場景。",
+      "inheritGlobal": "繼承全域",
+      "language": "語言覆寫",
+      "matchedNow": "已符合：{{name}}",
+      "matcher": {
+        "bundleId": "Bundle ID（macOS）",
+        "disabled": "已停用",
+        "processName": "程序名稱",
+        "windowTitle": "視窗標題包含"
+      },
+      "matcherType": "比對類型",
+      "matcherValue": "值",
+      "matchers": "比對器",
+      "noForeground": "未偵測到前景應用程式",
+      "noMatchedProfile": "無符合設定檔",
+      "noOverrides": "無覆寫 — 繼承全域設定",
+      "overrides": "覆寫項目",
+      "pasteMethod": "貼上方式覆寫",
+      "postProcessChain": "後處理鏈覆寫",
+      "postProcessChainDisabled": "已停用",
+      "postProcessChainHint": "覆寫此設定檔的後處理提示詞鏈。空列表將停用鏈式模式。",
+      "postProcessChainReset": "× 重設",
+      "postProcessPrompt": "後處理提示詞覆寫",
+      "postProcessProvider": "後處理供應商覆寫",
+      "profileEnabled": "已啟用",
+      "profileName": "設定檔名稱",
+      "puncZhEnabled": "中文標點（CT-Punc）覆寫",
+      "removeMatcher": "移除",
+      "selectedModel": "ASR 模型覆寫",
+      "selectedModelHint": "僅在啟用「熱切換引擎」時生效。每個設定檔首次轉錄時會增加 1–3 秒的模型載入延遲。",
+      "selectedPreset": "ASR 預設覆寫",
+      "selectedPresetHint": "在此設定檔啟用時套用 ASR 預設。影響語言和 CT-Punc 設定。",
+      "title": "應用程式感知設定檔",
+      "tristate": {
+        "inherit": "繼承全域",
+        "off": "關",
+        "on": "開"
       }
     }
   },
@@ -608,5 +751,9 @@
   "overlay": {
     "transcribing": "正在轉錄...",
     "processing": "處理中..."
+  },
+  "toast": {
+    "puncMissingDescription": "在下載 CT-Punc 模型前，Apple Speech 和 SenseVoice 不會產生中文標點。請開啟設定 → 進階進行下載。",
+    "puncMissingTitle": "中文標點模型未下載"
   }
 }

@@ -15,7 +15,8 @@
     "postProcessing": "Pós-Processamento",
     "history": "Histórico",
     "debug": "Depuração",
-    "about": "Sobre"
+    "about": "Sobre",
+    "profiles": "Perfis"
   },
   "onboarding": {
     "subtitle": "Para começar, escolha um modelo de transcrição",
@@ -92,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "Um modelo grande, mais lento, mas muito preciso e multilíngue."
+      },
+      "sense-voice-small-sherpa": {
+        "description": "Mesmo modelo que SenseVoice Small, ID de modelo separado. Suporta bias L2 de hotwords (hotwords_boost) de custom_words. Via sherpa-onnx, ~242 MB.",
+        "name": "SenseVoice (sherpa-onnx)"
       }
     },
     "errors": {
@@ -195,6 +200,19 @@
       "pushToTalk": {
         "label": "Pressionar para Falar",
         "description": "Segure para gravar, solte para parar"
+      },
+      "diary": {
+        "addKeyword": "Adicionar",
+        "browse": "Procurar",
+        "description": "Anexa automaticamente transcrições a um arquivo markdown diário quando começam com uma palavra-chave gatilho.",
+        "dirDescription": "Caminho para a pasta onde os arquivos do diário diário são gravados. Deixe vazio para desativar.",
+        "dirLabel": "Diretório do diário",
+        "dirPlaceholder": "~/obsidian/diary",
+        "keywordPlaceholder": "Adicionar palavra-chave...",
+        "keywordsDescription": "As transcrições que começam com uma dessas palavras-chave (seguidas de pontuação opcional) são arquivadas.",
+        "keywordsLabel": "Palavras-chave gatilho",
+        "removeKeyword": "Remover palavra-chave",
+        "title": "Arquivamento automático do diário"
       }
     },
     "models": {
@@ -355,7 +373,29 @@
         "placeholder": "Adicionar uma palavra",
         "add": "Adicionar",
         "remove": "Remover {{word}}",
-        "duplicate": "\"{{word}}\" já existe"
+        "duplicate": "\"{{word}}\" já existe",
+        "bulkImportPlaceholder": "Cole palavras separadas por quebras de linha ou vírgulas...",
+        "bulkImportTitle": "Importação em massa de palavras personalizadas",
+        "cancel": "Cancelar",
+        "confirmAdd": "Adicionar tudo",
+        "export": "Exportar",
+        "fileTypes": ".txt / .csv / .json",
+        "fromFile": "Ou carregar de arquivo",
+        "import": "Importar",
+        "layerHint": "Essas palavras são usadas para (1) substituição aproximada após transcrição (2) dicas de bias de decodificação",
+        "preview": "{{add}} nova · {{skip}} duplicada · {{invalid}} inválida"
+      },
+      "puncZh": {
+        "cancel": "Cancelar",
+        "description": "Adiciona automaticamente pontuação a transcrições em chinês usando o modelo CT-Transformer. Aplica-se a todos os motores ASR (Apple Speech, SenseVoice, FunASR-Nano). Requer o modelo de pontuação (~50 MB).",
+        "download": "Baixar modelo",
+        "label": "Pontuação chinesa (CT-Transformer)",
+        "modelDownloading": "Baixando modelo de pontuação...",
+        "modelFailed": "Download falhou: {{error}}",
+        "modelMissing": "Modelo não baixado — pontuação chinesa será ignorada.",
+        "modelReady": "Modelo pronto (76 MB)",
+        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
+        "retry": "Tentar novamente"
       }
     },
     "postProcessing": {
@@ -416,7 +456,15 @@
         "cancel": "Cancelar",
         "selectToEdit": "Selecione um prompt acima para visualizar e editar seus detalhes.",
         "createFirst": "Clique em 'Criar Novo Prompt' acima para criar seu primeiro prompt de pós-processamento."
-      }
+      },
+      "chainAddStep": "Adicionar etapa",
+      "chainEmpty": "Adicione pelo menos um prompt",
+      "chainEnabled": "Usar cadeia em vez de prompt único",
+      "chainMoveDown": "Mover etapa para baixo",
+      "chainMoveUp": "Mover etapa para cima",
+      "chainRemove": "Remover etapa",
+      "chainSection": "Cadeia de prompts",
+      "chainStepLabel": "Etapa {{n}}"
     },
     "history": {
       "title": "Histórico",
@@ -431,7 +479,17 @@
       "retranscribe": "Re-transcrever",
       "retranscribeError": "Falha ao re-transcrever. Por favor, tente novamente.",
       "transcribing": "Transcrevendo...",
-      "transcriptionFailed": "A transcrição falhou. Você pode re-transcrever usando o ícone de tentar novamente."
+      "transcriptionFailed": "A transcrição falhou. Você pode re-transcrever usando o ícone de tentar novamente.",
+      "retranscribeModal": {
+        "cancelButton": "Cancelar",
+        "languageLabel": "Idioma",
+        "modelLabel": "Modelo",
+        "modelPlaceholder": "Usar modelo atual",
+        "noDownloadedModels": "Nenhum modelo baixado",
+        "runButton": "Re-transcrever",
+        "title": "Re-transcrever"
+      },
+      "retranscribeOptions": "Re-transcrever com opções"
     },
     "debug": {
       "title": "Depuração",
@@ -536,6 +594,91 @@
           "description": "Inferência de alto desempenho do modelo de reconhecimento automático de fala Whisper da OpenAI",
           "details": "O Handy usa Whisper.cpp para processamento rápido e local de fala para texto. Agradecemos ao incrível trabalho de Georgi Gerganov e colaboradores."
         }
+      },
+      "fork": {
+        "description": "Este é o Handy+, um fork comunitário mantido por @ccharname. Veja o link upstream para o projeto original.",
+        "forkLabel": "handy-plus por @ccharname",
+        "title": "Fork",
+        "viewFork": "Ver fork no GitHub",
+        "viewUpstream": "Ver upstream (cjpais/Handy)"
+      }
+    },
+    "asrPresets": {
+      "active": "Ativo",
+      "advancedHint": "Ou selecione manualmente um modelo abaixo.",
+      "appleNative": {
+        "description": "Apple Speech com patch de pontuação CT-Punc. Menor latência para comandos curtos.",
+        "name": "Apple Native"
+      },
+      "apply": "Aplicar",
+      "applyAndDownload": "Baixar e Aplicar",
+      "chineseBalanced": {
+        "description": "SenseVoice com pontuação automática CT-Punc. Ideal para usuários de chinês.",
+        "name": "Chinês Equilibrado"
+      },
+      "customized": "Personalizado (preset desacoplado)",
+      "description": "Alterne rapidamente entre configurações de reconhecimento de fala selecionadas.",
+      "multilingualOffline": {
+        "description": "FunASR-Nano com suporte a 8+ idiomas, totalmente offline.",
+        "name": "Multilíngue Offline"
+      },
+      "switching": "Alternando...",
+      "title": "Presets ASR"
+    },
+    "profiles": {
+      "add": "Adicionar perfil",
+      "addMatcher": "Adicionar matcher",
+      "appendTrailingSpace": "Adicionar espaço final",
+      "autoSubmit": "Envio automático",
+      "chainStepsCount": "Cadeia de {{count}} etapas",
+      "confirmDelete": "Excluir este perfil?",
+      "customWordsCount": "{{count}} hot-words",
+      "customWordsExtra": "Hot-words adicionais",
+      "customWordsExtraPlaceholder": "Adicionar uma palavra",
+      "delete": "Excluir",
+      "detectedNow": "Agora: {{app}}",
+      "duplicate": "Duplicar",
+      "enabledDescription": "Detecta o app em primeiro plano e aplica o perfil correspondente para substituir idioma, método de colar e pós-processamento.",
+      "enabledLabel": "Ativar Power Mode",
+      "hotSwapEngineDescription": "Permite que perfis alternem para um modelo ASR diferente. Adiciona 1–3 s de latência na troca — desativado por padrão.",
+      "hotSwapEngineLabel": "Hot-swap de motor por perfil",
+      "howItWorksHint": "Power Mode aplica automaticamente os perfis Code e Claude Code quando esses apps estão em primeiro plano; ative outros para adicionar mais cenas.",
+      "inheritGlobal": "Herdar global",
+      "language": "Substituição de idioma",
+      "matchedNow": "Correspondência: {{name}}",
+      "matcher": {
+        "bundleId": "Bundle ID (macOS)",
+        "disabled": "Desativado",
+        "processName": "Nome do processo",
+        "windowTitle": "Título da janela contém"
+      },
+      "matcherType": "Tipo de matcher",
+      "matcherValue": "Valor",
+      "matchers": "Matchers",
+      "noForeground": "Nenhum app em primeiro plano detectado",
+      "noMatchedProfile": "Nenhum perfil correspondente",
+      "noOverrides": "Sem substituições — herda configurações globais",
+      "overrides": "Substituições",
+      "pasteMethod": "Substituição de método de colar",
+      "postProcessChain": "Substituição de cadeia de pós-processamento",
+      "postProcessChainDisabled": "desativado",
+      "postProcessChainHint": "Substituir a cadeia de prompts de pós-processamento para este perfil. Lista vazia desativa o modo cadeia.",
+      "postProcessChainReset": "× redefinir",
+      "postProcessPrompt": "Substituição de prompt de pós-processamento",
+      "postProcessProvider": "Substituição de provedor de pós-processamento",
+      "profileEnabled": "Ativado",
+      "profileName": "Nome do perfil",
+      "puncZhEnabled": "Substituição de pontuação chinesa (CT-Punc)",
+      "removeMatcher": "Remover",
+      "selectedModel": "Substituição de modelo ASR",
+      "selectedModelHint": "Respeitado apenas quando 'Hot-swap de motor' está ativado. Adiciona 1–3 s de latência de carregamento de modelo na primeira transcrição por perfil.",
+      "selectedPreset": "Substituição de preset ASR",
+      "selectedPresetHint": "Aplicar um preset ASR quando este perfil estiver ativo. Afeta idioma e configurações CT-Punc.",
+      "title": "Perfis por aplicativo",
+      "tristate": {
+        "inherit": "Herdar global",
+        "off": "Desligado",
+        "on": "Ligado"
       }
     }
   },
@@ -608,5 +751,9 @@
   "overlay": {
     "transcribing": "Transcrevendo...",
     "processing": "Processando..."
+  },
+  "toast": {
+    "puncMissingDescription": "Apple Speech e SenseVoice não produzirão pontuação chinesa até que o modelo CT-Punc seja baixado. Abrir Configurações → Avançado para baixar.",
+    "puncMissingTitle": "Modelo de pontuação chinesa não baixado"
   }
 }

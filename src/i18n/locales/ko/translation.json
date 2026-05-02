@@ -15,7 +15,8 @@
     "postProcessing": "후처리",
     "history": "히스토리",
     "debug": "디버그",
-    "about": "정보"
+    "about": "정보",
+    "profiles": "프로필"
   },
   "onboarding": {
     "subtitle": "시작하려면 음성 인식 모델을 선택하세요",
@@ -92,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "크고 느리지만 매우 정확한 다국어 모델."
+      },
+      "sense-voice-small-sherpa": {
+        "description": "SenseVoice Small과 동일한 모델, 별도 모델 ID. custom_words의 hotwords L2 바이어스(hotwords_boost) 지원. sherpa-onnx 경유, ~242 MB.",
+        "name": "SenseVoice (sherpa-onnx)"
       }
     },
     "errors": {
@@ -195,6 +200,19 @@
       "pushToTalk": {
         "label": "녹음 중 단축키 홀딩",
         "description": "누르고 있으면 녹음, 놓으면 정지"
+      },
+      "diary": {
+        "addKeyword": "추가",
+        "browse": "찾아보기",
+        "description": "트리거 키워드로 시작하는 전사를 일일 마크다운 파일에 자동으로 추가합니다.",
+        "dirDescription": "일일 다이어리 파일이 저장되는 폴더 경로. 비활성화하려면 비워 두세요.",
+        "dirLabel": "다이어리 디렉토리",
+        "dirPlaceholder": "~/obsidian/diary",
+        "keywordPlaceholder": "키워드 추가...",
+        "keywordsDescription": "이러한 키워드 중 하나로 시작하는 전사(선택적 구두점이 뒤따름)가 보관됩니다.",
+        "keywordsLabel": "트리거 키워드",
+        "removeKeyword": "키워드 제거",
+        "title": "다이어리 자동 보관"
       }
     },
     "sound": {
@@ -355,7 +373,29 @@
         "placeholder": "단어 추가",
         "add": "추가",
         "remove": "{{word}} 제거",
-        "duplicate": "\"{{word}}\"이(가) 이미 존재합니다"
+        "duplicate": "\"{{word}}\"이(가) 이미 존재합니다",
+        "bulkImportPlaceholder": "줄바꿈 또는 쉼표로 구분된 단어를 붙여넣으세요...",
+        "bulkImportTitle": "사용자 지정 단어 일괄 가져오기",
+        "cancel": "취소",
+        "confirmAdd": "모두 추가",
+        "export": "내보내기",
+        "fileTypes": ".txt / .csv / .json",
+        "fromFile": "또는 파일에서 불러오기",
+        "import": "가져오기",
+        "layerHint": "이 단어들은 (1) 전사 후 유사 교체, (2) 디코딩 바이어스 힌트에 사용됩니다",
+        "preview": "{{add}}개 새 항목 · {{skip}}개 중복 · {{invalid}}개 유효하지 않음"
+      },
+      "puncZh": {
+        "cancel": "취소",
+        "description": "CT-Transformer 모델을 사용하여 중국어 전사에 자동으로 구두점을 추가합니다. 모든 ASR 엔진(Apple Speech, SenseVoice, FunASR-Nano)에 적용됩니다. 구두점 모델 다운로드 필요 (~50 MB).",
+        "download": "모델 다운로드",
+        "label": "중국어 구두점 (CT-Transformer)",
+        "modelDownloading": "구두점 모델 다운로드 중...",
+        "modelFailed": "다운로드 실패: {{error}}",
+        "modelMissing": "모델 미다운로드 — 중국어 구두점이 건너뛰어집니다.",
+        "modelReady": "모델 준비 완료 (76 MB)",
+        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
+        "retry": "다시 시도"
       }
     },
     "postProcessing": {
@@ -416,7 +456,15 @@
         "cancel": "취소",
         "selectToEdit": "세부 정보를 보고 편집하려면 위에서 프롬프트를 선택하세요.",
         "createFirst": "첫 번째 후처리 프롬프트를 만들려면 위의 '새 프롬프트 만들기'를 클릭하세요."
-      }
+      },
+      "chainAddStep": "단계 추가",
+      "chainEmpty": "최소 하나의 프롬프트를 추가하세요",
+      "chainEnabled": "단일 프롬프트 대신 체인 사용",
+      "chainMoveDown": "단계 아래로 이동",
+      "chainMoveUp": "단계 위로 이동",
+      "chainRemove": "단계 제거",
+      "chainSection": "프롬프트 체인",
+      "chainStepLabel": "단계 {{n}}"
     },
     "history": {
       "title": "히스토리",
@@ -431,7 +479,17 @@
       "retranscribe": "다시 전사",
       "retranscribeError": "다시 전사에 실패했습니다. 다시 시도해주세요.",
       "transcribing": "전사 중...",
-      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다."
+      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다.",
+      "retranscribeModal": {
+        "cancelButton": "취소",
+        "languageLabel": "언어",
+        "modelLabel": "모델",
+        "modelPlaceholder": "현재 모델 사용",
+        "noDownloadedModels": "다운로드된 모델 없음",
+        "runButton": "재전사",
+        "title": "재전사"
+      },
+      "retranscribeOptions": "옵션으로 재전사"
     },
     "debug": {
       "title": "디버그",
@@ -536,6 +594,91 @@
           "description": "OpenAI의 Whisper 자동 음성 인식 모델의 고성능 추론",
           "details": "Handy는 빠르고 로컬 음성-텍스트 처리를 위해 Whisper.cpp를 사용합니다. Georgi Gerganov와 기여자들의 놀라운 작업에 감사드립니다."
         }
+      },
+      "fork": {
+        "description": "이것은 Handy+로, @ccharname이 유지 관리하는 커뮤니티 포크입니다. 원본 프로젝트는 업스트림 링크를 참조하세요.",
+        "forkLabel": "@ccharname의 handy-plus",
+        "title": "포크",
+        "viewFork": "GitHub에서 포크 보기",
+        "viewUpstream": "업스트림 보기 (cjpais/Handy)"
+      }
+    },
+    "asrPresets": {
+      "active": "활성",
+      "advancedHint": "또는 아래에서 모델을 수동으로 선택하세요.",
+      "appleNative": {
+        "description": "CT-Punc 구두점 패치가 적용된 Apple Speech. 짧은 명령에 대한 최저 지연..",
+        "name": "Apple Native"
+      },
+      "apply": "적용",
+      "applyAndDownload": "다운로드 및 적용",
+      "chineseBalanced": {
+        "description": "CT-Punc 자동 구두점이 적용된 SenseVoice. 중국어 사용자에게 최적.",
+        "name": "중국어 균형"
+      },
+      "customized": "사용자 지정 (프리셋 분리됨)",
+      "description": "엄선된 음성 인식 설정 간에 빠르게 전환합니다.",
+      "multilingualOffline": {
+        "description": "FunASR-Nano는 8개 이상의 언어를 지원하며 완전 오프라인입니다.",
+        "name": "다국어 오프라인"
+      },
+      "switching": "전환 중...",
+      "title": "ASR 프리셋"
+    },
+    "profiles": {
+      "add": "프로필 추가",
+      "addMatcher": "매처 추가",
+      "appendTrailingSpace": "후행 공백 추가",
+      "autoSubmit": "자동 제출",
+      "chainStepsCount": "{{count}}단계 체인",
+      "confirmDelete": "이 프로필을 삭제하시겠습니까?",
+      "customWordsCount": "{{count}}개 핫워드",
+      "customWordsExtra": "추가 핫워드",
+      "customWordsExtraPlaceholder": "단어 추가",
+      "delete": "삭제",
+      "detectedNow": "현재: {{app}}",
+      "duplicate": "복제",
+      "enabledDescription": "전경 앱을 감지하고 언어, 붙여넣기 방법 및 후처리를 재정의하는 매칭 프로필을 적용합니다.",
+      "enabledLabel": "Power Mode 활성화",
+      "hotSwapEngineDescription": "프로필이 다른 ASR 모델로 전환할 수 있게 합니다. 전환 시 1~3초의 지연이 발생합니다 — 기본적으로 꺼져 있습니다.",
+      "hotSwapEngineLabel": "프로필별 엔진 hot-swap",
+      "howItWorksHint": "Power Mode는 Code와 Claude Code 프로필을 해당 앱이 전면에 있을 때 자동 적용합니다. 다른 프로필을 켜서 더 많은 장면을 추가할 수 있습니다.",
+      "inheritGlobal": "글로벌 상속",
+      "language": "언어 재정의",
+      "matchedNow": "일치됨: {{name}}",
+      "matcher": {
+        "bundleId": "Bundle ID (macOS)",
+        "disabled": "비활성화됨",
+        "processName": "프로세스 이름",
+        "windowTitle": "창 제목에 포함"
+      },
+      "matcherType": "매처 유형",
+      "matcherValue": "값",
+      "matchers": "매처",
+      "noForeground": "전경 앱이 감지되지 않음",
+      "noMatchedProfile": "일치하는 프로필 없음",
+      "noOverrides": "재정의 없음 — 글로벌 설정 상속",
+      "overrides": "재정의",
+      "pasteMethod": "붙여넣기 방법 재정의",
+      "postProcessChain": "후처리 체인 재정의",
+      "postProcessChainDisabled": "비활성화됨",
+      "postProcessChainHint": "이 프로필의 후처리 프롬프트 체인을 재정의합니다. 빈 목록은 체인 모드를 비활성화합니다.",
+      "postProcessChainReset": "× 초기화",
+      "postProcessPrompt": "후처리 프롬프트 재정의",
+      "postProcessProvider": "후처리 공급자 재정의",
+      "profileEnabled": "활성화됨",
+      "profileName": "프로필 이름",
+      "puncZhEnabled": "중국어 구두점 (CT-Punc) 재정의",
+      "removeMatcher": "제거",
+      "selectedModel": "ASR 모델 재정의",
+      "selectedModelHint": "'엔진 hot-swap'이 활성화된 경우에만 적용됩니다. 프로필당 첫 번째 전사 시 1~3초의 모델 로딩 지연이 추가됩니다.",
+      "selectedPreset": "ASR 프리셋 재정의",
+      "selectedPresetHint": "이 프로필이 활성화될 때 ASR 프리셋을 적용합니다. 언어 및 CT-Punc 설정에 영향을 미칩니다.",
+      "title": "앱 인식 프로필",
+      "tristate": {
+        "inherit": "글로벌 상속",
+        "off": "끄기",
+        "on": "켜기"
       }
     }
   },
@@ -608,5 +751,9 @@
   "overlay": {
     "transcribing": "텍스트로 변환 중...",
     "processing": "처리 중..."
+  },
+  "toast": {
+    "puncMissingDescription": "CT-Punc 모델이 다운로드될 때까지 Apple Speech와 SenseVoice는 중국어 구두점을 생성하지 않습니다. 설정 → 고급을 열어 다운로드하세요.",
+    "puncMissingTitle": "중국어 구두점 모델 미다운로드"
   }
 }

@@ -15,7 +15,8 @@
     "postProcessing": "Efterbearbetning",
     "history": "Historik",
     "debug": "Felsökning",
-    "about": "Om"
+    "about": "Om",
+    "profiles": "Profiler"
   },
   "onboarding": {
     "subtitle": "För att komma igång, välj en transkriptionsmodell",
@@ -92,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "En stor, långsammare, men mycket noggrann flerspråkig modell."
+      },
+      "sense-voice-small-sherpa": {
+        "description": "Samma modell som SenseVoice Small, separat modell-ID. Stödjer hotwords L2-bias (hotwords_boost) från custom_words. Via sherpa-onnx, ~242 MB.",
+        "name": "SenseVoice (sherpa-onnx)"
       }
     },
     "errors": {
@@ -195,6 +200,19 @@
       "pushToTalk": {
         "label": "Tryck för att tala",
         "description": "Håll ned för att spela in, släpp för att stoppa"
+      },
+      "diary": {
+        "addKeyword": "Lägg till",
+        "browse": "Bläddra",
+        "description": "Lägger automatiskt till transkriptioner i en daglig markdown-fil när de börjar med ett triggerord.",
+        "dirDescription": "Sökväg till mappen där dagliga dagboksfiler skrivs. Lämna tomt för att inaktivera.",
+        "dirLabel": "Dagboksmapp",
+        "dirPlaceholder": "~/obsidian/diary",
+        "keywordPlaceholder": "Lägg till nyckelord...",
+        "keywordsDescription": "Transkriptioner som börjar med ett av dessa nyckelord (följt av valfri interpunktion) arkiveras.",
+        "keywordsLabel": "Triggernyckelord",
+        "removeKeyword": "Ta bort nyckelord",
+        "title": "Automatisk dagboksarkivering"
       }
     },
     "models": {
@@ -355,7 +373,29 @@
         "placeholder": "Lägg till ett ord",
         "add": "Lägg till",
         "remove": "Ta bort {{word}}",
-        "duplicate": "\"{{word}}\" finns redan"
+        "duplicate": "\"{{word}}\" finns redan",
+        "bulkImportPlaceholder": "Klistra in ord separerade med radbrytningar eller kommatecken...",
+        "bulkImportTitle": "Massimportera anpassade ord",
+        "cancel": "Avbryt",
+        "confirmAdd": "Lägg till alla",
+        "export": "Exportera",
+        "fileTypes": ".txt / .csv / .json",
+        "fromFile": "Eller läs in från fil",
+        "import": "Importera",
+        "layerHint": "Dessa ord används för (1) suddig ersättning efter transkription (2) avkodnings-bias-tips",
+        "preview": "{{add}} nya · {{skip}} dubbletter · {{invalid}} ogiltiga"
+      },
+      "puncZh": {
+        "cancel": "Avbryt",
+        "description": "Lägger automatiskt till interpunktion i kinesiska transkriptioner med CT-Transformer-modellen. Gäller alla ASR-motorer (Apple Speech, SenseVoice, FunASR-Nano). Kräver nedladdning av interpunktionsmodellen (~50 MB).",
+        "download": "Ladda ner modell",
+        "label": "Kinesisk interpunktion (CT-Transformer)",
+        "modelDownloading": "Laddar ner interpunktionsmodell...",
+        "modelFailed": "Nedladdning misslyckades: {{error}}",
+        "modelMissing": "Modell ej nedladdad — kinesisk interpunktion hoppas över.",
+        "modelReady": "Modell klar (76 MB)",
+        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
+        "retry": "Försök igen"
       }
     },
     "postProcessing": {
@@ -416,7 +456,15 @@
         "cancel": "Avbryt",
         "selectToEdit": "Välj en prompt ovan för att visa och redigera dess detaljer.",
         "createFirst": "Klicka på 'Skapa ny prompt' ovan för att skapa din första prompt för efterbearbetning."
-      }
+      },
+      "chainAddStep": "Lägg till steg",
+      "chainEmpty": "Lägg till minst en prompt",
+      "chainEnabled": "Använd kedja istället för en enda prompt",
+      "chainMoveDown": "Flytta steg nedåt",
+      "chainMoveUp": "Flytta steg uppåt",
+      "chainRemove": "Ta bort steg",
+      "chainSection": "Promptkedja",
+      "chainStepLabel": "Steg {{n}}"
     },
     "history": {
       "title": "Historik",
@@ -431,7 +479,17 @@
       "retranscribe": "Transkribera igen",
       "retranscribeError": "Misslyckades med att transkribera igen. Försök igen.",
       "transcribing": "Transkriberar...",
-      "transcriptionFailed": "Transkribering misslyckades. Du kan transkribera igen med hjälp av ikonen för nytt försök."
+      "transcriptionFailed": "Transkribering misslyckades. Du kan transkribera igen med hjälp av ikonen för nytt försök.",
+      "retranscribeModal": {
+        "cancelButton": "Avbryt",
+        "languageLabel": "Språk",
+        "modelLabel": "Modell",
+        "modelPlaceholder": "Använd aktuell modell",
+        "noDownloadedModels": "Inga nedladdade modeller",
+        "runButton": "Transkribera om",
+        "title": "Transkribera om"
+      },
+      "retranscribeOptions": "Transkribera om med alternativ"
     },
     "debug": {
       "title": "Felsökning",
@@ -536,6 +594,91 @@
           "description": "Högpresterande inferens av OpenAI:s Whisper-modell för automatisk taligenkänning",
           "details": "Handy använder Whisper.cpp för snabb, lokal tal-till-text-behandling. Tack till det fantastiska arbete som utförts av Georgi Gerganov med medarbetare."
         }
+      },
+      "fork": {
+        "description": "Detta är Handy+, en gemenskapsfork underhållen av @ccharname. Se upstream-länken för det ursprungliga projektet.",
+        "forkLabel": "handy-plus av @ccharname",
+        "title": "Fork",
+        "viewFork": "Visa fork på GitHub",
+        "viewUpstream": "Visa upstream (cjpais/Handy)"
+      }
+    },
+    "asrPresets": {
+      "active": "Aktiv",
+      "advancedHint": "Eller välj en modell manuellt nedan.",
+      "appleNative": {
+        "description": "Apple Speech med CT-Punc interpunktionskorrigering. Lägst latens för korta kommandon.",
+        "name": "Apple Native"
+      },
+      "apply": "Tillämpa",
+      "applyAndDownload": "Ladda ner och tillämpa",
+      "chineseBalanced": {
+        "description": "SenseVoice med automatisk CT-Punc-interpunktion. Bäst för kinesiska användare.",
+        "name": "Kinesisk balanserad"
+      },
+      "customized": "Anpassad (preset frikopplad)",
+      "description": "Byt snabbt mellan utvalda taligenkänningsinställningar.",
+      "multilingualOffline": {
+        "description": "FunASR-Nano stödjer 8+ språk, helt offline.",
+        "name": "Flerspråkig offline"
+      },
+      "switching": "Byter...",
+      "title": "ASR-presets"
+    },
+    "profiles": {
+      "add": "Lägg till profil",
+      "addMatcher": "Lägg till matchare",
+      "appendTrailingSpace": "Lägg till efterföljande blanksteg",
+      "autoSubmit": "Automatisk inlämning",
+      "chainStepsCount": "{{count}}-stegskedja",
+      "confirmDelete": "Ta bort den här profilen?",
+      "customWordsCount": "{{count}} hot-words",
+      "customWordsExtra": "Extra hot-words",
+      "customWordsExtraPlaceholder": "Lägg till ett ord",
+      "delete": "Ta bort",
+      "detectedNow": "Just nu: {{app}}",
+      "duplicate": "Duplicera",
+      "enabledDescription": "Identifierar förgrundsprogrammet och tillämpar den matchande profilen för att åsidosätta språk, inklistringsmetod och efterbearbetning.",
+      "enabledLabel": "Aktivera Power Mode",
+      "hotSwapEngineDescription": "Tillåter profiler att byta till en annan ASR-modell. Tillför 1–3 s latens vid byte — inaktiverat som standard.",
+      "hotSwapEngineLabel": "Hot-swap-motor per profil",
+      "howItWorksHint": "Power Mode tillämpar automatiskt Code- och Claude Code-profiler när dessa appar är i förgrunden; aktivera andra för att lägga till fler scener.",
+      "inheritGlobal": "Ärv global",
+      "language": "Åsidosättning av språk",
+      "matchedNow": "Matchad: {{name}}",
+      "matcher": {
+        "bundleId": "Bundle ID (macOS)",
+        "disabled": "Inaktiverad",
+        "processName": "Processnamn",
+        "windowTitle": "Fönsterrubriken innehåller"
+      },
+      "matcherType": "Matchartyp",
+      "matcherValue": "Värde",
+      "matchers": "Matchare",
+      "noForeground": "Inget förgrundsprogram hittades",
+      "noMatchedProfile": "Ingen matchad profil",
+      "noOverrides": "Inga åsidosättningar — ärver globala inställningar",
+      "overrides": "Åsidosättningar",
+      "pasteMethod": "Åsidosättning av inklistringsmetod",
+      "postProcessChain": "Åsidosättning av efterbearbetningskedja",
+      "postProcessChainDisabled": "inaktiverad",
+      "postProcessChainHint": "Åsidosätt efterbearbetningspromptkedjan för den här profilen. Tom lista inaktiverar kedjläge.",
+      "postProcessChainReset": "× återställ",
+      "postProcessPrompt": "Åsidosättning av efterbearbetningsprompt",
+      "postProcessProvider": "Åsidosättning av efterbearbetningsleverantör",
+      "profileEnabled": "Aktiverad",
+      "profileName": "Profilnamn",
+      "puncZhEnabled": "Åsidosättning av kinesisk interpunktion (CT-Punc)",
+      "removeMatcher": "Ta bort",
+      "selectedModel": "Åsidosättning av ASR-modell",
+      "selectedModelHint": "Respekteras endast när 'Hot-swap-motor' är aktiverad. Lägger till 1–3 s modellinläsningslatens vid första transkriptionen per profil.",
+      "selectedPreset": "Åsidosättning av ASR-preset",
+      "selectedPresetHint": "Tillämpa en ASR-preset när den här profilen är aktiv. Påverkar språk och CT-Punc-inställningar.",
+      "title": "Appmedvetna profiler",
+      "tristate": {
+        "inherit": "Ärv global",
+        "off": "Av",
+        "on": "På"
       }
     }
   },
@@ -608,5 +751,9 @@
   "overlay": {
     "transcribing": "Transkriberar...",
     "processing": "Bearbetar..."
+  },
+  "toast": {
+    "puncMissingDescription": "Apple Speech och SenseVoice producerar inte kinesisk interpunktion förrän CT-Punc-modellen har laddats ner. Öppna Inställningar → Avancerat för att ladda ner.",
+    "puncMissingTitle": "Kinesisk interpunktionsmodell ej nedladdad"
   }
 }

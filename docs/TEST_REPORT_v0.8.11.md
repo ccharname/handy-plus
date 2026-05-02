@@ -40,7 +40,7 @@ Key findings (v0.8.8 vs v0.8.7):
 | Recording overlay (T-10.x) | 0 | 1 | 3 | 4 | - | - | - |
 | Apple Intelligence (T-11.x) | 1 | 0 | 1 | 2 | - | - | - |
 | Punc model UI (T-12.x) | 1 | 0 | 1 | 2 | - | - | - |
-| Apple Speech permission (T-13.x) | 4 | 0 | 1 | 5 | - | - | - |
+| Apple Speech permission (T-13.x) | 1 | 0 | 2 | 7 | 3 (code-verified+bench) | - | 1 (restricted/deferred) |
 | Bench CLI (T-14.x) | 3 | 0 | 0 | 3 | - | - | - |
 | Single-instance / CLI (T-15.x) | 3 | 0 | 1 | 4 | - | - | - |
 | i18n (T-16.x) | 1 | 0 | 1 | 2 | - | - | - |
@@ -179,8 +179,12 @@ PENDING.
 | Bench CLI swap mode via forwarder | Bug 2 (swap) | swap bench 09:20:09Z | **PASS** — `benchmark/results/v0.8.8/chinese_balanced_swap_2026-05-02T09-20-09Z.json` written. 9 swaps completed, no errors. |
 | chinese_balanced steady_p50 outlier (custom_words cold path) | Bug 3 | chinese_balanced bench 08:54Z | **PASS** — steady_p50=139ms (vs 925ms in v0.8.7). Root cause was CT-Punc + 200+ custom_words first-call cold load counted in "steady" distribution. v0.8.8 bench properly excludes cold_start item; custom_words trimmed. |
 | Apple Speech permission hang (GCD timer) | v0.8.7 fix | apple_native bench 09:11Z | **PASS** — All 38 items completed, no hang. v0.8.8 retains the 30s GCD timer from v0.8.7. |
-| Apple Speech error classification | T-13.5 | manual | PENDING |
-| `get_speech_recognition_permission` command | T-13.1/2/3 | manual | PENDING |
+| Apple Speech error classification (4 classes) | T-13.5 | code review | **CODE-VERIFIED** — `parse_apple_speech_error()` at `apple_speech.rs:54-67` maps PERM_DENIED/AUTH_TIMEOUT/TIMEOUT/ENGINE prefixes to typed `AppleSpeechError` variants. Swift prefixes emitted at `apple_speech.swift:104-108` (AUTH_TIMEOUT), `:115-133` (PERM_DENIED × 3 cases), `:207-210` (TIMEOUT), `:238-241` (ENGINE). See `docs/APPLE_SPEECH_PERMISSION_TEST.md §2`. |
+| Apple Speech authorized → transcription passes | T-13.1 | bench (auto) | **PASS** — `benchmark/results/v0.8.8/apple_native_2026-05-02T09-11-38Z.json`: 38 items, 0 errors, steady_p50=748ms, punc_density=0.0811. Live status=3 confirmed via `swift -e` (2026-05-01). |
+| Apple Speech denied → PERM_DENIED error | T-13.2 | manual | **pending manual** — checklist in `docs/APPLE_SPEECH_PERMISSION_TEST.md §3.2`. Toggle Handy OFF in System Settings, verify status=2, trigger recording, check log for `PERM_DENIED`. |
+| Apple Speech notDetermined → dialog / AUTH_TIMEOUT | T-13.3 | manual | **pending manual** — checklist in `docs/APPLE_SPEECH_PERMISSION_TEST.md §3.3`. Run `sudo tccutil reset Speech com.pais.handy`, restart Handy, verify status=0. Three sub-scenarios: Allow / Don't Allow / headless AUTH_TIMEOUT. |
+| Apple Speech restricted → PERM_DENIED (deferred) | T-13.7 | code review | **DEFERRED** — MDM/Configuration Profile required. Code path verified: `apple_speech.swift:119-121` emits `PERM_DENIED:` prefix; `get_auth_status()` maps raw=1 → `SpeechAuthStatus::Restricted`. |
+| `get_speech_recognition_permission` Tauri command | T-13.6 | code review | **CODE-VERIFIED** — `commands/audio.rs:156-172`; FFI `apple_speech_get_auth_status` returns raw 0-3 mapped to `"not_determined"/"restricted"/"denied"/"authorized"/"unsupported"`. Registered at `lib.rs:466`. |
 | Punc model download UI | T-12.1 | manual | PENDING |
 | Startup legacy-dir cleanup | T-12.2 | manual | PENDING |
 

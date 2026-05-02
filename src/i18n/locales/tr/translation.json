@@ -15,7 +15,8 @@
     "postProcessing": "Son İşlem",
     "history": "Geçmiş",
     "debug": "Hata Ayıklama",
-    "about": "Hakkında"
+    "about": "Hakkında",
+    "profiles": "Profiller"
   },
   "onboarding": {
     "subtitle": "Başlamak için bir transkripsiyon modeli seçin",
@@ -92,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "Büyük, daha yavaş, ancak çok doğru çok dilli bir model."
+      },
+      "sense-voice-small-sherpa": {
+        "description": "SenseVoice Small ile aynı model, ayrı model kimliği. custom_words'den hotwords L2 biasını (hotwords_boost) destekler. sherpa-onnx üzerinden, ~242 MB.",
+        "name": "SenseVoice (sherpa-onnx)"
       }
     },
     "errors": {
@@ -213,6 +218,19 @@
       "pushToTalk": {
         "label": "Bas Konuş",
         "description": "Kaydetmek için basılı tutun, durdurmak için bırakın"
+      },
+      "diary": {
+        "addKeyword": "Ekle",
+        "browse": "Gözat",
+        "description": "Tetikleyici bir anahtar kelimeyle başladığında transkriptleri otomatik olarak günlük bir markdown dosyasına ekler.",
+        "dirDescription": "Günlük günlük dosyalarının yazıldığı klasörün yolu. Devre dışı bırakmak için boş bırakın.",
+        "dirLabel": "Günlük Dizini",
+        "dirPlaceholder": "~/obsidian/diary",
+        "keywordPlaceholder": "Anahtar kelime ekle...",
+        "keywordsDescription": "Bu anahtar kelimelerden biriyle başlayan transkriptler (ardından isteğe bağlı noktalama) arşivlenir.",
+        "keywordsLabel": "Tetikleyici Anahtar Kelimeler",
+        "removeKeyword": "Anahtar kelimeyi kaldır",
+        "title": "Günlük Otomatik Arşivleme"
       }
     },
     "sound": {
@@ -355,7 +373,29 @@
         "placeholder": "Kelime ekle",
         "add": "Ekle",
         "remove": "{{word}} Kaldır",
-        "duplicate": "\"{{word}}\" zaten mevcut"
+        "duplicate": "\"{{word}}\" zaten mevcut",
+        "bulkImportPlaceholder": "Yeni satır veya virgülle ayrılmış kelimeleri yapıştırın...",
+        "bulkImportTitle": "Özel kelimeleri toplu içe aktar",
+        "cancel": "İptal",
+        "confirmAdd": "Tümünü ekle",
+        "export": "Dışa aktar",
+        "fileTypes": ".txt / .csv / .json",
+        "fromFile": "Veya dosyadan yükle",
+        "import": "İçe aktar",
+        "layerHint": "Bu kelimeler (1) transkripsiyon sonrası bulanık değiştirme (2) kod çözme önyargı ipuçları için kullanılır",
+        "preview": "{{add}} yeni · {{skip}} tekrarlı · {{invalid}} geçersiz"
+      },
+      "puncZh": {
+        "cancel": "İptal",
+        "description": "CT-Transformer modelini kullanarak Çince transkriptlere otomatik olarak noktalama ekler. Tüm ASR motorlarına (Apple Speech, SenseVoice, FunASR-Nano) uygulanır. Noktalama modelinin indirilmesini gerektirir (~50 MB).",
+        "download": "Modeli indir",
+        "label": "Çince Noktalama (CT-Transformer)",
+        "modelDownloading": "Noktalama modeli indiriliyor...",
+        "modelFailed": "İndirme başarısız: {{error}}",
+        "modelMissing": "Model indirilmedi — Çince noktalama atlanacak.",
+        "modelReady": "Model hazır (76 MB)",
+        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
+        "retry": "Yeniden dene"
       }
     },
     "postProcessing": {
@@ -416,7 +456,15 @@
         "cancel": "İptal",
         "selectToEdit": "Ayrıntılarını görüntülemek ve düzenlemek için yukarıdan bir prompt seçin.",
         "createFirst": "İlk son işlem prompt'unuzu oluşturmak için yukarıdaki “Yeni Prompt Oluştur” seçeneğine tıklayın."
-      }
+      },
+      "chainAddStep": "Adım ekle",
+      "chainEmpty": "En az bir istem ekleyin",
+      "chainEnabled": "Tek istem yerine zincir kullan",
+      "chainMoveDown": "Adımı aşağı taşı",
+      "chainMoveUp": "Adımı yukarı taşı",
+      "chainRemove": "Adımı kaldır",
+      "chainSection": "İstem Zinciri",
+      "chainStepLabel": "Adım {{n}}"
     },
     "history": {
       "title": "Geçmiş",
@@ -431,7 +479,17 @@
       "retranscribe": "Yeniden yazıya dök",
       "retranscribeError": "Yeniden yazıya dökme başarısız oldu. Lütfen tekrar deneyin.",
       "transcribing": "Yazıya döküyor...",
-      "transcriptionFailed": "Transkripsiyon başarısız oldu. Yeniden deneme simgesini kullanarak tekrar yazıya dökebilirsiniz."
+      "transcriptionFailed": "Transkripsiyon başarısız oldu. Yeniden deneme simgesini kullanarak tekrar yazıya dökebilirsiniz.",
+      "retranscribeModal": {
+        "cancelButton": "İptal",
+        "languageLabel": "Dil",
+        "modelLabel": "Model",
+        "modelPlaceholder": "Geçerli modeli kullan",
+        "noDownloadedModels": "İndirilmiş model yok",
+        "runButton": "Yeniden transkribe et",
+        "title": "Yeniden Transkribe Et"
+      },
+      "retranscribeOptions": "Seçeneklerle yeniden transkribe et"
     },
     "debug": {
       "title": "Hata Ayıklama",
@@ -536,6 +594,91 @@
           "description": "OpenAI'nin Whisper otomatik konuşma tanıma modelinin yüksek performanslı çıkarımı",
           "details": "Handy, hızlı ve yerel konuşmadan metne dönüştürme için Whisper.cpp kullanır. Georgi Gerganov ve katkıda bulunanların harika çalışmaları için teşekkür ederiz."
         }
+      },
+      "fork": {
+        "description": "Bu, @ccharname tarafından sürdürülen bir topluluk fork'u olan Handy+'dır. Orijinal proje için upstream bağlantısına bakın.",
+        "forkLabel": "@ccharname tarafından handy-plus",
+        "title": "Fork",
+        "viewFork": "GitHub'da fork'u görüntüle",
+        "viewUpstream": "Upstream'i görüntüle (cjpais/Handy)"
+      }
+    },
+    "asrPresets": {
+      "active": "Aktif",
+      "advancedHint": "Veya aşağıdan manuel olarak bir model seçin.",
+      "appleNative": {
+        "description": "CT-Punc noktalama yamasıyla Apple Speech. Kısa komutlar için en düşük gecikme.",
+        "name": "Apple Native"
+      },
+      "apply": "Uygula",
+      "applyAndDownload": "İndir ve Uygula",
+      "chineseBalanced": {
+        "description": "CT-Punc otomatik noktalama ile SenseVoice. Çince öncelikli kullanıcılar için en iyi.",
+        "name": "Çince Dengeli"
+      },
+      "customized": "Özelleştirilmiş (önayar ayrıldı)",
+      "description": "Seçilmiş konuşma tanıma kurulumları arasında hızlıca geçiş yapın.",
+      "multilingualOffline": {
+        "description": "FunASR-Nano 8'den fazla dili destekler, tamamen çevrimdışı.",
+        "name": "Çok Dilli Çevrimdışı"
+      },
+      "switching": "Geçiliyor...",
+      "title": "ASR Önayarları"
+    },
+    "profiles": {
+      "add": "Profil ekle",
+      "addMatcher": "Eşleştirici ekle",
+      "appendTrailingSpace": "Sona boşluk ekle",
+      "autoSubmit": "Otomatik gönder",
+      "chainStepsCount": "{{count}} adımlı zincir",
+      "confirmDelete": "Bu profili sil?",
+      "customWordsCount": "{{count}} hot-word",
+      "customWordsExtra": "Ekstra hot-words",
+      "customWordsExtraPlaceholder": "Bir kelime ekle",
+      "delete": "Sil",
+      "detectedNow": "Şu an: {{app}}",
+      "duplicate": "Çoğalt",
+      "enabledDescription": "Ön plandaki uygulamayı algılar ve dil, yapıştırma yöntemi ve son işlemeyi geçersiz kılmak için eşleşen profili uygular.",
+      "enabledLabel": "Power Mode'u etkinleştir",
+      "hotSwapEngineDescription": "Profillerin farklı bir ASR modeline geçmesine izin verir. Geçişte 1–3 s gecikme ekler — varsayılan olarak kapalı.",
+      "hotSwapEngineLabel": "Profil başına motor hot-swap",
+      "howItWorksHint": "Power Mode, o uygulamalar ön planda olduğunda Code ve Claude Code profillerini otomatik uygular; daha fazla sahne eklemek için diğerlerini etkinleştirin.",
+      "inheritGlobal": "Genel mirası",
+      "language": "Dil geçersiz kılma",
+      "matchedNow": "Eşleşti: {{name}}",
+      "matcher": {
+        "bundleId": "Bundle ID (macOS)",
+        "disabled": "Devre dışı",
+        "processName": "İşlem adı",
+        "windowTitle": "Pencere başlığı içeriyor"
+      },
+      "matcherType": "Eşleştirici türü",
+      "matcherValue": "Değer",
+      "matchers": "Eşleştiriciler",
+      "noForeground": "Ön plan uygulaması algılanmadı",
+      "noMatchedProfile": "Eşleşen profil yok",
+      "noOverrides": "Geçersiz kılma yok — genel ayarları devralır",
+      "overrides": "Geçersiz kılmalar",
+      "pasteMethod": "Yapıştırma yöntemi geçersiz kılma",
+      "postProcessChain": "Son işlem zinciri geçersiz kılma",
+      "postProcessChainDisabled": "devre dışı",
+      "postProcessChainHint": "Bu profil için son işlem istem zincirini geçersiz kılın. Boş liste zincir modunu devre dışı bırakır.",
+      "postProcessChainReset": "× sıfırla",
+      "postProcessPrompt": "Son işlem istemi geçersiz kılma",
+      "postProcessProvider": "Son işlem sağlayıcısı geçersiz kılma",
+      "profileEnabled": "Etkin",
+      "profileName": "Profil adı",
+      "puncZhEnabled": "Çince noktalama (CT-Punc) geçersiz kılma",
+      "removeMatcher": "Kaldır",
+      "selectedModel": "ASR modeli geçersiz kılma",
+      "selectedModelHint": "Yalnızca 'Motor hot-swap' etkinleştirildiğinde geçerlidir. Profil başına ilk transkripsiyon için 1–3 s model yükleme gecikmesi ekler.",
+      "selectedPreset": "ASR önayarı geçersiz kılma",
+      "selectedPresetHint": "Bu profil etkin olduğunda bir ASR önayarı uygulayın. Dil ve CT-Punc ayarlarını etkiler.",
+      "title": "Uygulama Farkında Profiller",
+      "tristate": {
+        "inherit": "Genel mirası",
+        "off": "Kapalı",
+        "on": "Açık"
       }
     }
   },
@@ -608,5 +751,9 @@
   "overlay": {
     "transcribing": "Transkribe ediliyor...",
     "processing": "İşleniyor..."
+  },
+  "toast": {
+    "puncMissingDescription": "CT-Punc modeli indirilene kadar Apple Speech ve SenseVoice Çince noktalama üretmez. İndirmek için Ayarlar → Gelişmiş'i açın.",
+    "puncMissingTitle": "Çince noktalama modeli indirilmedi"
   }
 }

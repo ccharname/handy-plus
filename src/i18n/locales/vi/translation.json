@@ -15,7 +15,8 @@
     "postProcessing": "Xử lý sau",
     "history": "Lịch sử",
     "debug": "Gỡ lỗi",
-    "about": "Giới thiệu"
+    "about": "Giới thiệu",
+    "profiles": "Hồ Sơ"
   },
   "onboarding": {
     "subtitle": "Để bắt đầu, hãy chọn một mô hình chuyển đổi giọng nói",
@@ -92,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "Mô hình lớn, chậm hơn, nhưng rất chính xác và đa ngôn ngữ."
+      },
+      "sense-voice-small-sherpa": {
+        "description": "Cùng mô hình với SenseVoice Small, ID mô hình riêng. Hỗ trợ bias L2 từ hotwords (hotwords_boost) từ custom_words. Qua sherpa-onnx, ~242 MB.",
+        "name": "SenseVoice (sherpa-onnx)"
       }
     },
     "errors": {
@@ -213,6 +218,19 @@
       "pushToTalk": {
         "label": "Nhấn để nói",
         "description": "Giữ để ghi âm, thả để dừng"
+      },
+      "diary": {
+        "addKeyword": "Thêm",
+        "browse": "Duyệt",
+        "description": "Tự động thêm bản phiên âm vào tệp markdown hàng ngày khi chúng bắt đầu bằng từ khóa kích hoạt.",
+        "dirDescription": "Đường dẫn đến thư mục nơi các tệp nhật ký hàng ngày được ghi. Để trống để tắt.",
+        "dirLabel": "Thư mục nhật ký",
+        "dirPlaceholder": "~/obsidian/diary",
+        "keywordPlaceholder": "Thêm từ khóa...",
+        "keywordsDescription": "Các bản phiên âm bắt đầu bằng một trong các từ khóa này (theo sau là dấu câu tùy chọn) sẽ được lưu trữ.",
+        "keywordsLabel": "Từ khóa kích hoạt",
+        "removeKeyword": "Xóa từ khóa",
+        "title": "Tự Động Lưu Trữ Nhật Ký"
       }
     },
     "sound": {
@@ -355,7 +373,29 @@
         "placeholder": "Thêm một từ",
         "add": "Thêm",
         "remove": "Xóa {{word}}",
-        "duplicate": "\"{{word}}\" đã tồn tại"
+        "duplicate": "\"{{word}}\" đã tồn tại",
+        "bulkImportPlaceholder": "Dán các từ được phân tách bằng dấu xuống dòng hoặc dấu phẩy...",
+        "bulkImportTitle": "Nhập hàng loạt từ tùy chỉnh",
+        "cancel": "Hủy",
+        "confirmAdd": "Thêm tất cả",
+        "export": "Xuất",
+        "fileTypes": ".txt / .csv / .json",
+        "fromFile": "Hoặc tải từ tệp",
+        "import": "Nhập",
+        "layerHint": "Các từ này được dùng cho (1) thay thế mờ sau phiên âm (2) gợi ý độ lệch giải mã",
+        "preview": "{{add}} mới · {{skip}} trùng lặp · {{invalid}} không hợp lệ"
+      },
+      "puncZh": {
+        "cancel": "Hủy",
+        "description": "Tự động thêm dấu câu vào các bản phiên âm tiếng Trung bằng mô hình CT-Transformer. Áp dụng cho tất cả các công cụ ASR (Apple Speech, SenseVoice, FunASR-Nano). Yêu cầu tải xuống mô hình dấu câu (~50 MB).",
+        "download": "Tải xuống mô hình",
+        "label": "Dấu câu tiếng Trung (CT-Transformer)",
+        "modelDownloading": "Đang tải xuống mô hình dấu câu...",
+        "modelFailed": "Tải xuống thất bại: {{error}}",
+        "modelMissing": "Chưa tải xuống mô hình — dấu câu tiếng Trung sẽ bị bỏ qua.",
+        "modelReady": "Mô hình sẵn sàng (76 MB)",
+        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
+        "retry": "Thử lại"
       }
     },
     "postProcessing": {
@@ -416,7 +456,15 @@
         "cancel": "Hủy",
         "selectToEdit": "Chọn một prompt ở trên để xem và chỉnh sửa chi tiết.",
         "createFirst": "Nhấn 'Tạo Prompt mới' ở trên để tạo prompt xử lý sau đầu tiên của bạn."
-      }
+      },
+      "chainAddStep": "Thêm bước",
+      "chainEmpty": "Thêm ít nhất một prompt",
+      "chainEnabled": "Dùng chuỗi thay vì một prompt duy nhất",
+      "chainMoveDown": "Di chuyển bước xuống",
+      "chainMoveUp": "Di chuyển bước lên",
+      "chainRemove": "Xóa bước",
+      "chainSection": "Chuỗi Prompt",
+      "chainStepLabel": "Bước {{n}}"
     },
     "history": {
       "title": "Lịch sử",
@@ -431,7 +479,17 @@
       "retranscribe": "Phiên âm lại",
       "retranscribeError": "Không thể phiên âm lại. Vui lòng thử lại.",
       "transcribing": "Đang phiên âm...",
-      "transcriptionFailed": "Phiên âm thất bại. Bạn có thể phiên âm lại bằng biểu tượng thử lại."
+      "transcriptionFailed": "Phiên âm thất bại. Bạn có thể phiên âm lại bằng biểu tượng thử lại.",
+      "retranscribeModal": {
+        "cancelButton": "Hủy",
+        "languageLabel": "Ngôn ngữ",
+        "modelLabel": "Mô hình",
+        "modelPlaceholder": "Dùng mô hình hiện tại",
+        "noDownloadedModels": "Không có mô hình đã tải xuống",
+        "runButton": "Phiên âm lại",
+        "title": "Phiên âm lại"
+      },
+      "retranscribeOptions": "Phiên âm lại với tùy chọn"
     },
     "debug": {
       "title": "Gỡ lỗi",
@@ -536,6 +594,91 @@
           "description": "Suy luận hiệu suất cao của mô hình nhận dạng giọng nói tự động Whisper của OpenAI",
           "details": "Handy sử dụng Whisper.cpp để xử lý chuyển đổi giọng nói thành văn bản nhanh, cục bộ. Cảm ơn công việc tuyệt vời của Georgi Gerganov và các cộng tác viên."
         }
+      },
+      "fork": {
+        "description": "Đây là Handy+, một nhánh cộng đồng được duy trì bởi @ccharname. Xem liên kết upstream cho dự án gốc.",
+        "forkLabel": "handy-plus bởi @ccharname",
+        "title": "Nhánh fork",
+        "viewFork": "Xem fork trên GitHub",
+        "viewUpstream": "Xem upstream (cjpais/Handy)"
+      }
+    },
+    "asrPresets": {
+      "active": "Đang dùng",
+      "advancedHint": "Hoặc chọn mô hình thủ công bên dưới.",
+      "appleNative": {
+        "description": "Apple Speech với bản vá dấu câu CT-Punc. Độ trễ thấp nhất cho các lệnh ngắn.",
+        "name": "Apple Native"
+      },
+      "apply": "Áp dụng",
+      "applyAndDownload": "Tải xuống & Áp dụng",
+      "chineseBalanced": {
+        "description": "SenseVoice với dấu câu tự động CT-Punc. Tốt nhất cho người dùng tiếng Trung.",
+        "name": "Tiếng Trung Cân Bằng"
+      },
+      "customized": "Tùy chỉnh (preset đã tách)",
+      "description": "Chuyển đổi nhanh giữa các cấu hình nhận dạng giọng nói được chọn lọc.",
+      "multilingualOffline": {
+        "description": "FunASR-Nano hỗ trợ 8+ ngôn ngữ, hoàn toàn ngoại tuyến.",
+        "name": "Đa Ngôn Ngữ Ngoại Tuyến"
+      },
+      "switching": "Đang chuyển...",
+      "title": "Cài Sẵn ASR"
+    },
+    "profiles": {
+      "add": "Thêm hồ sơ",
+      "addMatcher": "Thêm bộ so khớp",
+      "appendTrailingSpace": "Thêm khoảng trắng cuối",
+      "autoSubmit": "Tự động gửi",
+      "chainStepsCount": "Chuỗi {{count}} bước",
+      "confirmDelete": "Xóa hồ sơ này?",
+      "customWordsCount": "{{count}} hot-words",
+      "customWordsExtra": "Hot-words bổ sung",
+      "customWordsExtraPlaceholder": "Thêm một từ",
+      "delete": "Xóa",
+      "detectedNow": "Hiện tại: {{app}}",
+      "duplicate": "Nhân đôi",
+      "enabledDescription": "Phát hiện ứng dụng ở nền trước và áp dụng hồ sơ phù hợp để ghi đè ngôn ngữ, phương thức dán và hậu xử lý.",
+      "enabledLabel": "Bật Power Mode",
+      "hotSwapEngineDescription": "Cho phép hồ sơ chuyển sang mô hình ASR khác. Thêm 1-3 giây độ trễ khi chuyển — tắt theo mặc định.",
+      "hotSwapEngineLabel": "Hoán đổi nóng công cụ theo hồ sơ",
+      "howItWorksHint": "Power Mode tự động áp dụng các hồ sơ Code và Claude Code khi những ứng dụng đó ở nền trước; bật các hồ sơ khác để thêm cảnh.",
+      "inheritGlobal": "Kế thừa toàn cục",
+      "language": "Ghi đè ngôn ngữ",
+      "matchedNow": "Đã khớp: {{name}}",
+      "matcher": {
+        "bundleId": "Bundle ID (macOS)",
+        "disabled": "Đã tắt",
+        "processName": "Tên tiến trình",
+        "windowTitle": "Tiêu đề cửa sổ chứa"
+      },
+      "matcherType": "Loại bộ so khớp",
+      "matcherValue": "Giá trị",
+      "matchers": "Bộ so khớp",
+      "noForeground": "Không phát hiện ứng dụng nền trước",
+      "noMatchedProfile": "Không có hồ sơ nào khớp",
+      "noOverrides": "Không có ghi đè — kế thừa cài đặt toàn cục",
+      "overrides": "Ghi đè",
+      "pasteMethod": "Ghi đè phương thức dán",
+      "postProcessChain": "Ghi đè chuỗi hậu xử lý",
+      "postProcessChainDisabled": "đã tắt",
+      "postProcessChainHint": "Ghi đè chuỗi prompt hậu xử lý cho hồ sơ này. Danh sách trống sẽ tắt chế độ chuỗi.",
+      "postProcessChainReset": "× đặt lại",
+      "postProcessPrompt": "Ghi đè prompt hậu xử lý",
+      "postProcessProvider": "Ghi đè nhà cung cấp hậu xử lý",
+      "profileEnabled": "Đã bật",
+      "profileName": "Tên hồ sơ",
+      "puncZhEnabled": "Ghi đè dấu câu tiếng Trung (CT-Punc)",
+      "removeMatcher": "Xóa",
+      "selectedModel": "Ghi đè mô hình ASR",
+      "selectedModelHint": "Chỉ được tôn trọng khi 'Hoán đổi nóng công cụ' được bật. Thêm 1-3 giây độ trễ tải mô hình ở lần phiên âm đầu tiên cho mỗi hồ sơ.",
+      "selectedPreset": "Ghi đè cài sẵn ASR",
+      "selectedPresetHint": "Áp dụng cài sẵn ASR khi hồ sơ này đang hoạt động. Ảnh hưởng đến ngôn ngữ và cài đặt CT-Punc.",
+      "title": "Hồ Sơ Theo Ứng Dụng",
+      "tristate": {
+        "inherit": "Kế thừa toàn cục",
+        "off": "Tắt",
+        "on": "Bật"
       }
     }
   },
@@ -608,5 +751,9 @@
   "overlay": {
     "transcribing": "Đang chuyển đổi...",
     "processing": "Đang xử lý..."
+  },
+  "toast": {
+    "puncMissingDescription": "Apple Speech và SenseVoice sẽ không tạo dấu câu tiếng Trung cho đến khi mô hình CT-Punc được tải xuống. Mở Cài đặt → Nâng cao để tải xuống.",
+    "puncMissingTitle": "Chưa tải xuống mô hình dấu câu tiếng Trung"
   }
 }
