@@ -17,6 +17,7 @@
     "test:playwright": "playwright test",
     "test:playwright:ui": "playwright test --ui",
     "tauri:build": "bun run tauri build && bash scripts/sign-build.sh",
+    "tauri:deploy": "bun run tauri:build && bash scripts/deploy-build.sh",
     "check:translations": "bun scripts/check-translations.ts",
     "postinstall": "bun scripts/check-nix-deps.ts"
   },
