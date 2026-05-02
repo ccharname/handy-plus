@@ -1,0 +1,161 @@
+{
+  "preset_id": "chinese_balanced",
+  "preset_name": "Swap",
+  "model_id": "sense-voice-int8 / funasr-nano",
+  "language": "n/a",
+  "punc_zh_enabled": false,
+  "timestamp": "2026-05-02T09:20:09Z",
+  "bench_mode": "swap",
+  "items": [
+    {
+      "wav": "swap_01_(none)_to_sense-voice-int8",
+      "hypothesis": "",
+      "latency_ms": 511,
+      "punc_count": 0,
+      "char_count": 0
+    },
+    {
+      "wav": "swap_02_sense-voice-int8_to_funasr-nano",
+      "hypothesis": "",
+      "latency_ms": 2160,
+      "punc_count": 0,
+      "char_count": 0
+    },
+    {
+      "wav": "swap_03_funasr-nano_to_sense-voice-int8",
+      "hypothesis": "",
+      "latency_ms": 419,
+      "punc_count": 0,
+      "char_count": 0
+    },
+    {
+      "wav": "swap_04_sense-voice-int8_to_funasr-nano",
+      "hypothesis": "",
+      "latency_ms": 1921,
+      "punc_count": 0,
+      "char_count": 0
+    },
+    {
+      "wav": "swap_05_funasr-nano_to_sense-voice-int8",
+      "hypothesis": "",
+      "latency_ms": 428,
+      "punc_count": 0,
+      "char_count": 0
+    },
+    {
+      "wav": "swap_06_sense-voice-int8_to_funasr-nano",
+      "hypothesis": "",
+      "latency_ms": 2101,
+      "punc_count": 0,
+      "char_count": 0
+    },
+    {
+      "wav": "swap_07_funasr-nano_to_sense-voice-int8",
+      "hypothesis": "",
+      "latency_ms": 506,
+      "punc_count": 0,
+      "char_count": 0
+    },
+    {
+      "wav": "swap_08_sense-voice-int8_to_funasr-nano",
+      "hypothesis": "",
+      "latency_ms": 1957,
+      "punc_count": 0,
+      "char_count": 0
+    },
+    {
+      "wav": "swap_09_funasr-nano_to_sense-voice-int8",
+      "hypothesis": "",
+      "latency_ms": 540,
+      "punc_count": 0,
+      "char_count": 0
+    }
+  ],
+  "summary": {
+    "total_items": 9,
+    "total_audio_seconds": 0.0,
+    "p50_latency_ms": 540,
+    "p95_latency_ms": 2160,
+    "punctuation_density": 0.0,
+    "cold_start_latency_ms": 511,
+    "steady_p50_latency_ms": 1921,
+    "steady_p95_latency_ms": 2160,
+    "swap_p50_latency_ms": 540,
+    "swap_p95_latency_ms": 2160
+  },
+  "chain_steps": [],
+  "swap_records": [
+    {
+      "swap_index": 1,
+      "from_model": "(none)",
+      "to_model": "sense-voice-int8",
+      "unload_ms": 0,
+      "load_ms": 511,
+      "total_ms": 511
+    },
+    {
+      "swap_index": 2,
+      "from_model": "sense-voice-int8",
+      "to_model": "funasr-nano",
+      "unload_ms": 10,
+      "load_ms": 2150,
+      "total_ms": 2160
+    },
+    {
+      "swap_index": 3,
+      "from_model": "funasr-nano",
+      "to_model": "sense-voice-int8",
+      "unload_ms": 55,
+      "load_ms": 364,
+      "total_ms": 419
+    },
+    {
+      "swap_index": 4,
+      "from_model": "sense-voice-int8",
+      "to_model": "funasr-nano",
+      "unload_ms": 10,
+      "load_ms": 1911,
+      "total_ms": 1921
+    },
+    {
+      "swap_index": 5,
+      "from_model": "funasr-nano",
+      "to_model": "sense-voice-int8",
+      "unload_ms": 50,
+      "load_ms": 378,
+      "total_ms": 428
+    },
+    {
+      "swap_index": 6,
+      "from_model": "sense-voice-int8",
+      "to_model": "funasr-nano",
+      "unload_ms": 11,
+      "load_ms": 2090,
+      "total_ms": 2101
+    },
+    {
+      "swap_index": 7,
+      "from_model": "funasr-nano",
+      "to_model": "sense-voice-int8",
+      "unload_ms": 65,
+      "load_ms": 441,
+      "total_ms": 506
+    },
+    {
+      "swap_index": 8,
+      "from_model": "sense-voice-int8",
+      "to_model": "funasr-nano",
+      "unload_ms": 13,
+      "load_ms": 1944,
+      "total_ms": 1957
+    },
+    {
+      "swap_index": 9,
+      "from_model": "funasr-nano",
+      "to_model": "sense-voice-int8",
+      "unload_ms": 66,
+      "load_ms": 474,
+      "total_ms": 540
+    }
+  ]
+}

@@ -356,5 +356,9 @@ pub async fn download_punc_model(app: AppHandle) -> Result<(), String> {
     // Clean up partial file
     let _ = fs::remove_file(&partial_path);
 
+    // Reset the punc model cache so the next transcription loads the freshly
+    // downloaded model without requiring an app restart.
+    crate::audio_toolkit::punc_zh::reset_cached_model();
+
     Ok(())
 }

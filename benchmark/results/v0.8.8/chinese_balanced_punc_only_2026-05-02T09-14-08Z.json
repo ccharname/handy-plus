@@ -1,0 +1,7025 @@
+{
+  "preset_id": "chinese_balanced",
+  "preset_name": "PuncOnly",
+  "model_id": "/Users/zhengma/Library/Application Support/com.pais.handy/models/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8",
+  "language": "zh",
+  "punc_zh_enabled": true,
+  "timestamp": "2026-05-02T09:14:08Z",
+  "bench_mode": "punc_only",
+  "items": [
+    {
+      "wav": "iter000_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 9,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter000_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 5,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter000_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter000_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 5,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter000_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 9,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter000_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 3,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter000_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 4,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter000_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter000_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 3,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter000_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter001_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 3,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter001_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 3,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter001_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter001_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter001_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 5,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter001_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter001_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 3,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter001_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 3,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter001_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter001_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter002_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter002_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter002_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter002_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter002_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter002_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter002_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter002_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter002_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter002_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter003_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter003_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter003_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter003_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter003_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter003_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter003_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter003_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter003_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter003_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter004_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter004_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter004_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter004_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter004_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter004_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter004_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter004_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter004_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter004_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter005_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter005_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter005_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter005_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter005_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter005_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter005_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter005_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter005_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter005_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter006_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter006_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter006_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter006_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter006_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter006_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter006_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter006_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter006_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter006_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter007_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter007_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter007_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter007_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter007_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter007_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter007_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter007_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter007_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter007_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter008_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter008_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter008_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter008_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter008_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter008_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter008_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter008_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter008_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter008_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter009_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter009_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter009_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter009_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter009_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter009_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter009_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter009_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter009_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter009_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter010_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter010_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter010_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter010_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter010_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter010_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter010_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter010_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter010_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter010_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter011_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter011_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter011_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter011_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter011_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter011_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter011_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter011_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter011_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter011_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter012_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter012_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter012_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter012_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter012_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter012_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter012_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter012_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter012_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter012_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter013_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter013_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter013_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter013_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter013_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter013_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter013_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter013_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter013_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter013_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter014_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter014_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter014_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter014_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter014_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter014_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter014_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter014_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter014_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter014_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter015_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter015_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter015_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter015_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter015_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter015_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter015_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter015_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter015_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter015_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter016_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter016_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter016_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter016_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter016_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter016_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter016_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter016_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter016_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter016_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter017_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter017_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter017_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter017_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter017_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter017_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter017_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter017_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter017_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter017_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter018_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter018_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter018_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter018_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter018_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter018_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter018_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter018_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter018_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter018_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter019_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter019_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter019_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter019_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter019_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter019_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter019_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter019_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter019_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter019_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter020_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter020_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter020_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter020_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter020_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter020_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter020_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter020_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter020_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter020_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter021_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter021_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter021_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter021_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter021_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter021_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter021_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter021_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter021_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter021_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter022_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter022_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter022_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter022_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter022_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter022_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter022_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter022_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter022_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter022_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter023_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter023_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter023_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter023_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter023_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter023_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter023_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter023_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter023_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter023_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter024_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter024_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter024_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter024_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter024_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter024_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter024_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter024_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter024_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter024_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter025_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter025_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter025_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter025_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter025_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter025_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter025_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter025_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter025_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter025_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter026_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter026_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter026_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter026_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter026_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter026_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter026_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter026_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter026_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter026_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter027_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter027_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter027_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter027_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter027_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter027_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter027_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter027_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter027_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter027_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter028_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter028_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter028_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter028_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter028_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter028_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter028_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter028_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter028_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter028_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter029_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter029_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter029_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter029_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter029_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter029_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter029_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter029_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter029_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter029_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter030_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter030_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter030_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter030_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter030_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter030_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter030_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter030_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter030_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter030_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter031_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter031_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter031_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter031_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter031_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter031_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter031_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter031_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter031_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 5,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter031_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 5,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter032_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 8,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter032_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter032_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter032_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 3,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter032_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 68,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter032_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 6,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter032_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 7,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter032_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 3,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter032_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 4,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter032_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 3,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter033_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter033_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter033_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter033_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter033_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter033_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter033_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 3,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter033_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter033_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter033_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 15,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter034_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter034_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter034_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter034_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter034_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 5,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter034_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter034_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter034_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter034_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter034_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter035_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter035_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter035_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter035_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter035_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter035_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter035_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter035_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter035_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter035_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter036_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter036_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter036_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter036_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter036_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter036_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter036_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter036_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter036_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter036_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter037_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter037_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter037_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter037_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter037_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter037_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter037_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter037_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter037_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter037_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter038_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter038_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter038_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter038_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter038_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter038_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter038_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter038_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter038_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter038_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter039_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter039_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter039_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter039_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter039_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter039_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter039_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter039_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter039_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter039_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter040_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter040_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter040_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter040_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter040_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter040_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter040_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter040_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter040_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter040_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter041_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter041_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter041_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter041_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter041_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter041_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter041_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter041_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter041_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter041_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter042_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter042_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter042_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter042_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter042_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter042_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter042_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter042_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter042_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter042_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter043_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter043_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter043_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter043_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter043_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter043_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter043_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter043_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter043_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter043_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter044_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter044_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter044_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter044_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter044_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter044_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter044_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter044_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter044_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter044_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter045_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter045_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter045_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter045_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter045_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter045_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter045_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter045_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter045_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter045_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter046_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter046_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter046_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter046_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter046_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter046_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter046_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter046_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter046_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter046_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter047_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter047_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter047_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter047_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter047_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter047_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter047_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter047_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter047_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter047_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter048_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter048_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter048_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter048_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter048_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter048_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter048_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter048_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter048_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter048_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter049_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter049_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter049_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter049_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter049_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter049_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter049_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter049_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter049_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter049_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter050_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter050_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter050_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter050_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter050_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter050_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter050_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter050_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter050_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter050_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter051_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter051_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter051_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter051_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter051_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter051_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter051_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter051_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter051_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter051_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter052_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter052_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter052_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter052_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter052_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter052_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter052_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter052_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter052_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter052_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter053_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter053_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter053_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter053_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter053_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter053_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter053_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter053_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter053_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter053_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter054_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter054_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter054_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter054_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter054_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter054_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter054_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter054_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter054_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter054_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter055_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter055_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter055_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter055_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter055_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter055_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter055_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter055_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter055_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter055_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter056_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter056_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter056_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter056_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter056_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter056_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 8,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter056_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter056_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter056_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter056_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter057_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter057_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter057_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter057_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter057_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter057_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter057_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter057_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter057_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter057_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter058_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter058_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter058_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter058_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter058_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter058_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter058_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter058_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter058_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter058_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter059_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter059_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter059_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter059_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter059_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter059_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter059_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter059_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter059_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter059_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter060_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter060_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter060_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter060_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter060_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter060_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter060_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter060_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter060_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter060_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter061_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter061_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter061_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter061_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter061_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter061_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter061_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter061_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter061_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter061_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter062_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter062_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter062_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter062_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter062_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter062_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter062_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter062_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter062_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter062_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter063_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter063_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter063_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter063_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter063_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter063_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter063_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter063_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter063_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter063_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter064_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter064_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter064_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter064_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter064_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter064_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter064_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter064_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter064_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter064_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter065_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter065_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter065_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter065_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter065_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter065_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter065_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter065_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter065_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter065_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter066_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter066_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter066_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter066_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter066_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter066_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter066_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter066_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter066_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter066_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter067_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter067_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter067_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter067_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter067_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter067_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter067_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter067_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter067_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter067_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter068_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter068_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter068_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter068_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter068_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter068_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter068_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter068_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter068_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter068_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter069_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter069_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter069_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter069_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter069_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter069_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter069_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter069_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter069_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter069_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter070_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter070_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter070_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter070_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter070_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter070_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter070_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter070_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter070_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter070_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter071_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter071_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter071_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter071_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter071_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter071_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter071_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter071_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter071_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter071_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter072_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter072_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter072_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter072_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter072_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter072_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter072_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter072_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter072_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter072_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter073_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter073_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter073_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter073_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter073_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter073_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter073_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter073_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 3,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter073_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter073_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter074_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter074_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter074_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter074_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 3,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter074_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 7,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter074_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter074_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 3,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter074_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter074_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter074_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter075_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter075_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter075_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter075_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter075_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 5,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter075_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 3,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter075_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 3,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter075_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter075_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter075_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter076_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter076_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter076_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter076_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter076_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter076_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter076_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter076_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter076_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter076_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter077_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter077_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter077_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter077_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter077_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter077_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter077_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 3,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter077_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 3,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter077_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter077_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter078_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter078_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter078_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter078_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter078_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter078_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter078_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter078_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter078_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 3,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter078_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter079_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter079_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter079_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter079_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter079_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter079_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter079_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter079_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter079_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter079_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter080_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter080_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter080_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter080_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter080_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter080_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter080_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter080_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter080_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter080_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter081_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter081_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter081_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter081_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter081_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter081_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter081_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter081_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter081_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter081_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter082_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter082_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter082_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter082_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter082_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter082_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter082_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter082_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter082_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter082_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter083_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter083_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter083_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter083_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter083_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter083_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter083_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter083_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter083_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter083_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter084_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter084_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter084_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter084_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter084_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter084_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter084_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter084_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter084_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter084_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter085_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter085_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter085_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter085_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter085_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter085_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter085_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter085_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter085_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter085_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter086_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter086_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter086_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter086_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter086_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter086_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter086_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter086_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter086_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter086_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter087_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter087_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter087_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter087_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter087_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter087_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter087_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter087_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter087_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter087_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter088_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter088_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter088_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter088_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter088_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter088_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter088_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter088_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter088_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter088_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter089_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter089_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter089_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter089_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter089_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter089_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter089_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter089_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter089_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter089_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter090_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter090_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter090_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter090_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter090_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter090_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter090_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter090_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter090_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter090_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter091_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter091_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter091_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter091_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter091_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter091_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter091_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter091_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter091_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter091_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter092_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter092_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter092_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter092_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter092_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter092_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter092_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter092_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter092_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter092_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter093_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter093_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter093_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter093_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter093_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter093_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter093_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter093_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter093_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter093_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter094_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter094_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter094_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter094_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter094_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter094_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter094_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter094_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter094_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter094_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter095_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter095_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter095_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter095_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter095_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter095_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter095_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter095_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter095_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter095_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter096_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter096_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter096_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter096_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter096_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter096_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter096_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter096_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter096_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter096_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter097_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter097_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter097_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter097_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter097_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter097_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter097_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter097_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter097_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter097_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter098_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter098_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter098_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter098_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter098_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter098_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter098_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter098_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter098_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter098_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    },
+    {
+      "wav": "iter099_sent00",
+      "hypothesis": "今天天气真不错，我们去公园散步吧。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "iter099_sent01",
+      "hypothesis": "明天的会议改到下午三点，请通知所有人。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 19
+    },
+    {
+      "wav": "iter099_sent02",
+      "hypothesis": "我用ChatGPT做brainstorming session还挺有效的。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 37
+    },
+    {
+      "wav": "iter099_sent03",
+      "hypothesis": "请把这份报告发给张总，然后CC一下李四。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter099_sent04",
+      "hypothesis": "昨晚看了一部很有意思的纪录片是关于深海生物的。",
+      "latency_ms": 4,
+      "punc_count": 1,
+      "char_count": 23
+    },
+    {
+      "wav": "iter099_sent05",
+      "hypothesis": "这次出差去上海，需要提前订好机票和酒店。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 20
+    },
+    {
+      "wav": "iter099_sent06",
+      "hypothesis": "大模型推理加速这块，目前主流方案是量化和蒸馏。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 23
+    },
+    {
+      "wav": "iter099_sent07",
+      "hypothesis": "下周一有个重要的产品发布会准备好PPT了吗？",
+      "latency_ms": 2,
+      "punc_count": 1,
+      "char_count": 22
+    },
+    {
+      "wav": "iter099_sent08",
+      "hypothesis": "他们公司的技术栈主要是React加Node . js后端。",
+      "latency_ms": 2,
+      "punc_count": 2,
+      "char_count": 29
+    },
+    {
+      "wav": "iter099_sent09",
+      "hypothesis": "最新的benchmark显示Qwen3比GPT4o快了很多。",
+      "latency_ms": 1,
+      "punc_count": 1,
+      "char_count": 30
+    }
+  ],
+  "summary": {
+    "total_items": 1000,
+    "total_audio_seconds": 0.0,
+    "p50_latency_ms": 2,
+    "p95_latency_ms": 4,
+    "punctuation_density": 0.06666666666666667,
+    "cold_start_latency_ms": 9,
+    "steady_p50_latency_ms": 2,
+    "steady_p95_latency_ms": 4,
+    "swap_p50_latency_ms": 0,
+    "swap_p95_latency_ms": 0
+  },
+  "chain_steps": [],
+  "swap_records": []
+}

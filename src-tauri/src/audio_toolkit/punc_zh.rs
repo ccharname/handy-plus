@@ -12,16 +12,27 @@
 //! `<app_data_dir>/models/sherpa-onnx-punct-ct-transformer-zh-cn-2024-04-12/`
 
 use log::{info, warn};
-use once_cell::sync::OnceCell;
 use sherpa_onnx::{OfflinePunctuation, OfflinePunctuationConfig};
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
-// Global lazy-init slot.  We only need one instance; the OfflinePunctuation
-// wrapper is Send + Sync.  We guard it behind a Mutex so that the first-init
-// path is thread-safe.
-static PUNC: OnceCell<Option<Arc<OfflinePunctuation>>> = OnceCell::new();
-static INIT_MUTEX: Mutex<()> = Mutex::new(());
+/// Lifecycle state of the global punctuation model slot.
+enum PuncState {
+    /// No init attempt has been made yet (or the cache was explicitly reset).
+    NotInited,
+    /// Model was loaded successfully.
+    InitedOk(Arc<OfflinePunctuation>),
+    /// Last init attempt failed (model absent or `OfflinePunctuation::create` returned None).
+    /// Stores the path that was tried so we can detect "model has since appeared".
+    InitedFailed(std::path::PathBuf),
+}
+
+// SAFETY: OfflinePunctuation is Send + Sync (the underlying ONNX session is
+// internally thread-safe).  We wrap it in Arc so clones are cheap.
+unsafe impl Send for PuncState {}
+unsafe impl Sync for PuncState {}
+
+static PUNC: RwLock<PuncState> = RwLock::new(PuncState::NotInited);
 
 /// Returns `true` when a punctuation model directory looks complete.
 pub fn is_punc_model_present(model_dir: &Path) -> bool {
@@ -30,31 +41,57 @@ pub fn is_punc_model_present(model_dir: &Path) -> bool {
     model_dir.exists() && onnx.exists()
 }
 
-/// Lazily initialise the punctuation model from `model_dir` (once, globally).
+/// Lazily initialise the punctuation model from `model_dir`.
 ///
+/// - Returns `Some(Arc<…>)` if the model is loaded (possibly on this call).
 /// - Returns `None` when the model is absent or creation fails.
-/// - Subsequent calls always return the same cached result.
+/// - Thread-safe: concurrent callers share a single `RwLock`; the slow-path
+///   write section is double-checked to avoid redundant init.
+/// - After `reset_cached_model()` a subsequent call will re-attempt init even
+///   if a previous attempt failed — enabling "no-restart-required" model
+///   download flow.
 fn get_punc(model_dir: &Path) -> Option<Arc<OfflinePunctuation>> {
-    // Fast path: already initialised.
-    if let Some(cached) = PUNC.get() {
-        return cached.clone();
-    }
-
-    // Slow path: first caller initialises under lock.
-    let _guard = INIT_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
-
-    // Double-checked after acquiring the lock.
-    if let Some(cached) = PUNC.get() {
-        return cached.clone();
-    }
-
     let onnx_path = model_dir.join("model.int8.onnx");
+
+    // ── Fast path (read lock) ────────────────────────────────────────────────
+    {
+        let guard = PUNC.read().unwrap_or_else(|e| e.into_inner());
+        match &*guard {
+            PuncState::InitedOk(arc) => return Some(arc.clone()),
+            PuncState::InitedFailed(tried) => {
+                // Only retry if the model file has since appeared.
+                if !onnx_path.exists() || tried == &onnx_path {
+                    // Model still absent and same path → no point retrying.
+                    return None;
+                }
+                // Fall through to slow path — model file appeared since last try.
+            }
+            PuncState::NotInited => {
+                // Fall through to slow path.
+            }
+        }
+    }
+
+    // ── Slow path (write lock, double-checked) ───────────────────────────────
+    let mut guard = PUNC.write().unwrap_or_else(|e| e.into_inner());
+
+    // Double-check: another thread may have inited between our read and write.
+    match &*guard {
+        PuncState::InitedOk(arc) => return Some(arc.clone()),
+        PuncState::InitedFailed(tried) => {
+            if !onnx_path.exists() || tried == &onnx_path {
+                return None;
+            }
+        }
+        PuncState::NotInited => {}
+    }
+
     if !onnx_path.exists() {
         warn!(
             "punc_zh: model not found at {}; skipping punctuation",
             onnx_path.display()
         );
-        let _ = PUNC.set(None);
+        *guard = PuncState::InitedFailed(onnx_path);
         return None;
     }
 
@@ -69,10 +106,10 @@ fn get_punc(model_dir: &Path) -> Option<Arc<OfflinePunctuation>> {
         Some(p) => {
             info!(
                 "punc_zh: CT-Transformer model loaded from {}",
-                onnx_path.display()
+                model_dir.display()
             );
             let arc = Arc::new(p);
-            let _ = PUNC.set(Some(arc.clone()));
+            *guard = PuncState::InitedOk(arc.clone());
             Some(arc)
         }
         None => {
@@ -80,7 +117,7 @@ fn get_punc(model_dir: &Path) -> Option<Arc<OfflinePunctuation>> {
                 "punc_zh: OfflinePunctuation::create failed for {}",
                 onnx_path.display()
             );
-            let _ = PUNC.set(None);
+            *guard = PuncState::InitedFailed(onnx_path);
             None
         }
     }
@@ -107,13 +144,86 @@ pub fn add_punctuation(model_dir: &Path, text: &str) -> Result<String, String> {
         .ok_or_else(|| "punc_zh: add_punctuation returned None".to_string())
 }
 
-/// Resets the cached punctuation model instance.
+/// Reset the cached punctuation model state to `NotInited`.
 ///
-/// Called after a model is deleted so the next transcription re-checks
-/// whether the model is available.
+/// The next call to `add_punctuation` (or `get_punc`) will re-attempt model
+/// initialization from the model directory passed at that time.  Call this
+/// after a model download/extraction completes so the app can use the model
+/// immediately without requiring a restart.
 pub fn reset_cached_model() {
-    // OnceCell does not support reset, but we can log a warning.
-    // In practice the user must restart the app after deleting the punc model
-    // for the cache to be cleared — acceptable for a post-MVP feature.
-    warn!("punc_zh: reset_cached_model called; restart the app to reload the model");
+    let mut guard = PUNC.write().unwrap_or_else(|e| e.into_inner());
+    *guard = PuncState::NotInited;
+    info!("punc_zh: model cache reset; next call will re-init");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+    // Serialize tests that mutate the global PUNC static so they don't race
+    // each other (Rust's test runner can run them concurrently by default).
+    use std::sync::Mutex;
+    static TEST_LOCK: Mutex<()> = Mutex::new(());
+
+    /// Helper: read the raw state variant name for assertions.
+    fn state_variant() -> &'static str {
+        let guard = PUNC.read().unwrap_or_else(|e| e.into_inner());
+        match &*guard {
+            PuncState::NotInited => "NotInited",
+            PuncState::InitedOk(_) => "InitedOk",
+            PuncState::InitedFailed(_) => "InitedFailed",
+        }
+    }
+
+    #[test]
+    fn reset_clears_cache() {
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        // 1. Drive the cache into InitedFailed via a nonexistent model dir.
+        let bogus_dir = PathBuf::from("/nonexistent/punc_model_test_dir_xyz");
+        let _ = get_punc(&bogus_dir); // sets InitedFailed
+        assert_eq!(
+            state_variant(),
+            "InitedFailed",
+            "expected InitedFailed after attempting a missing model"
+        );
+
+        // 2. reset_cached_model() should transition back to NotInited.
+        reset_cached_model();
+        assert_eq!(
+            state_variant(),
+            "NotInited",
+            "expected NotInited after reset"
+        );
+    }
+
+    #[test]
+    fn starts_not_inited_or_failed() {
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        // After a reset we must be NotInited.
+        reset_cached_model();
+        assert_eq!(state_variant(), "NotInited");
+    }
+
+    #[test]
+    fn failed_path_not_retried_without_reset() {
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        reset_cached_model();
+        let bogus = PathBuf::from("/nonexistent/punc_model_stable_xyz");
+        // First call → InitedFailed
+        assert!(get_punc(&bogus).is_none());
+        assert_eq!(
+            state_variant(),
+            "InitedFailed",
+            "expected InitedFailed after attempting a missing model"
+        );
+        // Second call with same bogus path → still None, no infinite loop
+        assert!(get_punc(&bogus).is_none());
+        assert_eq!(
+            state_variant(),
+            "InitedFailed",
+            "expected InitedFailed on repeated attempt with same path"
+        );
+        // Clean up for other tests
+        reset_cached_model();
+    }
 }

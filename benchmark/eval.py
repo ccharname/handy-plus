@@ -31,6 +31,90 @@ from typing import Optional
 
 
 # ---------------------------------------------------------------------------
+# Hotword recall helpers
+# ---------------------------------------------------------------------------
+
+def parse_hotwords_from_reference(lines: list[str]) -> list[str]:
+    """Extract hotwords from '# hotwords: word1,word2,word3' header lines."""
+    hotwords: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.lower().startswith("# hotwords:"):
+            words_part = stripped[len("# hotwords:"):].strip()
+            hotwords.extend(w.strip() for w in words_part.split(",") if w.strip())
+    return hotwords
+
+
+def compute_hotword_recall(
+    items: list[dict],
+    references: list[str],
+    hotwords: list[str],
+) -> Optional[dict]:
+    """
+    For each reference line that contains a hotword, check whether the
+    corresponding hypothesis also contains it.
+
+    Returns a dict with per-hotword recall and an overall recall score,
+    or None if no hotwords or no reference data.
+    """
+    if not hotwords or not references:
+        return None
+
+    # Filter out header lines from references
+    ref_lines = [l for l in references if not l.strip().startswith("#")]
+
+    per_word: dict[str, dict[str, int]] = {
+        hw: {"total": 0, "recalled": 0} for hw in hotwords
+    }
+
+    for i, item in enumerate(items):
+        if i >= len(ref_lines):
+            break
+        ref = ref_lines[i].strip()
+        hyp = item.get("hypothesis", "")
+        ref_lower = ref.lower()
+        hyp_lower = hyp.lower()
+        for hw in hotwords:
+            hw_lower = hw.lower()
+            if hw_lower in ref_lower:
+                per_word[hw]["total"] += 1
+                if hw_lower in hyp_lower:
+                    per_word[hw]["recalled"] += 1
+
+    total_occ = sum(v["total"] for v in per_word.values())
+    total_recalled = sum(v["recalled"] for v in per_word.values())
+    overall = (total_recalled / total_occ) if total_occ > 0 else None
+
+    return {
+        "overall": overall,
+        "total_occurrences": total_occ,
+        "total_recalled": total_recalled,
+        "per_word": per_word,
+    }
+
+
+def format_hotword_recall_section(recall: dict) -> list[str]:
+    """Render hotword recall as markdown lines."""
+    lines: list[str] = []
+    lines.append("## Hotword Recall")
+    lines.append("")
+    overall = recall["overall"]
+    overall_str = f"{overall:.4f}" if overall is not None else "N/A (no occurrences)"
+    lines.append(f"Overall recall: **{overall_str}**  "
+                 f"({recall['total_recalled']}/{recall['total_occurrences']} occurrences)")
+    lines.append("")
+    lines.append("| Hotword | Occurrences | Recalled | Recall |")
+    lines.append("| ------- | ----------- | -------- | ------ |")
+    for hw, counts in sorted(recall["per_word"].items()):
+        tot = counts["total"]
+        rec = counts["recalled"]
+        rate = f"{rec / tot:.4f}" if tot > 0 else "N/A"
+        lines.append(f"| `{hw}` | {tot} | {rec} | {rate} |")
+    lines.append("")
+    return lines
+
+
+# ---------------------------------------------------------------------------
 # WER helpers
 # ---------------------------------------------------------------------------
 
@@ -94,7 +178,11 @@ def load_report(path: str) -> dict:
 # Single-report display
 # ---------------------------------------------------------------------------
 
-def display_single(report: dict, reference_path: Optional[str] = None) -> str:
+def display_single(
+    report: dict,
+    reference_path: Optional[str] = None,
+    hotword_recall: bool = False,
+) -> str:
     lines: list[str] = []
 
     preset_id = report.get("preset_id", "?")
@@ -137,13 +225,15 @@ def display_single(report: dict, reference_path: Optional[str] = None) -> str:
             lines.append(f"> WARNING: reference file not found: {reference_path}")
 
     if references and items:
+        # Filter out header lines for WER/CER computation
+        ref_lines_plain = [l for l in references if not l.strip().startswith("#")]
         total_cer = 0.0
         total_wer_j: Optional[float] = 0.0
         counted = 0
         for i, item in enumerate(items):
-            if i >= len(references) or not references[i].strip():
+            if i >= len(ref_lines_plain) or not ref_lines_plain[i].strip():
                 continue
-            ref = references[i].strip()
+            ref = ref_lines_plain[i].strip()
             hyp = item.get("hypothesis", "")
             total_cer += compute_cer(ref, hyp)
             wj = compute_wer_jiwer(ref, hyp)
@@ -166,6 +256,17 @@ def display_single(report: dict, reference_path: Optional[str] = None) -> str:
             else:
                 lines.append(f"| WER    | N/A    | install jiwer for WER |")
             lines.append(f"| Files evaluated | {counted}/{len(items)} | |")
+            lines.append("")
+
+    # Hotword recall (only when --hotword-recall flag is set and reference provided)
+    if hotword_recall and references and items:
+        detected_hotwords = parse_hotwords_from_reference(references)
+        if detected_hotwords:
+            recall = compute_hotword_recall(items, references, detected_hotwords)
+            if recall is not None:
+                lines.extend(format_hotword_recall_section(recall))
+        else:
+            lines.append("> NOTE: --hotword-recall enabled but no `# hotwords:` header found in reference.")
             lines.append("")
 
     # Sample hypotheses
@@ -287,6 +388,14 @@ def main() -> None:
         default=None,
         help="Path to reference.txt (one line per WAV, sorted by filename). Used for CER/WER.",
     )
+    parser.add_argument(
+        "--hotword-recall",
+        action="store_true",
+        help=(
+            "Compute hotword recall metric. Requires --reference; reference file may contain "
+            "'# hotwords: word1,word2,word3' header line(s) listing words to track."
+        ),
+    )
     args = parser.parse_args()
 
     # Expand any glob patterns (useful when the shell doesn't expand them, e.g. Windows)
@@ -335,7 +444,11 @@ def main() -> None:
                 file=sys.stderr,
             )
     else:
-        md = display_single(loaded[0], reference_path=args.reference)
+        md = display_single(
+            loaded[0],
+            reference_path=args.reference,
+            hotword_recall=args.hotword_recall,
+        )
         print(md)
 
         md_path = first_report_dir / f"{loaded[0].get('preset_id', 'report')}_{timestamp}.md"
