@@ -660,6 +660,11 @@ pub struct AppSettings {
     /// (i.e. manually changed one or more settings after applying a preset).
     #[serde(default)]
     pub active_preset_id: Option<String>,
+    /// Tracks which one-time migrations have been applied. Keys are migration
+    /// identifiers (e.g. "v_0_8_10_enable_builtins"); value=true means the
+    /// migration ran. Missing key = not applied yet.
+    #[serde(default)]
+    pub migration_applied: HashMap<String, bool>,
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -1037,6 +1042,48 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     changed
 }
 
+/// One-time migration: v0.8.10 made builtin_chat/writing/code/claude_code
+/// enabled-by-default, but existing users have these stuck at false from
+/// before. Force-enable them once if the user has never explicitly toggled.
+const MIGRATION_V_0_8_10_ENABLE_BUILTINS: &str = "v_0_8_10_enable_builtins";
+
+pub fn ensure_v_0_8_10_enable_builtins_migration(settings: &mut AppSettings) -> bool {
+    if settings
+        .migration_applied
+        .get(MIGRATION_V_0_8_10_ENABLE_BUILTINS)
+        .copied()
+        .unwrap_or(false)
+    {
+        return false; // already applied
+    }
+
+    const TARGETS: &[&str] = &[
+        "builtin_code",
+        "builtin_chat",
+        "builtin_writing",
+        "builtin_claude_code",
+    ];
+
+    let mut changed = false;
+    for profile in settings.app_profiles.iter_mut() {
+        if TARGETS.contains(&profile.id.as_str()) && !profile.enabled {
+            profile.enabled = true;
+            changed = true;
+            log::info!(
+                "[migration v0.8.10] force-enabled builtin profile '{}'",
+                profile.id
+            );
+        }
+    }
+
+    settings
+        .migration_applied
+        .insert(MIGRATION_V_0_8_10_ENABLE_BUILTINS.to_string(), true);
+    // Always return true so migration_applied flag itself gets persisted
+    let _ = changed;
+    true
+}
+
 /// Ensure app_profiles is populated for users upgrading from a version before Power Mode.
 pub fn ensure_app_profiles_defaults(settings: &mut AppSettings) -> bool {
     if settings.app_profiles.is_empty() {
@@ -1175,6 +1222,7 @@ pub fn get_default_settings() -> AppSettings {
         punc_zh_enabled: default_punc_zh_enabled(),
         hotwords_boost: default_hotwords_boost(),
         active_preset_id: None,
+        migration_applied: HashMap::new(),
     }
 }
 
@@ -1247,6 +1295,7 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
 
     let mut changed = ensure_post_process_defaults(&mut settings);
     changed |= ensure_app_profiles_defaults(&mut settings);
+    changed |= ensure_v_0_8_10_enable_builtins_migration(&mut settings);
     if changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
@@ -1273,6 +1322,7 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
 
     let mut changed = ensure_post_process_defaults(&mut settings);
     changed |= ensure_app_profiles_defaults(&mut settings);
+    changed |= ensure_v_0_8_10_enable_builtins_migration(&mut settings);
     if changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
@@ -1310,6 +1360,75 @@ pub fn get_history_limit(app: &AppHandle) -> usize {
 pub fn get_recording_retention_period(app: &AppHandle) -> RecordingRetentionPeriod {
     let settings = get_settings(app);
     settings.recording_retention_period
+}
+
+#[cfg(test)]
+mod migration_tests {
+    use super::*;
+
+    fn build_settings_with_disabled_builtins() -> AppSettings {
+        let mut s = get_default_settings();
+        for p in s.app_profiles.iter_mut() {
+            p.enabled = false;
+        }
+        s.migration_applied = HashMap::new();
+        s
+    }
+
+    #[test]
+    fn migration_enables_target_builtins() {
+        let mut s = build_settings_with_disabled_builtins();
+        ensure_v_0_8_10_enable_builtins_migration(&mut s);
+
+        let enabled_ids: Vec<&str> = s
+            .app_profiles
+            .iter()
+            .filter(|p| p.enabled)
+            .map(|p| p.id.as_str())
+            .collect();
+
+        assert!(enabled_ids.contains(&"builtin_code"));
+        assert!(enabled_ids.contains(&"builtin_chat"));
+        assert!(enabled_ids.contains(&"builtin_writing"));
+        assert!(enabled_ids.contains(&"builtin_claude_code"));
+        // builtin_default_fallback should remain disabled (no matchers, won't fire)
+        assert!(
+            !s.app_profiles
+                .iter()
+                .find(|p| p.id == "builtin_default_fallback")
+                .unwrap()
+                .enabled
+        );
+
+        // migration_applied should be recorded
+        assert_eq!(
+            s.migration_applied.get("v_0_8_10_enable_builtins"),
+            Some(&true)
+        );
+    }
+
+    #[test]
+    fn migration_idempotent() {
+        let mut s = build_settings_with_disabled_builtins();
+        ensure_v_0_8_10_enable_builtins_migration(&mut s);
+
+        // user explicitly disables builtin_code after migration
+        s.app_profiles
+            .iter_mut()
+            .find(|p| p.id == "builtin_code")
+            .unwrap()
+            .enabled = false;
+
+        // run migration again — should NOT re-enable (already marked applied)
+        ensure_v_0_8_10_enable_builtins_migration(&mut s);
+
+        let code_profile = s
+            .app_profiles
+            .iter()
+            .find(|p| p.id == "builtin_code")
+            .unwrap();
+        assert!(!code_profile.enabled, "migration should be idempotent");
+    }
 }
 
 #[cfg(test)]
