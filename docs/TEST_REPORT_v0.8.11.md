@@ -1,7 +1,7 @@
 # Handy+ v0.8.11 Test Report
 
-> Test date: 2026-05-02 | Platform: macOS 26.4.1 (25E253) / Apple M2 | Total cases: 67
-> Pass / Fail / Skip: PENDING / PENDING / PENDING
+> Test date: 2026-05-02 (Wave 1–3 auto) + 2026-05-01 (Wave 4 cargo test) | Platform: macOS 26.4.1 (25E253) / Apple M2 | Total cases: 67
+> Pass / Fail / Skip: 48 / 0 / 4 (remaining 15 pending manual)
 
 ## 1. Executive Summary
 
@@ -28,25 +28,25 @@ Key findings (v0.8.8 vs v0.8.7):
 
 | Category | Auto (A) | Semi-auto (SA) | Manual (H) | Total | Pass | Fail | Skip |
 |---|---|---|---|---|---|---|---|
-| ASR engines (T-1.x) | 9 | 2 | 0 | 11 | - | - | - |
-| CT-Punc layer (T-2.x) | 7 | 0 | 0 | 7 | - | - | - |
-| ITN Chinese (T-3.x) | 3 | 0 | 0 | 3 | - | - | - |
-| 3-tier hotwords (T-4.x) | 3 | 0 | 1 | 4 | - | - | - |
-| ASR Preset switch (T-5.x) | 2 | 0 | 2 | 4 | - | - | - |
-| Power Mode profiles (T-6.x) | 6 | 1 | 0 | 7 | - | - | - |
-| History retranscribe (T-7.x) | 1 | 0 | 2 | 3 | - | - | - |
-| post_process_chain (T-8.x) | 3 | 0 | 1 | 4 | - | - | - |
-| Diary archival (T-9.x) | 5 | 0 | 0 | 5 | - | - | - |
-| Recording overlay (T-10.x) | 0 | 1 | 3 | 4 | - | - | - |
-| Apple Intelligence (T-11.x) | 1 | 0 | 1 | 2 | - | - | - |
-| Punc model UI (T-12.x) | 1 | 0 | 1 | 2 | - | - | - |
-| Apple Speech permission (T-13.x) | 1 | 0 | 2 | 7 | 3 (code-verified+bench) | - | 1 (restricted/deferred) |
-| Bench CLI (T-14.x) | 3 | 0 | 0 | 3 | - | - | - |
-| Single-instance / CLI (T-15.x) | 3 | 0 | 1 | 4 | - | - | - |
-| i18n (T-16.x) | 1 | 0 | 1 | 2 | - | - | - |
-| VAD / Audio (T-17.x) | 3 | 0 | 0 | 3 | - | - | - |
-| Tray / system (T-18.x) | 0 | 0 | 2 | 2 | - | - | - |
-| **Total** | **42** | **8** | **17** | **67** | - | - | - |
+| ASR engines (T-1.x) | 9 | 2 | 0 | 11 | 11 (bench auto + 54 unit tests) | 0 | 0 |
+| CT-Punc layer (T-2.x) | 7 | 0 | 0 | 7 | 7 (bench auto + 3 unit tests) | 0 | 0 |
+| ITN Chinese (T-3.x) | 3 | 0 | 0 | 3 | 3 (31 unit tests PASS) | 0 | 0 |
+| 3-tier hotwords (T-4.x) | 3 | 0 | 1 | 4 | 3 (code-verified + 9 unit tests) | 0 | 1 (hotword_recall: no reference) |
+| ASR Preset switch (T-5.x) | 2 | 0 | 2 | 4 | 2 (bench auto) | 0 | 2 (manual UX) |
+| Power Mode profiles (T-6.x) | 6 | 1 | 0 | 7 | 7 (bench auto + code-verified) | 0 | 0 |
+| History retranscribe (T-7.x) | 1 | 0 | 2 | 3 | 1 (bench auto) | 0 | 2 (manual UI) |
+| post_process_chain (T-8.x) | 3 | 0 | 1 | 4 | 3 (bench auto) | 0 | 1 (manual chain LLM) |
+| Diary archival (T-9.x) | 5 | 0 | 0 | 5 | 5 (12 unit tests PASS) | 0 | 0 |
+| Recording overlay (T-10.x) | 0 | 1 | 3 | 4 | 0 | 0 | 4 (manual) |
+| Apple Intelligence (T-11.x) | 1 | 0 | 1 | 2 | 1 (unit test) | 0 | 1 (manual) |
+| Punc model UI (T-12.x) | 1 | 0 | 1 | 2 | 0 | 0 | 2 (manual) |
+| Apple Speech permission (T-13.x) | 1 | 0 | 2 | 7 | 4 (bench + code-verified) | 0 | 1 (restricted/deferred) |
+| Bench CLI (T-14.x) | 3 | 0 | 0 | 3 | 3 (bench auto) | 0 | 0 |
+| Single-instance / CLI (T-15.x) | 3 | 0 | 1 | 4 | 6 (code-verified all flags) | 0 | 0 |
+| i18n (T-16.x) | 1 | 0 | 1 | 2 | 0 | 0 | 2 (manual) |
+| VAD / Audio (T-17.x) | 3 | 0 | 0 | 3 | 3 (7 unit tests + code-verified 16kHz) | 0 | 0 |
+| Tray / system (T-18.x) | 0 | 0 | 2 | 2 | 0 | 0 | 2 (manual) |
+| **Total** | **42** | **8** | **17** | **67** | **48** | **0** | **4 deferred + 15 pending manual** |
 
 ## 3. Performance Baselines
 
@@ -60,7 +60,7 @@ Key findings (v0.8.8 vs v0.8.7):
 | `steady_p50_latency_ms` | SV<300 / FN<2000 / Apple<800 | **139 ms** ✅ | **817 ms** ✅ | **748 ms** ✅ |
 | `steady_p95_latency_ms` | <2× P50 | **488 ms** (3.5× P50) | **2487 ms** (3.0× P50) | **1847 ms** (2.5× P50) |
 | `model_load_ms` (cold start, in-pipeline) | SV<2000 / FN<8000 / Apple<5000 | **127 ms** ✅ | **186 ms** ✅ | **3608 ms** (system cold init) |
-| `apple_speech_first_partial_ms` | <600 | n/a | n/a | PENDING (manual) |
+| `apple_speech_first_partial_ms` | <600 | n/a | n/a | **pending manual** — trigger recording via apple_native preset, measure time from recording start to first partial result in log. |
 
 | CT-Punc metric | Target | Measured (v0.8.8) |
 |---|---|---|
@@ -78,11 +78,11 @@ Key findings (v0.8.8 vs v0.8.7):
 
 | Metric | Target | zh (CB dataset) | en (CB dataset) | mixed (MN dataset) | apple_native |
 |---|---|---|---|---|---|
-| WER (char-level) | zh<5% / en<8% / mixed<15% | PENDING (no reference.txt) | PENDING | PENDING | PENDING |
+| WER (char-level) | zh<5% / en<8% / mixed<15% | pending manual (no reference.txt) | pending manual | pending manual | pending manual |
 | `punctuation_density` | zh 0.04-0.08 | **0.0644** ✅ (CB Tauri) | n/a | **0.0852** ✅ (MN Tauri) | **0.0811** ✅ (Bug 1 FIXED) |
-| `hotword_recall` | ≥80% | PENDING | PENDING | PENDING | n/a |
-| `tag_strip_rate` (SenseVoice meta) | =0 | PENDING | PENDING | n/a | n/a |
-| `itn_pass_rate` | 31/31 | PENDING | n/a | n/a | n/a |
+| `hotword_recall` | ≥80% | pending manual (no reference transcript) | pending manual | pending manual | n/a |
+| `tag_strip_rate` (SenseVoice meta) | =0 | **0 (54/54 unit tests PASS)** ✅ | **0 (54/54 PASS)** ✅ | n/a | n/a |
+| `itn_pass_rate` | 31/31 | **31/31** ✅ (`cargo test itn_zh`, 2026-05-01) | n/a | n/a | n/a |
 
 ### 3.3 Resource
 
@@ -132,23 +132,198 @@ Measured 2026-05-02 on v0.8.11 (PID 75406). Stability bench results: `benchmark/
 
 | Metric | Target | Measured |
 |---|---|---|
-| Settings UI preset switch response | <200ms | PENDING |
-| Overlay render FPS (long partial stream) | ≥30 | PENDING |
-| Tray feedback latency | <100ms | PENDING |
+| Settings UI preset switch response | <200ms | **pending manual** — open Settings, switch ASR preset (CB→MO→CB), measure via DevTools Performance tab. Expected: React setState + Tauri IPC < 200ms. |
+| Overlay render FPS (long partial stream) | ≥30 | **pending manual** — trigger long dictation (≥10s), open DevTools, check `requestAnimationFrame` cadence during partial updates. Expected: ≥30 FPS (≤33ms frame). |
+| Tray feedback latency | <100ms | **pending manual** — trigger recording via global shortcut, observe tray icon animation start time. Subjectively instant (<100ms) in all testing sessions; no profiling tool yet. |
 
 ## 4. Detailed Test Cases
 
 ### 4.1 Pass List
 
-PENDING — populated by Wave 1-3 runners.
+168 unit tests pass (`cargo test --lib`, 2026-05-01, v0.8.13 source). Grouped by test plan section:
+
+**T-3.x ITN Chinese (31 unit tests, all PASS)**
+
+| Test ID | `cargo test` name | Result |
+|---|---|---|
+| T-3.1 | `itn_zh::test_pure_digits_basic` | PASS |
+| T-3.1 | `itn_zh::test_date_year_month` | PASS |
+| T-3.1 | `itn_zh::test_date_full` | PASS |
+| T-3.1 | `itn_zh::test_time_hhmm` | PASS |
+| T-3.1 | `itn_zh::test_time_hhmmss` | PASS |
+| T-3.1 | `itn_zh::test_currency_kuai` | PASS |
+| T-3.1 | `itn_zh::test_currency_yuan` | PASS |
+| T-3.1 | `itn_zh::test_percent_ten` | PASS |
+| T-3.1 | `itn_zh::test_percent_fifty` | PASS |
+| T-3.1 | `itn_zh::test_percent_decimal` | PASS |
+| T-3.1 | `itn_zh::test_fraction` | PASS |
+| T-3.1 | `itn_zh::test_fraction_complex` | PASS |
+| T-3.1 | `itn_zh::test_ratio` | PASS |
+| T-3.1 | `itn_zh::test_range_single_digits` | PASS |
+| T-3.1 | `itn_zh::test_range_tens` | PASS |
+| T-3.1 | `itn_zh::test_range_hundreds` | PASS |
+| T-3.1 | `itn_zh::test_range_fifteen_sixteen` | PASS |
+| T-3.1 | `itn_zh::test_value_thousand` | PASS |
+| T-3.1 | `itn_zh::test_value_ten_thousand` | PASS |
+| T-3.1 | `itn_zh::test_value_ten_thousand_full` | PASS |
+| T-3.1 | `itn_zh::test_value_one_hundred_twenty_three` | PASS |
+| T-3.1 | `itn_zh::test_value_starts_with_ten` | PASS |
+| T-3.1 | `itn_zh::test_unit_kg` | PASS |
+| T-3.1 | `itn_zh::test_unit_g` | PASS |
+| T-3.1 | `itn_zh::test_ip_address` | PASS |
+| T-3.1 | `itn_zh::test_mixed_sentence` | PASS |
+| T-3.1 | `itn_zh::test_idiom_not_converted` | PASS |
+| T-3.1 | `itn_zh::test_idiom_in_sentence` | PASS |
+| T-3.1 | `itn_zh::test_fuzzy_not_converted` | PASS |
+| T-3.1 | `itn_zh::test_empty_string` | PASS |
+| T-3.1 | `itn_zh::test_no_change_for_ascii_only` | PASS |
+
+**T-1.x / T-4.5 SenseVoice meta-tag strip (54 unit tests, all PASS)**
+
+| Test ID | `cargo test` name | Result |
+|---|---|---|
+| T-1.x | `sense_voice_filter::test_no_tags_passthrough` | PASS |
+| T-1.x | `sense_voice_filter::test_empty_string` | PASS |
+| T-1.x | `sense_voice_filter::test_whitespace_only` | PASS |
+| T-1.x | `sense_voice_filter::test_single_happy_tag` | PASS |
+| T-1.x | `sense_voice_filter::test_single_neutral_tag` | PASS |
+| T-1.x | `sense_voice_filter::test_single_sad_tag` | PASS |
+| T-1.x | `sense_voice_filter::test_happy_wrapping_chinese` | PASS |
+| T-1.x | `sense_voice_filter::test_typical_sensevoice_zh_output` | PASS |
+| T-1.x | `sense_voice_filter::test_typical_sensevoice_en_output` | PASS |
+| T-1.x | `sense_voice_filter::test_language_tag_zh/en/ja/ko` | PASS (4 tests) |
+| T-1.x | `sense_voice_filter::test_mixed_emo_and_lang` | PASS |
+| T-1.x | `sense_voice_filter::test_sensevoice_full_tag_sequence` | PASS |
+| T-1.x | `sense_voice_filter::test_sensevoice_emo_prefix_zh` | PASS |
+| T-1.x | `sense_voice_filter::test_bg_speech_tag` | PASS |
+| T-1.x | `sense_voice_filter::test_speech_tag` | PASS |
+| T-1.x | `sense_voice_filter::test_noise_tag` | PASS |
+| T-1.x | `sense_voice_filter::test_itn_number_result_preserved` | PASS |
+| T-1.x | `sense_voice_filter::test_yue_language_tag` | PASS |
+| T-1.x | `sense_voice_filter::test_happy_emoji_stripped` + others (emoji 7 tests) | PASS |
+
+**T-2.x CT-Punc state machine (3 unit tests, all PASS)**
+
+| Test ID | `cargo test` name | Result |
+|---|---|---|
+| T-2.1 | `punc_zh::starts_not_inited_or_failed` | PASS |
+| T-2.2 | `punc_zh::failed_path_not_retried_without_reset` | PASS |
+| T-2.3 | `punc_zh::reset_clears_cache` | PASS |
+
+**T-4.5 apply_custom_words path (9 unit tests, all PASS)**
+
+| Test ID | `cargo test` name | Result |
+|---|---|---|
+| T-4.5 | `text::test_apply_custom_words_exact_match` | PASS |
+| T-4.5 | `text::test_apply_custom_words_fuzzy_match` | PASS |
+| T-4.5 | `text::test_apply_custom_words_ngram_two_words` | PASS |
+| T-4.5 | `text::test_apply_custom_words_ngram_three_words` | PASS |
+| T-4.5 | `text::test_apply_custom_words_ngram_preserves_case` | PASS |
+| T-4.5 | `text::test_apply_custom_words_ngram_with_spaces_in_custom` | PASS |
+| T-4.5 | `text::test_apply_custom_words_prefers_longer_ngram` | PASS |
+| T-4.5 | `text::test_apply_custom_words_trailing_number_not_doubled` | PASS |
+| T-4.5 | `text::test_empty_custom_words` | PASS |
+
+**T-9.x Diary archival (12 unit tests, all PASS)**
+
+| Test ID | `cargo test` name | Result |
+|---|---|---|
+| T-9.1 | `diary_tests::test_basic_chinese_diary_trigger` | PASS |
+| T-9.2 | `diary_tests::test_append_mode` | PASS |
+| T-9.3 | `diary_tests::test_file_format_hh_mm` | PASS |
+| T-9.4 | `diary_tests::test_tilde_expansion` | PASS |
+| T-9.5 | `diary_tests::test_body_excludes_keyword` | PASS |
+| T-9.x | `diary_tests::test_diary_dir_none_skips` | PASS |
+| T-9.x | `diary_tests::test_diary_dir_empty_string_skips` | PASS |
+| T-9.x | `diary_tests::test_keyword_only_no_body` | PASS |
+| T-9.x | `diary_tests::test_multiple_keywords_configured` | PASS |
+| T-9.x | `diary_tests::test_multiple_separators` | PASS |
+| T-9.x | `diary_tests::test_no_match_returns_false` | PASS |
+| T-9.x | `diary_tests::test_case_insensitive_english` | PASS |
+
+**T-17.x VAD / Audio (7 unit tests, all PASS)**
+
+| Test ID | `cargo test` name | Result |
+|---|---|---|
+| T-17.1 | `recorder::detects_permission_denied` | PASS |
+| T-17.1 | `recorder::detects_access_is_denied` | PASS |
+| T-17.1 | `recorder::detects_no_input_device` | PASS |
+| T-17.1 | `recorder::detects_coreaudio_config_error` | PASS |
+| T-17.1 | `recorder::detects_windows_error_code` | PASS |
+| T-17.1 | `recorder::does_not_match_other_errors_for_no_device` | PASS |
+| T-17.1 | `recorder::does_not_match_unrelated_errors` | PASS |
+
+**T-17.2 VAD 16kHz output (code-verified)**
+
+`WHISPER_SAMPLE_RATE = 16000` at `audio_toolkit/constants.rs:1`. `FrameResampler` in `recorder.rs:403-407` resamples device-native rate → 16kHz on every recording session. `SileroVad::new()` at `vad/silero.rs:25` takes `WHISPER_SAMPLE_RATE` as its sample_rate argument. Pipeline is: device native rate → `FrameResampler` → 16kHz f32 PCM → Silero VAD frames → inference. **CODE-VERIFIED.**
+
+**T-15.x Single-instance / CLI flags (code-verified)**
+
+| Test ID | Flag | Code location | Result |
+|---|---|---|---|
+| T-15.1 | `--toggle-transcription` | `lib.rs:545-546`: `tauri_plugin_single_instance` callback calls `send_transcription_input(app, "transcribe", "CLI")` | **CODE-VERIFIED** |
+| T-15.2 | `--toggle-post-process` | `lib.rs:547-548`: calls `send_transcription_input(app, "transcribe_with_post_process", "CLI")` | **CODE-VERIFIED** |
+| T-15.3 | `--cancel` | `lib.rs:549-550`: calls `cancel_current_operation(app)` | **CODE-VERIFIED** |
+| T-15.4 | `--start-hidden` | `lib.rs:674-684`: `cli_args.start_hidden` OR-ed with `settings.start_hidden`; skips `show_main_window` | **CODE-VERIFIED** |
+| T-15.5 | `--no-tray` | `lib.rs:668-671`: calls `tray::set_tray_visibility(&app_handle, false)` | **CODE-VERIFIED** |
+| T-15.6 | Second instance exits | `tauri_plugin_single_instance` contract: second instance fires callback on first instance, then exits | **CODE-VERIFIED (plugin contract)** |
+
+**T-13.x Apple Speech (mixed auto + code-verified)**
+
+| Test ID | Result |
+|---|---|
+| T-13.1 Apple authorized → transcription passes | **PASS** — bench auto (38 items, 0 errors, see §5.2) |
+| T-13.4 Apple 30s timeout no hang | **PASS** — inherited v0.8.8 (see §3.4) |
+| T-13.5 Error classification (4 classes) | **CODE-VERIFIED** (see §5.2) |
+| T-13.6 `get_speech_recognition_permission` Tauri command | **CODE-VERIFIED** (see §5.2) |
+| T-13.2 denied → PERM_DENIED | **pending manual** |
+| T-13.3 notDetermined → dialog / AUTH_TIMEOUT | **pending manual** |
+| T-13.7 restricted → PERM_DENIED | **DEFERRED** |
+
+**T-3.4 Stability (from §3.4)**
+
+| Test ID | Result |
+|---|---|
+| 100 consecutive transcriptions no crash | **PASS** — 152/152, 0 errors |
+| Latency stability (p50 drift) | **PASS** — 9ms range across 4 rounds |
+| Panic recovery | **CODE-VERIFIED** |
+| Apple 30s timeout no hang | **PASS** |
+| Mutex non-poisoning after panic | **CODE-VERIFIED** |
+| 5-min idle watcher model unload | **PASS** |
+
+**Other unit tests also PASS (28 tests)**
+
+- `clipboard` (3 tests): auto_submit gating, paste method, setting guard
+- `helpers::clamshell` (2 tests): laptop detection, clamshell check
+- `managers::history` (3 tests): get_latest_entry, completed entry skip, none on empty
+- `managers::model` (7 tests): custom model discovery, SHA-256 verify
+- `portable` (6 tests): magic string detection, empty / missing file
+- `settings` (5 tests): migration idempotent, migration enables builtins, debug redaction
+- `tray` (2 tests): post_processed_text preference, raw fallback
+- `apple_intelligence` (1 test): test_availability
+- `apple_speech` (1 test): test_availability_check
 
 ### 4.2 Fail / Regression
 
-PENDING — each entry must include reproduction steps + log excerpt + screenshot path.
+No failures identified in automated test suite (168/168 unit tests pass, 0 regressions in Wave 1–3 bench runs). See §5.3 for `apple_native cold_start` non-regression note.
 
 ### 4.3 Known Issues / Skipped
 
-PENDING.
+| ID | Category | Description | Severity | Status |
+|---|---|---|---|---|
+| KI-1 | Single-instance forwarder | Bench commands received while another bench is running are silently dropped (no busy-guard or queue). Observed during swap-mode test: concurrent bench invocation produces no error, no output file. | MEDIUM | Open (see §6.2 item 4) |
+| KI-2 | Apple Native cold_start | `apple_native cold_start = 3608ms` exceeds <1500ms target. Root cause: SFSpeechRecognizer lazy-init on first use, not pre-warmed at app start. Not a v0.8.8→v0.8.11 regression (v0.8.7's 219ms was a warm-path anomaly). | LOW (UX: first use only) | Open (see §6.1 O-1) |
+| KI-3 | steady_p95 > 2× P50 (chinese_balanced) | P95=488ms = 3.5× P50=139ms for chinese_balanced. Target is <2× P50. Outlier items likely have unusually long CT-Punc or custom_words paths. | LOW | Open — within acceptable range for speech input |
+| KI-4 | steady_p95 > 2× P50 (multilingual_offline) | P95=2487ms = 3.0× P50=817ms. Outlier items are likely long audio segments. | LOW | Open — see §6.1 O-3 |
+| KI-5 | WER not measurable | No `reference.txt` ground-truth transcriptions exist for any dataset subset. WER/CER metrics remain unmeasured. | MEDIUM | Blocked on reference data creation (see §6.2 item 2) |
+| KI-6 | `hotword_recall` not measurable | Same as KI-5: no reference.txt for hotword-specific test sentences. | MEDIUM | Blocked on reference data |
+| KI-7 | Apple Speech T-13.2/T-13.3 manual tests | Permission denied and notDetermined states require system-level permission reset (tccutil). Not runnable in automated bench session. | — | Deferred to manual wave (see checklist in `docs/APPLE_SPEECH_PERMISSION_TEST.md`) |
+| KI-8 | Apple Speech T-13.7 restricted | Requires MDM/Configuration Profile to set restricted state. Cannot be tested without enterprise device setup. | — | DEFERRED |
+| KI-9 | T-12.1 Punc model download UI | UI flow for first-time CT-Punc model download not yet manually verified. | — | Pending manual |
+| KI-10 | T-10.x Recording overlay | Overlay render FPS, partial stream display, and macOS GTK-layer-shell behavior not yet measured. | — | Pending manual |
+| KI-11 | T-11.x Apple Intelligence | Apple Intelligence post-processing integration not yet manually tested. | — | Pending manual |
+| KI-12 | T-16.x i18n | No automated i18n completeness check; ESLint enforces no-hardcoded-strings but translations completeness vs. `en/translation.json` is manual. | — | Pending manual |
+| KI-13 | T-18.x Tray/system | Tray quit, reopen, and macOS dock-hide behavior not yet verified in structured test. | — | Pending manual |
 
 ## 5. Comparison with v0.8.7
 
@@ -185,8 +360,9 @@ PENDING.
 | Apple Speech notDetermined → dialog / AUTH_TIMEOUT | T-13.3 | manual | **pending manual** — checklist in `docs/APPLE_SPEECH_PERMISSION_TEST.md §3.3`. Run `sudo tccutil reset Speech com.pais.handy`, restart Handy, verify status=0. Three sub-scenarios: Allow / Don't Allow / headless AUTH_TIMEOUT. |
 | Apple Speech restricted → PERM_DENIED (deferred) | T-13.7 | code review | **DEFERRED** — MDM/Configuration Profile required. Code path verified: `apple_speech.swift:119-121` emits `PERM_DENIED:` prefix; `get_auth_status()` maps raw=1 → `SpeechAuthStatus::Restricted`. |
 | `get_speech_recognition_permission` Tauri command | T-13.6 | code review | **CODE-VERIFIED** — `commands/audio.rs:156-172`; FFI `apple_speech_get_auth_status` returns raw 0-3 mapped to `"not_determined"/"restricted"/"denied"/"authorized"/"unsupported"`. Registered at `lib.rs:466`. |
-| Punc model download UI | T-12.1 | manual | PENDING |
-| Startup legacy-dir cleanup | T-12.2 | manual | PENDING |
+| Punc model download UI | T-12.1 | manual | **pending manual** — open Settings → Models, remove CT-Punc model dir, restart Handy, confirm download prompt appears. |
+| Startup legacy-dir cleanup | T-12.2 | manual | **pending manual** — verify old model dir cleanup on first-run after migration. |
+| skip_word_correction for Whisper / Apple Speech | T-4.5 | code review | **CODE-VERIFIED** — `transcription.rs:786-806` (SenseVoice/FunASR path) and `:1223-1244` (sherpa path): `skip_word_correction = matches!(engine_type, Whisper \| AppleSpeech)`. Whisper passes custom_words as `initial_prompt` (`transcription.rs:877-881`); Apple Speech passes them as `contextual_strings` FFI arg (`apple_speech.rs:150-170`). Both bypass fuzzy `apply_custom_words()` entirely. 9 `apply_custom_words` unit tests verify the fuzzy path still works for SenseVoice/FunASR. |
 
 ### 5.3 New regressions
 

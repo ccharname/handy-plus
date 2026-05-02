@@ -2454,7 +2454,7 @@ dependencies = [
 
 [[package]]
 name = "handy"
-version = "0.8.12"
+version = "0.8.13"
 dependencies = [
  "anyhow",
  "bzip2",
