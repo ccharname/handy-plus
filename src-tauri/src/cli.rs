@@ -26,4 +26,16 @@ pub struct CliArgs {
     /// Enable debug mode with verbose logging
     #[arg(long)]
     pub debug: bool,
+
+    /// Run ASR benchmark for a preset (sent to running instance); requires --bench-dataset and --bench-output
+    #[arg(long)]
+    pub bench_preset: Option<String>,
+
+    /// Dataset directory containing WAV files for benchmark
+    #[arg(long)]
+    pub bench_dataset: Option<String>,
+
+    /// Output directory for benchmark JSON reports
+    #[arg(long)]
+    pub bench_output: Option<String>,
 }

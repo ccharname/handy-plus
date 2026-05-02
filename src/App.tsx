@@ -70,6 +70,28 @@ function App() {
     }
   }, [onboardingStep, refreshAudioDevices, refreshOutputDevices]);
 
+  // Warn once per session if punc model is missing but punc_zh is enabled
+  useEffect(() => {
+    if (onboardingStep !== "done") return;
+    if (!settings) return;
+    if (!settings.punc_zh_enabled) return;
+    if (sessionStorage.getItem("puncMissingToastShown")) return;
+
+    commands
+      .isPuncDownloaded()
+      .then((downloaded) => {
+        if (!downloaded) {
+          sessionStorage.setItem("puncMissingToastShown", "1");
+          toast.warning(t("toast.puncMissingTitle"), {
+            description: t("toast.puncMissingDescription"),
+          });
+        }
+      })
+      .catch(() => {
+        // Silently ignore — non-critical check
+      });
+  }, [onboardingStep, settings?.punc_zh_enabled, t]);
+
   // Handle keyboard shortcuts for debug mode toggle
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

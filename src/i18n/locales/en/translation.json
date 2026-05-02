@@ -275,7 +275,15 @@
       },
       "puncZh": {
         "label": "Chinese Punctuation (CT-Transformer)",
-        "description": "Automatically add punctuation to Chinese transcriptions using the CT-Transformer model. Applies to all ASR engines (Apple Speech, SenseVoice, FunASR-Nano). Requires the punctuation model to be downloaded (~50 MB)."
+        "description": "Automatically add punctuation to Chinese transcriptions using the CT-Transformer model. Applies to all ASR engines (Apple Speech, SenseVoice, FunASR-Nano). Requires the punctuation model to be downloaded (~50 MB).",
+        "modelReady": "Model ready (76 MB)",
+        "modelMissing": "Model not downloaded — Chinese punctuation will be skipped.",
+        "modelDownloading": "Downloading punctuation model...",
+        "modelFailed": "Download failed: {{error}}",
+        "download": "Download model",
+        "retry": "Retry",
+        "cancel": "Cancel",
+        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})"
       },
       "acceleration": {
         "whisper": {
@@ -726,5 +734,9 @@
   "overlay": {
     "transcribing": "Transcribing...",
     "processing": "Processing..."
+  },
+  "toast": {
+    "puncMissingTitle": "Chinese punctuation model not downloaded",
+    "puncMissingDescription": "Apple Speech and SenseVoice will not produce Chinese punctuation until the CT-Punc model is downloaded. Open Settings → Advanced to download."
   }
 }

@@ -17,6 +17,25 @@ This document explains what each preset is good for, the trade-offs between them
 
 If you don't know which one to start with: **Chinese Balanced is the v0.8.3-handy-plus.6 default**. Apply it once and start dictating.
 
+### Benchmark numbers (v0.8.5, M-series, 38 clips, 331 s audio)
+
+> Measured 2026-05-02 with `benchmark/run_bench.py` on 38 real + synthetic WAVs  
+> (5 user recordings + 5 SenseVoice test wavs + 24 FunASR-Nano test wavs + 4 edge-case clips).
+
+| Metric | Chinese Balanced | Multilingual Offline | Apple Native |
+|---|---|---|---|
+| Engine | SenseVoice-int8 | FunASR-Nano | Apple Speech |
+| P50 latency (ms) | **96** | 581 | 788 |
+| P95 latency (ms) | **280** | 1955 | 1788 |
+| Punctuation density | 0.0580 | 0.0667 | 0.0082 |
+| Errors (38 clips) | 0 | 0 | 4 (silence/noise) |
+
+Key takeaways:
+- **Chinese Balanced is 6× faster at P50** than Multilingual Offline; the gap widens at P95 (~7×).
+- **Apple Native** has the lowest punc density — Apple Speech produces minimal punctuation natively; the CT-Punc layer adds some but the overall density is still ~7× lower than sherpa-onnx models.
+- **Apple Native gracefully errors** on silence/noise clips (`No speech detected`) — clean degradation.
+- **FunASR-Nano** shines on Chinese quality (higher punc density = more complete sentences) and handles code-mixed content but pays a latency tax.
+
 ---
 
 ## What each preset actually does
@@ -31,8 +50,11 @@ If you don't know which one to start with: **Chinese Balanced is the v0.8.3-hand
 | Hot-words boost | Default 2.0 (used only when sherpa-onnx path is selected) |
 | ITN (number normalization) | Disabled in engine; handled downstream by `itn_zh.rs` |
 
+**Benchmark results** (2026-05-02, 38 clips, 331 s audio, M-series):
+P50 = **96 ms** | P95 = **280 ms** | punc density = 0.0580 | errors = 0
+
 **Strengths**
-- Fastest end-to-end for Chinese: SenseVoice-int8 runs at ~70 ms per 10 s of audio on M-series.
+- Fastest end-to-end for Chinese: SenseVoice-int8 runs at ~70–96 ms per 10 s of audio on M-series.
 - Built-in language detection covers zh / en / ja / ko / yue if you happen to drop in a non-Chinese segment.
 - 152 MB on disk — small enough to keep loaded indefinitely.
 - Meta-tag stripping (`<|HAPPY|>`, `<|EMO_NEUTRAL|>`, etc.) is automatic, so you never see emotion markers leak into the output.
@@ -51,6 +73,9 @@ If you don't know which one to start with: **Chinese Balanced is the v0.8.3-hand
 | Language | `auto` |
 | Punctuation | CT-Transformer-Punc enabled |
 | Hot-words boost | Honoured via `OfflineRecognizerConfig.hotwords_score` |
+
+**Benchmark results** (2026-05-02, 38 clips, 331 s audio, M-series):
+P50 = **581 ms** | P95 = **1955 ms** | punc density = 0.0667 | errors = 0
 
 **Strengths**
 - Strong multilingual decoder (LLM-style): handles code-mixed Chinese + English in a single utterance better than the other two presets.
@@ -73,10 +98,14 @@ If you don't know which one to start with: **Chinese Balanced is the v0.8.3-hand
 | Punctuation | CT-Transformer-Punc enabled |
 | Contextual hints | Custom words are forwarded as `addContextualStrings` to the recognizer |
 
+**Benchmark results** (2026-05-02, 38 clips, 331 s audio, M-series):
+P50 = **788 ms** | P95 = **1788 ms** | punc density = 0.0082 | errors = 4 (silence/noise)
+
 **Strengths**
 - Lowest first-token latency for short commands — Apple's recognizer is tuned for one-shot dictation buffers.
 - Zero extra model weight; uses the system speech assets that Apple already ships.
 - Streaming partial results render into the overlay window in real time (other presets only show the final transcript).
+- Graceful degradation: returns `No speech detected` error on silence/noise rather than hallucinating.
 
 **Trade-offs**
 - Apple Speech does not output Chinese punctuation by itself. **Chinese punctuation is entirely supplied by the CT-Punc layer** — make sure `punc_zh_enabled` stays on.

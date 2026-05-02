@@ -1285,8 +1285,26 @@ fn apply_punc_zh_if_applicable(
         .next()
         .unwrap_or(lang_to_check);
 
-    if base_lang != "zh" && lang_to_check != "yue" {
-        // Not Chinese — skip punctuation layer entirely
+    let language_says_zh = base_lang == "zh" || lang_to_check == "yue";
+
+    // Content-based fallback: when language metadata is ambiguous (e.g. Apple
+    // Speech preset with `auto` + non-Chinese app_language), inspect the
+    // transcription itself. The CT-Transformer-Punc model we ship is the
+    // zh-en vocab272727 variant — it punctuates Chinese text safely and is
+    // a no-op on pure ASCII, so applying it whenever any CJK char appears is
+    // both safe and correct.
+    let text_has_cjk = text.chars().any(|c| {
+        let cp = c as u32;
+        // CJK Unified Ideographs core + extension A + Compatibility + general
+        // CJK punctuation ranges. Covers 簡/繁 + Cantonese + Japanese kanji.
+        (0x3400..=0x4DBF).contains(&cp)         // CJK Ext A
+            || (0x4E00..=0x9FFF).contains(&cp)  // CJK Unified Ideographs
+            || (0xF900..=0xFAFF).contains(&cp)  // CJK Compatibility Ideographs
+            || (0x3000..=0x303F).contains(&cp)  // CJK Symbols and Punctuation
+    });
+
+    if !language_says_zh && !text_has_cjk {
+        // Neither metadata nor content suggests Chinese — skip punc layer
         return text;
     }
 

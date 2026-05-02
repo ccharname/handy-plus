@@ -88,6 +88,46 @@ fn build_console_filter() -> env_filter::Filter {
     builder.build()
 }
 
+/// Remove the legacy (never-successfully-downloaded) punctuation model directory
+/// if it exists and contains at most 3 files (i.e., empty or only partial content).
+/// The real model has 7+ files. This cleans up stale directories left by v0.8.4 and
+/// earlier where the old zh-cn URL returned 404.
+fn cleanup_legacy_punc_model(app: &AppHandle) {
+    let Ok(data_dir) = crate::portable::app_data_dir(app) else {
+        return;
+    };
+    let legacy = data_dir
+        .join("models")
+        .join("sherpa-onnx-punct-ct-transformer-zh-cn-2024-04-12");
+    if !legacy.exists() {
+        return;
+    }
+    match std::fs::read_dir(&legacy) {
+        Ok(entries) => {
+            let count = entries.filter_map(|e| e.ok()).count();
+            // Threshold: <= 3 files = likely partial / failed download / empty.
+            // A fully-extracted real model has 7+ files.
+            if count <= 3 {
+                if let Err(e) = std::fs::remove_dir_all(&legacy) {
+                    log::warn!(
+                        "Failed to remove legacy punc dir {}: {}",
+                        legacy.display(),
+                        e
+                    );
+                } else {
+                    log::info!("Removed legacy empty punc dir {}", legacy.display());
+                }
+            } else {
+                log::warn!(
+                    "Legacy punc dir has {} files; refusing to remove (manual cleanup needed)",
+                    count
+                );
+            }
+        }
+        Err(e) => log::warn!("Cannot read legacy punc dir: {}", e),
+    }
+}
+
 fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
         if let Err(e) = main_window.unminimize() {
@@ -507,6 +547,44 @@ pub fn run(cli_args: CliArgs) {
                 signal_handle::send_transcription_input(app, "transcribe_with_post_process", "CLI");
             } else if args.iter().any(|a| a == "--cancel") {
                 crate::utils::cancel_current_operation(app);
+            } else if let Some(preset_pos) = args.iter().position(|a| a == "--bench-preset") {
+                // Benchmark trigger: --bench-preset <id> --bench-dataset <dir> --bench-output <dir>
+                let preset_id = args.get(preset_pos + 1).cloned().unwrap_or_default();
+                let dataset_dir = args
+                    .iter()
+                    .position(|a| a == "--bench-dataset")
+                    .and_then(|p| args.get(p + 1))
+                    .cloned()
+                    .unwrap_or_default();
+                let output_dir = args
+                    .iter()
+                    .position(|a| a == "--bench-output")
+                    .and_then(|p| args.get(p + 1))
+                    .cloned()
+                    .unwrap_or_default();
+                if !preset_id.is_empty() && !dataset_dir.is_empty() && !output_dir.is_empty() {
+                    let app = app.clone();
+                    tauri::async_runtime::spawn(async move {
+                        let tm = app.state::<Arc<TranscriptionManager>>();
+                        match crate::commands::benchmark::run_asr_benchmark(
+                            app.clone(),
+                            tm,
+                            preset_id.clone(),
+                            dataset_dir,
+                            output_dir,
+                        )
+                        .await
+                        {
+                            Ok(r) => log::info!(
+                                "Bench[{}] done: {} items, p50={}ms",
+                                preset_id,
+                                r.summary.total_items,
+                                r.summary.p50_latency_ms
+                            ),
+                            Err(e) => log::error!("Bench[{}] failed: {}", preset_id, e),
+                        }
+                    });
+                }
             } else {
                 show_main_window(app);
             }
@@ -561,6 +639,10 @@ pub fn run(cli_args: CliArgs) {
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
 
             initialize_core_logic(&app_handle);
+
+            // Clean up legacy punc model directory left by v0.8.4 and earlier
+            // (the old zh-cn URL 404'd so the directory is empty or partial).
+            cleanup_legacy_punc_model(&app_handle);
 
             // Pre-warm GPU/accelerator enumeration on a background thread.
             // The first call into transcribe_rs::whisper_cpp::gpu::list_gpu_devices
