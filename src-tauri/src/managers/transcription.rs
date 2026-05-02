@@ -1290,11 +1290,11 @@ fn apply_punc_zh_if_applicable(
         return text;
     }
 
-    // Build path: <app_data_dir>/models/sherpa-onnx-punct-ct-transformer-zh-cn-2024-04-12
+    // Build path: <app_data_dir>/models/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8
     let model_dir = match crate::portable::app_data_dir(app_handle) {
         Ok(d) => d
             .join("models")
-            .join("sherpa-onnx-punct-ct-transformer-zh-cn-2024-04-12"),
+            .join("sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8"),
         Err(e) => {
             warn!("punc_zh: cannot resolve app_data_dir: {}", e);
             return text;

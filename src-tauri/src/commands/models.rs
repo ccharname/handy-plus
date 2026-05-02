@@ -224,11 +224,11 @@ pub async fn cancel_download(
 // ── CT-Transformer Chinese punctuation model ──────────────────────────────
 
 /// Directory name for the punctuation model (matches the extracted archive name).
-const PUNC_MODEL_DIR: &str = "sherpa-onnx-punct-ct-transformer-zh-cn-2024-04-12";
+const PUNC_MODEL_DIR: &str = "sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8";
 
-/// Download URL for the punctuation model archive.
+/// Download URL for the punctuation model archive (zh+en, int8 ≈ 62 MB).
 const PUNC_MODEL_URL: &str =
-    "https://github.com/k2-fsa/sherpa-onnx/releases/download/punctuation-models/sherpa-onnx-punct-ct-transformer-zh-cn-2024-04-12.tar.bz2";
+    "https://github.com/k2-fsa/sherpa-onnx/releases/download/punctuation-models/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8.tar.bz2";
 
 /// Returns the path to the extracted punctuation model directory.
 fn punc_model_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {

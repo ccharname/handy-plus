@@ -57,10 +57,11 @@
 
 .bars-container {
   display: flex;
-  align-items: end;
+  /* center vertically so bars expand symmetrically around the midline
+     instead of being anchored to the bottom edge of the overlay */
+  align-items: center;
   justify-content: center;
   gap: 3px;
-  padding-bottom: 0px;
   height: 24px;
   overflow: hidden;
 }

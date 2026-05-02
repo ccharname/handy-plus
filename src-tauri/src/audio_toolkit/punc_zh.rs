@@ -6,7 +6,7 @@
 //!
 //! # Model layout expected on disk
 //! ```text
-//! <model_dir>/model.onnx       ← main model file (non-quantised)
+//! <model_dir>/model.int8.onnx       ← main model file (non-quantised)
 //! ```
 //! The canonical directory is:
 //! `<app_data_dir>/models/sherpa-onnx-punct-ct-transformer-zh-cn-2024-04-12/`
@@ -26,7 +26,7 @@ static INIT_MUTEX: Mutex<()> = Mutex::new(());
 /// Returns `true` when a punctuation model directory looks complete.
 pub fn is_punc_model_present(model_dir: &Path) -> bool {
     // Primary model file expected by sherpa-onnx ct_transformer path.
-    let onnx = model_dir.join("model.onnx");
+    let onnx = model_dir.join("model.int8.onnx");
     model_dir.exists() && onnx.exists()
 }
 
@@ -48,7 +48,7 @@ fn get_punc(model_dir: &Path) -> Option<Arc<OfflinePunctuation>> {
         return cached.clone();
     }
 
-    let onnx_path = model_dir.join("model.onnx");
+    let onnx_path = model_dir.join("model.int8.onnx");
     if !onnx_path.exists() {
         warn!(
             "punc_zh: model not found at {}; skipping punctuation",
@@ -89,7 +89,7 @@ fn get_punc(model_dir: &Path) -> Option<Arc<OfflinePunctuation>> {
 /// Apply CT-Transformer punctuation to `text`.
 ///
 /// # Arguments
-/// * `model_dir` — directory containing `model.onnx`
+/// * `model_dir` — directory containing `model.int8.onnx`
 /// * `text`      — raw transcription text (may already have some punctuation)
 ///
 /// # Returns
