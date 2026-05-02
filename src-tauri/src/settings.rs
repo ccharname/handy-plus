@@ -369,6 +369,17 @@ pub struct AppProfile {
     /// `profile_hot_swap_engine` is enabled in AppSettings.
     #[serde(default)]
     pub selected_model: Option<String>,
+    /// Override active_preset_id when profile matches.  None = inherit global.
+    /// This is UI-only — the pipeline uses the resolved model/language/punc
+    /// from other fields; this just reflects which preset label to show.
+    #[serde(default)]
+    pub active_preset_id: Option<String>,
+    /// Override punc_zh_enabled.  None = inherit global.
+    #[serde(default)]
+    pub punc_zh_enabled: Option<bool>,
+    /// Override post_process_chain.  None = inherit global; Some(empty vec) = disable chain.
+    #[serde(default)]
+    pub post_process_chain: Option<Vec<String>>,
 }
 
 fn default_power_mode_enabled() -> bool {
@@ -412,11 +423,14 @@ pub fn default_app_profiles() -> Vec<AppProfile> {
             append_trailing_space: Some(false),
             auto_submit: Some(false),
             selected_model: None,
+            active_preset_id: None,
+            punc_zh_enabled: Some(false),
+            post_process_chain: None,
         },
         AppProfile {
             id: "builtin_chat".to_string(),
             name: "Chat".to_string(),
-            enabled: false,
+            enabled: true,
             matchers: vec![
                 ProfileMatcher::BundleId {
                     value: "com.tencent.xinWeChat".to_string(),
@@ -436,11 +450,14 @@ pub fn default_app_profiles() -> Vec<AppProfile> {
             append_trailing_space: Some(true),
             auto_submit: Some(false),
             selected_model: None,
+            active_preset_id: None,
+            punc_zh_enabled: None,
+            post_process_chain: None,
         },
         AppProfile {
             id: "builtin_writing".to_string(),
             name: "Writing".to_string(),
-            enabled: false,
+            enabled: true,
             matchers: vec![
                 ProfileMatcher::BundleId {
                     value: "md.obsidian".to_string(),
@@ -460,6 +477,9 @@ pub fn default_app_profiles() -> Vec<AppProfile> {
             append_trailing_space: Some(true),
             auto_submit: Some(false),
             selected_model: None,
+            active_preset_id: None,
+            punc_zh_enabled: None,
+            post_process_chain: None,
         },
         AppProfile {
             id: "builtin_claude_code".to_string(),
@@ -476,6 +496,9 @@ pub fn default_app_profiles() -> Vec<AppProfile> {
             append_trailing_space: Some(false),
             auto_submit: Some(true),
             selected_model: None,
+            active_preset_id: None,
+            punc_zh_enabled: Some(false),
+            post_process_chain: None,
         },
         AppProfile {
             id: "builtin_default_fallback".to_string(),
@@ -490,6 +513,9 @@ pub fn default_app_profiles() -> Vec<AppProfile> {
             append_trailing_space: None,
             auto_submit: None,
             selected_model: None,
+            active_preset_id: None,
+            punc_zh_enabled: None,
+            post_process_chain: None,
         },
     ]
 }

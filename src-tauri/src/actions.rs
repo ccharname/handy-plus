@@ -298,11 +298,12 @@ pub(crate) async fn post_process_transcription(
         .unwrap_or(&settings.post_process_provider_id);
 
     // Determine if we should use a chain or single-prompt mode.
-    // Chain mode: settings.post_process_chain is Some(vec) with at least one entry.
+    // Chain mode: effective (profile override) or settings.post_process_chain is Some(vec) with at least one entry.
+    // Some(empty vec) in profile means "disable chain for this profile".
     // Single-prompt mode: everything else (backward-compat).
-    let chain = settings
-        .post_process_chain
-        .as_deref()
+    let chain = effective
+        .and_then(|e| e.post_process_chain.as_deref())
+        .or(settings.post_process_chain.as_deref())
         .filter(|v| !v.is_empty());
 
     if let Some(prompt_ids) = chain {

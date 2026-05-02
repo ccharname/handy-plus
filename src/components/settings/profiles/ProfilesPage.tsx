@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, Plus, Trash2, Copy } from "lucide-react";
 import { commands } from "@/bindings";
 import type {
   AppProfile,
+  AsrPreset,
   ForegroundApp,
   PasteMethod,
   ProfileMatcher,
@@ -131,6 +132,7 @@ interface ProfileCardProps {
   providers: Array<{ id: string; label: string }>;
   prompts: Array<{ id: string; name: string }>;
   models: Array<{ id: string; name: string }>;
+  presets: Array<{ id: string; label: string }>;
 }
 
 const ProfileCard: React.FC<ProfileCardProps> = ({
@@ -141,6 +143,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
   providers,
   prompts,
   models,
+  presets,
 }) => {
   const { t } = useTranslation();
   const [overridesOpen, setOverridesOpen] = useState(false);
@@ -209,6 +212,11 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
     ...models.map((m) => ({ value: m.id, label: m.name })),
   ];
 
+  const presetOptions = [
+    { value: "__inherit__", label: t("settings.profiles.inheritGlobal") },
+    ...presets.map((p) => ({ value: p.id, label: p.label })),
+  ];
+
   const [wordInput, setWordInput] = useState("");
 
   return (
@@ -268,6 +276,82 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
         )}
       </div>
 
+      {/* Override summary chips — display only fields that are overridden */}
+      {(() => {
+        const chips: Array<{ icon: string; label: string }> = [];
+        if (profile.active_preset_id) {
+          const preset = presets.find((p) => p.id === profile.active_preset_id);
+          chips.push({
+            icon: "🎯",
+            label: preset?.label ?? profile.active_preset_id,
+          });
+        }
+        if (profile.selected_model) {
+          const model = models.find((m) => m.id === profile.selected_model);
+          chips.push({
+            icon: "🧠",
+            label: model?.name ?? profile.selected_model,
+          });
+        }
+        if (profile.selected_language) {
+          chips.push({ icon: "🌐", label: profile.selected_language });
+        }
+        if (profile.paste_method) {
+          chips.push({ icon: "⚡", label: profile.paste_method });
+        }
+        if (profile.punc_zh_enabled !== null && profile.punc_zh_enabled !== undefined) {
+          chips.push({
+            icon: "・",
+            label: profile.punc_zh_enabled ? "punc on" : "punc off",
+          });
+        }
+        if (profile.append_trailing_space === true) {
+          chips.push({ icon: "␣", label: "trailing space" });
+        }
+        if (profile.auto_submit === true) {
+          chips.push({ icon: "↵", label: "auto submit" });
+        }
+        if (profile.custom_words_extra && profile.custom_words_extra.length > 0) {
+          chips.push({
+            icon: "⊕",
+            label: t("settings.profiles.customWordsCount", {
+              count: profile.custom_words_extra.length,
+            }),
+          });
+        }
+        if (
+          profile.post_process_chain &&
+          profile.post_process_chain.length > 0
+        ) {
+          chips.push({
+            icon: "⛓",
+            label: t("settings.profiles.chainStepsCount", {
+              count: profile.post_process_chain.length,
+            }),
+          });
+        }
+        if (chips.length === 0) {
+          return (
+            <div className="px-4 pb-2 text-xs text-mid-gray/50 italic">
+              {t("settings.profiles.noOverrides")}
+            </div>
+          );
+        }
+        return (
+          <div className="px-4 pb-2 flex flex-wrap gap-1.5">
+            {chips.map((c, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-logo-primary/10 text-logo-primary text-[11px]"
+              >
+                <span>{c.icon}</span>
+                <span>{c.label}</span>
+              </span>
+            ))}
+          </div>
+        );
+      })()}
+
       {/* Matchers section */}
       <div className="px-4 pb-3 border-t border-mid-gray/10">
         <p className="text-xs font-semibold text-mid-gray/70 mt-2 mb-2 uppercase tracking-wide">
@@ -322,6 +406,79 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
               />
               <p className="text-[10px] text-mid-gray/50 mt-1">
                 {t("settings.profiles.selectedModelHint")}
+              </p>
+            </div>
+
+            {/* ASR preset override */}
+            <div>
+              <label className="text-xs text-mid-gray/60 mb-1 block">
+                {t("settings.profiles.selectedPreset")}
+              </label>
+              <Dropdown
+                options={presetOptions}
+                selectedValue={profile.active_preset_id ?? "__inherit__"}
+                onSelect={(v) =>
+                  update({
+                    active_preset_id: v === "__inherit__" ? null : v,
+                  })
+                }
+              />
+              <p className="text-[10px] text-mid-gray/50 mt-1">
+                {t("settings.profiles.selectedPresetHint")}
+              </p>
+            </div>
+
+            {/* Chinese punctuation (CT-Punc) override */}
+            <div>
+              <label className="text-xs text-mid-gray/60 mb-1 block">
+                {t("settings.profiles.puncZhEnabled")}
+              </label>
+              <Dropdown
+                options={triStateOptions}
+                selectedValue={boolToTriState(profile.punc_zh_enabled)}
+                onSelect={(v) =>
+                  update({
+                    punc_zh_enabled: triStateToBool(v as TriState),
+                  })
+                }
+              />
+            </div>
+
+            {/* Post-process chain override (read-only chip + hint) */}
+            <div>
+              <label className="text-xs text-mid-gray/60 mb-1 block">
+                {t("settings.profiles.postProcessChain")}
+              </label>
+              <div className="flex items-center gap-2 flex-wrap">
+                {profile.post_process_chain == null ? (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-mid-gray/10 text-xs text-mid-gray/60">
+                    {t("settings.profiles.inheritGlobal")}
+                  </span>
+                ) : profile.post_process_chain.length === 0 ? (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-yellow-500/20 text-xs text-yellow-400">
+                    {t("settings.profiles.postProcessChainDisabled")}
+                  </span>
+                ) : (
+                  profile.post_process_chain.map((id) => (
+                    <span
+                      key={id}
+                      className="inline-flex items-center px-2 py-0.5 rounded-full bg-logo-primary/20 text-xs"
+                    >
+                      {id}
+                    </span>
+                  ))
+                )}
+                {profile.post_process_chain != null && (
+                  <button
+                    onClick={() => update({ post_process_chain: null })}
+                    className="text-xs text-mid-gray/50 hover:text-red-400 transition-colors"
+                  >
+                    {t("settings.profiles.postProcessChainReset")}
+                  </button>
+                )}
+              </div>
+              <p className="text-[10px] text-mid-gray/50 mt-1">
+                {t("settings.profiles.postProcessChainHint")}
               </p>
             </div>
 
@@ -475,6 +632,7 @@ export const ProfilesPage: React.FC = () => {
 
   const [foreground, setForeground] = useState<ForegroundApp | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [asrPresets, setAsrPresets] = useState<AsrPreset[]>([]);
 
   // Poll foreground app every second
   useEffect(() => {
@@ -493,6 +651,15 @@ export const ProfilesPage: React.FC = () => {
     };
   }, []);
 
+  // Fetch ASR presets once on mount
+  useEffect(() => {
+    commands.listAsrPresets().then((result) => {
+      if (result.status === "ok") {
+        setAsrPresets(result.data);
+      }
+    });
+  }, []);
+
   const profiles: AppProfile[] = settings?.app_profiles ?? [];
   const powerModeEnabled = settings?.power_mode_enabled ?? false;
 
@@ -508,6 +675,11 @@ export const ProfilesPage: React.FC = () => {
   const models = allModels
     .filter((m) => m.is_downloaded)
     .map((m) => ({ id: m.id, name: m.name }));
+
+  const presets = asrPresets.map((p) => ({
+    id: p.id,
+    label: `${p.icon} ${p.name}`,
+  }));
 
   const updateProfiles = useCallback(
     (newProfiles: AppProfile[]) => {
@@ -685,6 +857,7 @@ export const ProfilesPage: React.FC = () => {
             providers={providers}
             prompts={prompts}
             models={models}
+            presets={presets}
           />
         ))}
 

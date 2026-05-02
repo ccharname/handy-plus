@@ -963,7 +963,7 @@ export type ProfileMatcher =
   | { kind: "process_name"; value: string }
   | { kind: "window_title_substring"; value: string }
   | { kind: "disabled" }
-export type AppProfile = { id: string; name: string; enabled: boolean; matchers: ProfileMatcher[]; selected_language: string | null; custom_words_extra: string[]; post_process_provider_id: string | null; post_process_selected_prompt_id: string | null; paste_method: PasteMethod | null; append_trailing_space: boolean | null; auto_submit: boolean | null; selected_model?: string | null }
+export type AppProfile = { id: string; name: string; enabled: boolean; matchers: ProfileMatcher[]; selected_language: string | null; custom_words_extra: string[]; post_process_provider_id: string | null; post_process_selected_prompt_id: string | null; paste_method: PasteMethod | null; append_trailing_space: boolean | null; auto_submit: boolean | null; selected_model?: string | null; active_preset_id?: string | null; punc_zh_enabled?: boolean | null; post_process_chain?: string[] | null }
 export type ForegroundApp = { bundle_id: string | null; process_name: string | null; window_title: string | null }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"

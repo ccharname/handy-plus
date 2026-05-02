@@ -1,6 +1,7 @@
 use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager, SherpaModelKind};
+use crate::profile_resolver::resolve_effective_settings;
 use crate::settings::{
     get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, WhisperAcceleratorSetting,
 };
@@ -682,6 +683,7 @@ impl TranscriptionManager {
         }
 
         let settings = get_settings(&self.app_handle);
+        let effective = resolve_effective_settings(&settings);
 
         // Use override language if provided, otherwise fall back to settings.
         let language_to_use =
@@ -813,12 +815,13 @@ impl TranscriptionManager {
         let filter_ms = t_filter.elapsed().as_millis();
 
         // Apply CT-Transformer Chinese punctuation when enabled and language is Chinese.
+        // Use effective.punc_zh_enabled so profile overrides are honoured.
         let t_punc = std::time::Instant::now();
         let final_result = apply_punc_zh_if_applicable(
             filtered_result,
             &validated_language,
             &settings.app_language,
-            settings.punc_zh_enabled,
+            effective.punc_zh_enabled,
             &self.app_handle,
         );
         let punc_ms = t_punc.elapsed().as_millis();
@@ -1098,6 +1101,7 @@ impl TranscriptionManager {
 
         // Get current settings for configuration
         let settings = get_settings(&self.app_handle);
+        let effective = resolve_effective_settings(&settings);
 
         // Validate selected language against the model's supported languages.
         // If the language isn't supported, fall back to "auto" to prevent errors.
@@ -1249,12 +1253,13 @@ impl TranscriptionManager {
         let filter_ms = t_filter.elapsed().as_millis();
 
         // Apply CT-Transformer Chinese punctuation when enabled and language is Chinese.
+        // Use effective.punc_zh_enabled so profile overrides are honoured.
         let t_punc = std::time::Instant::now();
         let final_result = apply_punc_zh_if_applicable(
             filtered_result,
             &validated_language,
             &settings.app_language,
-            settings.punc_zh_enabled,
+            effective.punc_zh_enabled,
             &self.app_handle,
         );
         let punc_ms = t_punc.elapsed().as_millis();
