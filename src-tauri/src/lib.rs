@@ -463,6 +463,7 @@ pub fn run(cli_args: CliArgs) {
             commands::audio::get_selected_output_device,
             commands::audio::play_test_sound,
             commands::audio::check_custom_sounds,
+            commands::audio::get_speech_recognition_permission,
             commands::audio::set_clamshell_microphone,
             commands::audio::get_clamshell_microphone,
             commands::audio::is_recording,
@@ -549,6 +550,7 @@ pub fn run(cli_args: CliArgs) {
                 crate::utils::cancel_current_operation(app);
             } else if let Some(preset_pos) = args.iter().position(|a| a == "--bench-preset") {
                 // Benchmark trigger: --bench-preset <id> --bench-dataset <dir> --bench-output <dir>
+                //                    [--bench-mode asr|punc_only|chain|swap]
                 let preset_id = args.get(preset_pos + 1).cloned().unwrap_or_default();
                 let dataset_dir = args
                     .iter()
@@ -562,6 +564,12 @@ pub fn run(cli_args: CliArgs) {
                     .and_then(|p| args.get(p + 1))
                     .cloned()
                     .unwrap_or_default();
+                // Forward --bench-mode if present (None → run_asr_benchmark defaults to Asr).
+                let bench_mode_str = args
+                    .iter()
+                    .position(|a| a == "--bench-mode")
+                    .and_then(|p| args.get(p + 1))
+                    .cloned();
                 if !preset_id.is_empty() && !dataset_dir.is_empty() && !output_dir.is_empty() {
                     let app = app.clone();
                     tauri::async_runtime::spawn(async move {
@@ -572,12 +580,14 @@ pub fn run(cli_args: CliArgs) {
                             preset_id.clone(),
                             dataset_dir,
                             output_dir,
+                            bench_mode_str,
                         )
                         .await
                         {
                             Ok(r) => log::info!(
-                                "Bench[{}] done: {} items, p50={}ms",
+                                "Bench[{}] done: mode={} items={} p50={}ms",
                                 preset_id,
+                                r.bench_mode,
                                 r.summary.total_items,
                                 r.summary.p50_latency_ms
                             ),

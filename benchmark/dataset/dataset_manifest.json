@@ -1,0 +1,350 @@
+{
+  "version": "1.0",
+  "description": "Handy+ benchmark dataset manifest — 38 WAVs across 5 semantic subsets + edge group",
+  "reference_source": "ASR draft via chinese_balanced preset (SenseVoice-int8, result 2026-05-02T01-38-38Z); multilingual_offline (FunASR-Nano) used for Japanese/Korean/Yue; English lyrics partially hand-corrected",
+  "total_wavs": 38,
+  "subsets": {
+    "zh_short": {
+      "description": "Chinese short utterances (duration < 15 s); includes RAG domain, dialect, conversational, and user recordings",
+      "count": 15,
+      "items": [
+        {
+          "wav": "fn_rag_math.wav",
+          "duration_s": 5.52,
+          "language": "zh-Hans",
+          "reference": "对微分形式的积分是微分几何中的基本概念。",
+          "notes": "RAG domain — math; reference likely accurate"
+        },
+        {
+          "wav": "fn_rag_medical.wav",
+          "duration_s": 6.12,
+          "language": "zh-Hans",
+          "reference": "肾脏中肾小球囊上的细胞膜孔隙很小。",
+          "notes": "RAG domain — medical"
+        },
+        {
+          "wav": "fn_rag_chemistry.wav",
+          "duration_s": 6.84,
+          "language": "zh-Hans",
+          "reference": "比如说只在当时被认为是一种含养酸盐。",
+          "notes": "RAG domain — chemistry; '含养酸盐' may be '含氧酸盐'; TODO: verify"
+        },
+        {
+          "wav": "fn_far_2.wav",
+          "duration_s": 6.85,
+          "language": "zh-Hans",
+          "reference": "然后被灌停了，扎南县的城号。好了，不挂这个。那么前方即将到达沈都公路站，左边是8号线。",
+          "notes": "Far-field recording; place names may differ; TODO: verify '扎南县'"
+        },
+        {
+          "wav": "fn_dia_hunan.wav",
+          "duration_s": 7.01,
+          "language": "zh-Hans",
+          "dialect": "hunan",
+          "reference": "他长的来讲，孙本在本法的利个文扬比庞涓略胜于主。",
+          "notes": "Hunan dialect; SenseVoice reference likely inaccurate; TODO: human review"
+        },
+        {
+          "wav": "fn_dia_sh.wav",
+          "duration_s": 7.31,
+          "language": "zh-Hans",
+          "dialect": "shanghainese",
+          "reference": "人跟狗，包括人跟动物接触上了才有感情。那么随着阿拉社会的富裕。",
+          "notes": "Shanghai dialect; '阿拉' is Shanghainese for '我们'"
+        },
+        {
+          "wav": "fn_rag_history.wav",
+          "duration_s": 7.92,
+          "language": "zh-Hans",
+          "reference": "由罗马皇帝清点的犹地亚王大西律王统治期间。",
+          "notes": "RAG domain — history; proper nouns may be misrecognized"
+        },
+        {
+          "wav": "fn_dia_minnan.wav",
+          "duration_s": 8.08,
+          "language": "zh-Hans",
+          "dialect": "min_nan",
+          "reference": "嗯，下晚有机会吧，因为这个哦开了哦，转得差厉还都贴钱啊。",
+          "notes": "Min-Nan (Hokkien) influenced; reference is Mandarin approximation; TODO: human review"
+        },
+        {
+          "wav": "fn_rag_biochemistry.wav",
+          "duration_s": 8.52,
+          "language": "zh-Hans",
+          "reference": "利用3磷酸腺苷的水解所产生的能量来驱动其他化学反应。",
+          "notes": "RAG domain — biochemistry; '3磷酸腺苷' = ATP; likely accurate"
+        },
+        {
+          "wav": "fn_rag_physics.wav",
+          "duration_s": 12.12,
+          "language": "zh-Hans",
+          "reference": "根据碰撞理论，月面样本，缺少挥发性物质。",
+          "notes": "RAG domain — physics"
+        },
+        {
+          "wav": "sv_zh.wav",
+          "duration_s": 5.59,
+          "language": "zh-Hans",
+          "reference": "开饭时间，早上九点至下午五点。",
+          "notes": "SenseVoice test wav — clean Mandarin; reference highly reliable"
+        },
+        {
+          "wav": "handy-1777683331.wav",
+          "duration_s": 5.91,
+          "language": "zh-Hans",
+          "reference": "他的这个实时写入并不是在呃输入端，是在录音端。",
+          "notes": "User recording; disfluency '呃' retained in reference"
+        },
+        {
+          "wav": "handy-1777683335.wav",
+          "duration_s": 2.04,
+          "language": "zh-Hans",
+          "reference": "但觉但感觉确实快。",
+          "notes": "User recording — very short; disfluency at start"
+        },
+        {
+          "wav": "handy-1777683339.wav",
+          "duration_s": 2.25,
+          "language": "zh-Hans",
+          "reference": "很好的一个输入法。",
+          "notes": "User recording — very short"
+        },
+        {
+          "wav": "handy-1777683342.wav",
+          "duration_s": 1.35,
+          "language": "zh-Hans",
+          "reference": "特别棒。",
+          "notes": "User recording — shortest speech clip; near edge-case boundary"
+        }
+      ]
+    },
+    "zh_long": {
+      "description": "Chinese long utterances (duration > 12 s) with sustained speech; includes lyrics, far-field conversation, and user recording",
+      "count": 4,
+      "items": [
+        {
+          "wav": "fn_lyrics_2.wav",
+          "duration_s": 13.77,
+          "language": "zh-Hans",
+          "reference": "明明那么远，为我却感觉离他那么近。闭上眼，你深经的被除了所有押韵，虽然不停说唱了，但你已学会自信。我代表所有中会说唱都手向你致敬。不今面对困难的，你，早已不再抱怨。",
+          "notes": "Chinese rap lyrics; many likely misrecognized words in ASR draft; TODO: human review required"
+        },
+        {
+          "wav": "handy-1777683357.wav",
+          "duration_s": 13.89,
+          "language": "zh-Hans",
+          "reference": "a b c三个同时跑a跑mark出3 present对比加边缘用力，b是punch target加状态，提示下载按钮加进度条c是启动空目录。",
+          "notes": "User recording; mixed zh+en with technical jargon ('mark', 'punch target', 'present')"
+        },
+        {
+          "wav": "fn_lyrics_3.wav",
+          "duration_s": 17.46,
+          "language": "zh-Hans",
+          "reference": "你听啊秋末的落叶，你听它谈起，这离别，只剩我独自领略和与谁风和月，你听啊。",
+          "notes": "Chinese lyrics; TODO: verify against original song"
+        },
+        {
+          "wav": "fn_far_3.wav",
+          "duration_s": 21.80,
+          "language": "zh-Hans",
+          "reference": "周末要不要去露营？最近天气超舒服露营，我怕虫子咬，而且晚上睡帐篷会不会很冷啊？放心，我借了专业装备，还有暖宝宝，再带点火锅食材，边吃边看，星心超惬意。",
+          "notes": "Far-field conversation; '星心' likely '星空'; TODO: verify"
+        }
+      ]
+    },
+    "mixed": {
+      "description": "Code-switched or non-CJK/non-EN utterances: Japanese+English codeswitching, noisy English, Vietnamese",
+      "count": 3,
+      "items": [
+        {
+          "wav": "fn_ja_en_codeswitch.wav",
+          "duration_s": 8.15,
+          "language": "ja+en",
+          "reference": "このカフェのワイファイがアンステーブルすぎてグーグルミートでディスコネクトされてクライエントに悪い印象を与えてしまった。",
+          "notes": "Japanese with English loanwords (WiFi, Google Meet, disconnect, client); TODO: verify katakana romanization"
+        },
+        {
+          "wav": "fn_noise_en.wav",
+          "duration_s": 10.57,
+          "language": "en+noise",
+          "reference": "so what's interesting here? iOS? i feel that you brands knowing this when people sort of speak to the assistants at home. and if you want to be the brand.",
+          "notes": "English speech with background noise; 'iOS' possibly mishear; TODO: verify 'you brands' vs 'your brands'"
+        },
+        {
+          "wav": "fn_vietnamese.wav",
+          "duration_s": 7.15,
+          "language": "vi",
+          "reference": "",
+          "notes": "Vietnamese — SenseVoice outputs Chinese character transliteration (unreliable); placed in mixed; TODO: obtain native Vietnamese ground truth. ASR draft: '汝讲话接动计划的人力、权力和学一内海报一地话，要够联系利陆生业。'"
+        }
+      ]
+    },
+    "en": {
+      "description": "English monolingual utterances (song lyrics, narrative speech)",
+      "count": 3,
+      "items": [
+        {
+          "wav": "sv_en.wav",
+          "duration_s": 7.15,
+          "language": "en",
+          "reference": "The tribal chieftain called for the boy and presented him with fifty pieces of gold.",
+          "notes": "SenseVoice test wav — clean English; reference highly reliable"
+        },
+        {
+          "wav": "fn_lyrics_en_1.wav",
+          "duration_s": 23.34,
+          "language": "en",
+          "reference": "when I was young, I listened to the radio waiting for my favorite songs when they played, I sing along. it made me smile.",
+          "notes": "English lyrics; SenseVoice outputs 'iOS young' — corrected to 'I was young' manually; TODO: full lyrics verification"
+        },
+        {
+          "wav": "fn_lyrics_en_2.wav",
+          "duration_s": 21.71,
+          "language": "en",
+          "reference": "i see your monsters. i see your pain, tell me your problems. i'll chase them away. i'll be your lighthouse. i'll make it okay. when i see your monsters. i'll stand there so brave and chase them all away.",
+          "notes": "English lyrics ('Monsters' by Katie Sky); reference reliable"
+        },
+        {
+          "wav": "fn_lyrics_en_3.wav",
+          "duration_s": 24.88,
+          "language": "en",
+          "reference": "an empty street, an empty house, a hole inside my heart. i'm all alone the rooms are getting smaller. i wonder how i wonder why? i wonder where they are the days we had the songs we sang together.",
+          "notes": "English lyrics; SenseVoice: 'i all along' corrected to 'i'm all alone'; TODO: verify full lyrics"
+        }
+      ]
+    },
+    "multilingual": {
+      "description": "Non-Chinese non-English monolingual clips: Japanese, Korean, Cantonese/Yue, plus Chinese lyrics and far-field",
+      "count": 7,
+      "items": [
+        {
+          "wav": "sv_ja.wav",
+          "duration_s": 7.20,
+          "language": "ja",
+          "reference": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。",
+          "notes": "SenseVoice test wav — Japanese; reference high confidence"
+        },
+        {
+          "wav": "sv_ko.wav",
+          "duration_s": 4.61,
+          "language": "ko",
+          "reference": "조금만 생각을 하면서 살면 훨씬 편할 거야.",
+          "notes": "SenseVoice test wav — Korean; spacing normalized; reference reliable"
+        },
+        {
+          "wav": "sv_yue.wav",
+          "duration_s": 5.15,
+          "language": "yue",
+          "reference": "呢几个字都表达唔到我想讲嘅意思。",
+          "notes": "SenseVoice test wav — Cantonese (Yue); reference reliable"
+        },
+        {
+          "wav": "fn_dia_yue.wav",
+          "duration_s": 9.47,
+          "language": "yue",
+          "reference": "啲身体好劲啊，跟住咧佢哋有一个人咧，就突然可能就有高原反应啦，突然间就啊窒息咗，即系晕晕咗。",
+          "notes": "Cantonese dialect — longer clip; TODO: verify Cantonese character choices"
+        },
+        {
+          "wav": "fn_ja.wav",
+          "duration_s": 8.10,
+          "language": "ja",
+          "reference": "人民たちは金欲しさに往をのけ物にしてしまって何でも全べて商人のところへ持って行ってしまいました。",
+          "notes": "Japanese narrative; TODO: verify '往をのけ物' (unusual phrase, may be misrecognized)"
+        },
+        {
+          "wav": "fn_lyrics.wav",
+          "duration_s": 8.27,
+          "language": "zh-Hans",
+          "reference": "我看到我的身后盯着我的人群，喜欢祸很不一样的神情。我知道，这可能就是所谓的成名，我知道必须往前一步一步能停。",
+          "notes": "Chinese rap/lyrics; '喜欢祸' and '一步能停' likely wrong; TODO: match against original song"
+        },
+        {
+          "wav": "fn_far_4.wav",
+          "duration_s": 9.08,
+          "language": "zh-Hans",
+          "reference": "唯一的遗憾就是他那个8宝鸭还有烤鸭都没吃上，估计得提前预定吧，只能怪我自己没有做好功课。",
+          "notes": "Far-field Chinese; '8宝鸭' likely '八宝鸭' (traditional dish); reference otherwise reliable"
+        },
+        {
+          "wav": "fn_far_5.wav",
+          "duration_s": 8.92,
+          "language": "zh-Hans",
+          "reference": "别紧张，我只是我是在这边逛街，然后看到你们在这边拍照，想跟你交个朋友认识一下。",
+          "notes": "Far-field Chinese — conversational speech"
+        }
+      ]
+    },
+    "edge": {
+      "description": "Edge cases: silence, pure tones, white noise — expected to return empty or minimal hallucination",
+      "count": 4,
+      "items": [
+        {
+          "wav": "edge_500ms_silence.wav",
+          "duration_s": 0.50,
+          "language": null,
+          "reference": "",
+          "edge_type": "silence_too_short",
+          "notes": "Pure silence 0.5 s — below minimum valid threshold; correct output is empty; SenseVoice hallucinates '嗯。'"
+        },
+        {
+          "wav": "edge_1500ms_silence.wav",
+          "duration_s": 1.50,
+          "language": null,
+          "reference": "",
+          "edge_type": "silence_at_boundary",
+          "notes": "Pure silence 1.5 s — at lower valid boundary; correct output is empty; SenseVoice hallucinates '我。'"
+        },
+        {
+          "wav": "edge_2s_440hz_tone.wav",
+          "duration_s": 2.00,
+          "language": null,
+          "reference": "",
+          "edge_type": "pure_tone_non_speech",
+          "notes": "440 Hz sine wave 2 s — non-speech tonal; correct output is empty; SenseVoice hallucinates '我。'"
+        },
+        {
+          "wav": "edge_3s_noise.wav",
+          "duration_s": 3.00,
+          "language": null,
+          "reference": "",
+          "edge_type": "white_noise_non_speech",
+          "notes": "Gaussian white noise σ=0.05, 3 s — non-speech; correct output is empty; FunASR-Nano hallucinates '你是不是在想我？'"
+        }
+      ],
+      "out_of_dataset": [
+        {
+          "wav": "edge_cases/edge_90s_tone_then_silence.wav",
+          "duration_s": 90.0,
+          "language": null,
+          "reference": "",
+          "edge_type": "overlong_90s",
+          "notes": "5 s tone + 85 s silence — over-long; kept in edge_cases/ subdirectory only, NOT in main dataset/; Apple Speech times out at 30 s; FunASR-Nano ~8 s with hallucination; SenseVoice ~650 ms"
+        }
+      ]
+    }
+  },
+  "subset_counts": {
+    "zh_short": 15,
+    "zh_long": 4,
+    "mixed": 3,
+    "en": 4,
+    "multilingual": 8,
+    "edge": 4,
+    "total_in_dataset": 38
+  },
+  "TODO": [
+    "human_review: fn_dia_hunan.wav — heavy dialect, SenseVoice reference unreliable",
+    "human_review: fn_dia_minnan.wav — Min-Nan dialect, reference is Mandarin approximation",
+    "human_review: fn_lyrics_2.wav — Chinese rap, many likely errors in ASR draft",
+    "human_review: fn_lyrics.wav — '喜欢祸' and '一步能停' likely wrong",
+    "human_review: fn_ja.wav — '往をのけ物' unusual phrase, verify",
+    "human_review: fn_lyrics_en_1.wav — 'I was young' corrected manually but full lyrics unverified",
+    "human_review: fn_lyrics_en_3.wav — 'i'm all alone' corrected, full lyrics unverified",
+    "verify: fn_rag_chemistry.wav — '含养酸盐' may be '含氧酸盐'",
+    "verify: fn_far_3.wav — '星心' may be '星空'",
+    "verify: fn_far_2.wav — place name '扎南县' may be misrecognized",
+    "ground_truth_needed: fn_vietnamese.wav — SenseVoice outputs Chinese transliteration; need native Vietnamese text",
+    "eval_py: current eval.py does not support --subset flag; manifest-aware subset reporting requires future eval.py update"
+  ]
+}

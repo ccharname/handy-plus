@@ -19,6 +19,10 @@ typedef struct {
 // Returns 1 if the framework is present and at least one on-device locale exists; 0 otherwise.
 int is_apple_speech_available(void);
 
+// Query current speech recognition authorization status WITHOUT triggering a dialog.
+// Returns: 3 = authorized, 2 = denied, 1 = restricted, 0 = notDetermined, -1 = OS too old, -2 = unknown.
+int apple_speech_get_auth_status(void);
+
 // Transcribe PCM f32 audio samples using Apple's SFSpeechRecognizer.
 // samples        – pointer to float32 samples, mono, interleaved
 // sample_count   – number of samples

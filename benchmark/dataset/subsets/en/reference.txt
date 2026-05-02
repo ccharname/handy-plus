@@ -1,0 +1,4 @@
+fn_lyrics_en_1.wav	when I was young, I listened to the radio waiting for my favorite songs when they played, I sing along. it made me smile.
+fn_lyrics_en_2.wav	i see your monsters. i see your pain, tell me your problems. i'll chase them away. i'll be your lighthouse. i'll make it okay. when i see your monsters. i'll stand there so brave and chase them all away.
+fn_lyrics_en_3.wav	an empty street, an empty house, a hole inside my heart. i'm all alone the rooms are getting smaller. i wonder how i wonder why? i wonder where they are the days we had the songs we sang together.
+sv_en.wav	The tribal chieftain called for the boy and presented him with fifty pieces of gold.

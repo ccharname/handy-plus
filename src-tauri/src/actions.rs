@@ -287,7 +287,7 @@ async fn run_single_llm_step(
     }
 }
 
-async fn post_process_transcription(
+pub(crate) async fn post_process_transcription(
     settings: &AppSettings,
     transcription: &str,
     effective: Option<&EffectiveSettings>,
@@ -1011,3 +1011,267 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     );
     map
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Diary archival — unit tests
+// ─────────────────────────────────────────────────────────────────────────────
+#[cfg(test)]
+mod diary_tests {
+    use super::*;
+    use crate::settings::{get_default_settings, AppSettings};
+
+    /// Build a minimal settings object with diary fields set.
+    fn build_settings(diary_dir: Option<&str>, keywords: Vec<&str>) -> AppSettings {
+        let mut s = get_default_settings();
+        s.diary_dir = diary_dir.map(|d| d.to_string());
+        s.diary_keywords = keywords.into_iter().map(|k| k.to_string()).collect();
+        s
+    }
+
+    // ── 1. Basic Chinese keyword trigger ─────────────────────────────────────
+    #[test]
+    fn test_basic_chinese_diary_trigger() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = dir.path().to_str().unwrap();
+        let settings = build_settings(Some(path), vec!["日记"]);
+
+        let matched = maybe_archive_diary(&settings, "日记 今天阳光真好");
+        assert!(matched, "Chinese keyword '日记' should trigger archival");
+
+        let entries: Vec<_> = std::fs::read_dir(path)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .collect();
+        assert_eq!(entries.len(), 1, "exactly one diary file should be created");
+    }
+
+    // ── 2. Multiple CJK/ASCII separator characters ────────────────────────────
+    #[test]
+    fn test_multiple_separators() {
+        // All separator chars explicitly listed in maybe_archive_diary
+        let separators: &[&str] = &[
+            " ", "\t", ",", "，", "。", ".", "、", "：", ":", "!", "！", "？", "?",
+        ];
+        for sep in separators {
+            let dir = tempfile::TempDir::new().unwrap();
+            let path = dir.path().to_str().unwrap();
+            let settings = build_settings(Some(path), vec!["备忘"]);
+            let text = format!("备忘{}测试内容", sep);
+            assert!(
+                maybe_archive_diary(&settings, &text),
+                "separator {:?} should trigger archival",
+                sep
+            );
+        }
+    }
+
+    // ── 3. Case-insensitive English keyword ───────────────────────────────────
+    #[test]
+    fn test_case_insensitive_english() {
+        for prefix in ["diary", "Diary", "DIARY", "dIaRy"] {
+            let dir = tempfile::TempDir::new().unwrap();
+            let path = dir.path().to_str().unwrap();
+            let settings = build_settings(Some(path), vec!["diary"]);
+            let text = format!("{} testing today", prefix);
+            assert!(
+                maybe_archive_diary(&settings, &text),
+                "prefix {:?} should match case-insensitively",
+                prefix
+            );
+        }
+    }
+
+    // ── 4. No keyword match → returns false, no file ──────────────────────────
+    #[test]
+    fn test_no_match_returns_false() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let settings = build_settings(Some(dir.path().to_str().unwrap()), vec!["日记"]);
+
+        let matched = maybe_archive_diary(&settings, "今天天气真好");
+        assert!(!matched, "unrelated text should not match");
+
+        let entries: Vec<_> = std::fs::read_dir(dir.path())
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .collect();
+        assert_eq!(entries.len(), 0, "no file should be created on non-match");
+    }
+
+    // ── 5. diary_dir = None → disabled, returns false ─────────────────────────
+    #[test]
+    fn test_diary_dir_none_skips() {
+        let settings = build_settings(None, vec!["日记"]);
+        assert!(
+            !maybe_archive_diary(&settings, "日记 测试"),
+            "should return false when diary_dir is None"
+        );
+    }
+
+    // ── 6. diary_dir = empty string → disabled ────────────────────────────────
+    #[test]
+    fn test_diary_dir_empty_string_skips() {
+        let settings = build_settings(Some(""), vec!["日记"]);
+        assert!(
+            !maybe_archive_diary(&settings, "日记 测试"),
+            "should return false when diary_dir is empty string"
+        );
+    }
+
+    // ── 7. Tilde (~) expansion ────────────────────────────────────────────────
+    #[test]
+    fn test_tilde_expansion() {
+        let subdir_name = format!("handy_test_diary_{}", std::process::id());
+        let tilde_path = format!("~/{}", subdir_name);
+        let settings = build_settings(Some(&tilde_path), vec!["日记"]);
+
+        let matched = maybe_archive_diary(&settings, "日记 测试展开");
+        assert!(matched, "tilde path should be accepted and keyword matched");
+
+        // Cleanup
+        if let Some(home) = dirs_next::home_dir() {
+            let expanded = home.join(&subdir_name);
+            std::fs::remove_dir_all(&expanded).ok();
+        }
+    }
+
+    // ── 8. File format: ## HH:MM header + body ───────────────────────────────
+    #[test]
+    fn test_file_format_hh_mm() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let settings = build_settings(Some(dir.path().to_str().unwrap()), vec!["日记"]);
+
+        maybe_archive_diary(&settings, "日记 测试格式");
+
+        let entry = std::fs::read_dir(dir.path())
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .next()
+            .expect("diary file should exist");
+        let content = std::fs::read_to_string(entry.path()).unwrap();
+
+        assert!(
+            content.starts_with("## "),
+            "entry should start with markdown h2 header: {:?}",
+            content
+        );
+        // The first line is "## HH:MM" — verify it contains ':'
+        let first_line = content.lines().next().unwrap_or("");
+        assert!(
+            first_line.contains(':'),
+            "header should contain HH:MM time with colon: {:?}",
+            first_line
+        );
+        assert!(
+            content.contains("测试格式"),
+            "body text should be present in file"
+        );
+    }
+
+    // ── 9. Append mode: two entries → same file ───────────────────────────────
+    #[test]
+    fn test_append_mode() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let settings = build_settings(Some(dir.path().to_str().unwrap()), vec!["日记"]);
+
+        maybe_archive_diary(&settings, "日记 第一条");
+        maybe_archive_diary(&settings, "日记 第二条");
+
+        let entries: Vec<_> = std::fs::read_dir(dir.path())
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .collect();
+        assert_eq!(
+            entries.len(),
+            1,
+            "both entries should append to same daily file"
+        );
+
+        let content = std::fs::read_to_string(entries[0].path()).unwrap();
+        assert!(
+            content.contains("第一条"),
+            "first entry body should be in file"
+        );
+        assert!(
+            content.contains("第二条"),
+            "second entry body should be in file"
+        );
+    }
+
+    // ── 10. Body text stripped of keyword prefix ──────────────────────────────
+    #[test]
+    fn test_body_excludes_keyword() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let settings = build_settings(Some(dir.path().to_str().unwrap()), vec!["note"]);
+
+        maybe_archive_diary(&settings, "note: important meeting at 3pm");
+
+        let entry = std::fs::read_dir(dir.path())
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .next()
+            .expect("diary file should exist");
+        let content = std::fs::read_to_string(entry.path()).unwrap();
+
+        assert!(
+            content.contains("important meeting at 3pm"),
+            "body should contain text after the keyword"
+        );
+        // The keyword itself should NOT appear in the body (it was the prefix)
+        let body_section = content
+            .lines()
+            .skip(1) // skip ## HH:MM header
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(
+            !body_section.trim_start().starts_with("note"),
+            "body should not start with the keyword: {:?}",
+            body_section
+        );
+    }
+
+    // ── 11. Keyword at end only (no body) → archived with empty body ──────────
+    #[test]
+    fn test_keyword_only_no_body() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let settings = build_settings(Some(dir.path().to_str().unwrap()), vec!["日记"]);
+
+        // Just the keyword, no body text
+        let matched = maybe_archive_diary(&settings, "日记");
+        assert!(matched, "lone keyword should still match");
+        // File should be created
+        let entries: Vec<_> = std::fs::read_dir(dir.path())
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .collect();
+        assert_eq!(
+            entries.len(),
+            1,
+            "file should be created even with empty body"
+        );
+    }
+
+    // ── 12. Multiple keywords configured — first match wins ───────────────────
+    #[test]
+    fn test_multiple_keywords_configured() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let settings = build_settings(
+            Some(dir.path().to_str().unwrap()),
+            vec!["日记", "memo", "note"],
+        );
+
+        assert!(maybe_archive_diary(&settings, "memo 购物清单"));
+        assert!(maybe_archive_diary(&settings, "note buy milk"));
+        assert!(maybe_archive_diary(&settings, "日记 第三条"));
+
+        let entries: Vec<_> = std::fs::read_dir(dir.path())
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .collect();
+        // All three should append to the same daily file
+        assert_eq!(entries.len(), 1, "all entries should go to same daily file");
+        let content = std::fs::read_to_string(entries[0].path()).unwrap();
+        assert!(content.contains("购物清单"));
+        assert!(content.contains("buy milk"));
+        assert!(content.contains("第三条"));
+    }
+}

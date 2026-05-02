@@ -972,12 +972,18 @@ impl TranscriptionManager {
                     },
                 );
 
+                // Helper: returns true for errors that should NOT trigger a network fallback.
+                let is_fatal_error = |msg: &str| {
+                    msg.contains("Apple Speech permission not granted")
+                        || msg.contains("Apple Speech authorization timed out")
+                };
+
                 match first_result {
                     Ok(text) => Ok(transcribe_rs::TranscriptionResult {
                         text,
                         segments: None,
                     }),
-                    Err(ref e) if require_on_device => {
+                    Err(ref e) if require_on_device && !is_fatal_error(e) => {
                         warn!(
                             "Apple Speech on-device attempt failed ({}); retrying with network recognition",
                             e
@@ -1300,7 +1306,7 @@ fn apply_punc_zh_if_applicable(
         (0x3400..=0x4DBF).contains(&cp)         // CJK Ext A
             || (0x4E00..=0x9FFF).contains(&cp)  // CJK Unified Ideographs
             || (0xF900..=0xFAFF).contains(&cp)  // CJK Compatibility Ideographs
-            || (0x3000..=0x303F).contains(&cp)  // CJK Symbols and Punctuation
+            || (0x3000..=0x303F).contains(&cp) // CJK Symbols and Punctuation
     });
 
     if !language_says_zh && !text_has_cjk {

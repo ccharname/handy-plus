@@ -88,35 +88,47 @@ private func transcribeImpl(
 
     // Request authorization first (blocking, using semaphore pattern).
     // This should not show a dialog on subsequent calls once permission is granted.
+    // Use a 5-second timeout so automated/headless contexts (no one to click the dialog)
+    // never hang indefinitely.
     let authSemaphore = DispatchSemaphore(value: 0)
-    var authStatus: SFSpeechRecognizerAuthorizationStatus = .notDetermined
-    SFSpeechRecognizer.requestAuthorization { status in
-        authStatus = status
-        authSemaphore.signal()
+    var authStatus: SFSpeechRecognizerAuthorizationStatus = SFSpeechRecognizer.authorizationStatus()
+
+    if authStatus == .notDetermined {
+        // Only call requestAuthorization when truly undetermined; this may show a dialog.
+        SFSpeechRecognizer.requestAuthorization { status in
+            authStatus = status
+            authSemaphore.signal()
+        }
+        let authDeadline = DispatchTime.now() + .seconds(5)
+        if authSemaphore.wait(timeout: authDeadline) == .timedOut {
+            responsePtr.pointee.error_message = duplicateCString(
+                "AUTH_TIMEOUT: Speech recognition authorization dialog timed out (5s). Please grant permission in System Settings → Privacy & Security → Speech Recognition."
+            )
+            return responsePtr
+        }
     }
-    authSemaphore.wait()
 
     switch authStatus {
     case .authorized:
         break // proceed
     case .denied:
         responsePtr.pointee.error_message = duplicateCString(
-            "Speech recognition authorization denied. Please enable in System Preferences > Privacy > Speech Recognition."
+            "PERM_DENIED: Speech recognition authorization denied. Please enable in System Settings → Privacy & Security → Speech Recognition."
         )
         return responsePtr
     case .restricted:
         responsePtr.pointee.error_message = duplicateCString(
-            "Speech recognition is restricted on this device."
+            "PERM_DENIED: Speech recognition is restricted on this device."
         )
         return responsePtr
     case .notDetermined:
         responsePtr.pointee.error_message = duplicateCString(
-            "Speech recognition authorization not determined."
+            "PERM_DENIED: Speech recognition authorization not determined after request."
         )
         return responsePtr
     @unknown default:
         responsePtr.pointee.error_message = duplicateCString(
-            "Unknown speech recognition authorization status."
+            "PERM_DENIED: Unknown speech recognition authorization status."
         )
         return responsePtr
     }
@@ -165,8 +177,9 @@ private func transcribeImpl(
     request.append(pcmBuffer)
     request.endAudio()
 
-    // Start recognition task
-    recognizer.recognitionTask(with: request) { result, error in
+    // Start recognition task; keep a reference so the GCD timer can cancel it.
+    var recognitionTask: SFSpeechRecognitionTask?
+    recognitionTask = recognizer.recognitionTask(with: request) { result, error in
         if let result = result {
             if result.isFinal {
                 box.text = result.bestTranscription.formattedString
@@ -182,20 +195,37 @@ private func transcribeImpl(
         }
     }
 
-    // Wait with optional timeout
-    let waitResult: DispatchTimeoutResult
-    if timeoutMs <= 0 {
-        semaphore.wait()
-        waitResult = .success
-    } else {
-        let deadline = DispatchTime.now() + .milliseconds(Int(timeoutMs))
-        waitResult = semaphore.wait(timeout: deadline)
+    // GCD timer guard: independently force-cancels the recognition task and signals
+    // the semaphore after timeoutMs.  This ensures the semaphore is ALWAYS signaled
+    // even when the SFSpeech completion handler never fires (e.g. permission not granted,
+    // on-device model missing, or framework deadlock).
+    var timerWorkItem: DispatchWorkItem?
+    if timeoutMs > 0 {
+        let workItem = DispatchWorkItem {
+            recognitionTask?.cancel()
+            recognitionTask = nil
+            if box.text == nil && box.error == nil {
+                box.error = "TIMEOUT: Apple Speech timed out after \(timeoutMs)ms. The recognizer may be unavailable or waiting for first-use initialization."
+            }
+            semaphore.signal()
+        }
+        timerWorkItem = workItem
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(
+            deadline: .now() + .milliseconds(Int(timeoutMs)),
+            execute: workItem
+        )
     }
 
-    if waitResult == .timedOut {
-        responsePtr.pointee.error_message = duplicateCString(
-            "Speech recognition timed out after \(timeoutMs)ms."
-        )
+    // Wait — either the recognition callback or the GCD timer will signal us.
+    semaphore.wait()
+
+    // Cancel the timer if recognition finished first (race-safe: cancelling an already
+    // executed DispatchWorkItem is a no-op).
+    timerWorkItem?.cancel()
+
+    // Propagate timeout error set by the timer work item
+    if let errMsg = box.error, errMsg.hasPrefix("TIMEOUT:") {
+        responsePtr.pointee.error_message = duplicateCString(errMsg)
         return responsePtr
     }
 
@@ -203,12 +233,30 @@ private func transcribeImpl(
         responsePtr.pointee.text = duplicateCString(text)
         responsePtr.pointee.success = 1
     } else {
-        responsePtr.pointee.error_message = duplicateCString(
-            box.error ?? "Unknown speech recognition error."
-        )
+        let rawErr = box.error ?? "Unknown speech recognition error."
+        // Ensure engine-level errors are prefixed so Rust can classify them.
+        let prefixedErr = rawErr.hasPrefix("TIMEOUT:") || rawErr.hasPrefix("PERM_DENIED:") || rawErr.hasPrefix("AUTH_TIMEOUT:")
+            ? rawErr
+            : "ENGINE: \(rawErr)"
+        responsePtr.pointee.error_message = duplicateCString(prefixedErr)
     }
 
     return responsePtr
+}
+
+// MARK: - Auth status query (C-callable, no dialog)
+
+@_cdecl("apple_speech_get_auth_status")
+public func appleSpeechGetAuthStatus() -> Int32 {
+    guard #available(macOS 10.15, *) else { return -1 }
+    let status = SFSpeechRecognizer.authorizationStatus()
+    switch status {
+    case .authorized:      return 3
+    case .denied:          return 2
+    case .restricted:      return 1
+    case .notDetermined:   return 0
+    @unknown default:      return -2
+    }
 }
 
 // MARK: - Public C-callable transcription entry points

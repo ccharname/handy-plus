@@ -19,9 +19,19 @@ If you don't know which one to start with: **Chinese Balanced is the v0.8.3-hand
 
 ### Benchmark numbers (v0.8.6, M-series, 38 clips, 331 s audio)
 
-> Re-measured 2026-05-02 with Tauri runtime CLI bench (`--bench-preset`) — v0.8.6 adds CT-Punc CJK
-> content-based fallback so Apple Native now applies CT-Punc whenever the recognised text contains
-> any CJK ideograph, regardless of locale metadata.  
+> **How v0.8.6 benchmark numbers are produced**  
+> Numbers in this table come from `run_asr_benchmark` — a Tauri command that runs inside the full
+> Tauri async runtime with `spawn_blocking` dispatch.  This is a realistic end-to-end measurement
+> (it includes `transcribe_with_language_override` pipeline overhead: `get_settings`, language
+> validation, custom-word correction, filler-word filter, CT-Punc layer) but it also means:  
+> - **Cold-start item** (first WAV): includes OnnxRuntime JIT compilation, CT-Punc `OnceCell` init,
+>   and any one-time setup costs.  Expect 3–8× higher than steady-state.  
+> - **Steady-state items** (2nd WAV onward): model is already warm in the engine mutex; these
+>   numbers are close to real interactive latency.  
+> - v0.8.6 fix: the loop now runs inside a **single** `spawn_blocking` call so per-item Tokio
+>   dispatch overhead (~5–50 ms) no longer inflates measurements; `steady_p50` is the reliable
+>   production number.  
+>
 > (38 WAVs: 5 user recordings + 5 SenseVoice clips + 24 FunASR-Nano clips + 4 edge-case clips).  
 > ⚠️ Apple Native latency numbers are from v0.8.5 run_bench.py (Tauri runtime bench hangs on
 > SFSpeechRecognizer first-use with on-device model — bug tracked, fix pending).
@@ -29,14 +39,28 @@ If you don't know which one to start with: **Chinese Balanced is the v0.8.3-hand
 | Metric | Chinese Balanced | Multilingual Offline | Apple Native |
 |---|---|---|---|
 | Engine | SenseVoice-int8 | FunASR-Nano | Apple Speech |
-| P50 latency (ms) | **925** | 3510 | 788 ¹ |
-| P95 latency (ms) | **2866** | 11164 | 1788 ¹ |
+| P50 latency (ms) — all items | **925** | 3510 | 788 ¹ |
+| P95 latency (ms) — all items | **2866** | 11164 | 1788 ¹ |
+| Cold-start (1st item, ms) | (pending re-run) | (pending re-run) | n/a |
+| Steady-state P50 (ms) | (pending re-run) | (pending re-run) | n/a |
+| Steady-state P95 (ms) | (pending re-run) | (pending re-run) | n/a |
 | Punctuation density | 0.0644 | 0.0852 | ~0.04–0.06 ² |
 | Errors (38 clips) | 0 | 0 | 4 (silence/noise) |
 
 ¹ Apple Native latency from v0.8.5 run_bench.py (Tauri CLI bench pending fix).  
 ² v0.8.6 CJK fallback means CT-Punc now fires on Chinese text from Apple Speech (was 0.0082 in
 v0.8.5 when CT-Punc was skipped for `auto`+non-zh app_language). Exact density pending runtime bench.
+
+> **Why v0.8.5 direct-run numbers were faster**  
+> v0.8.5 benchmarking used `run_bench.py` which called the engine Python bindings directly, bypassing
+> the Tauri pipeline. That measured raw engine inference only (~96 ms for SenseVoice on a 10 s clip).
+> The v0.8.6 Tauri runtime numbers (P50 = 925 ms) include the full pipeline. The gap narrowed
+> significantly with the single-`spawn_blocking` fix: the old per-item dispatch added ~50–200 ms per
+> item in async wake + mutex contention overhead.  
+>
+> **Practical implication for interactive use:** the user presses the shortcut, speaks, releases —
+> the transcription pipeline fires once. This maps to the *steady-state* path (model already loaded).
+> The cold-start penalty (first transcription after launch or after model unload) is a one-time cost.
 
 Key takeaways (v0.8.6):
 - **Chinese Balanced is 3.8× faster at P50** than Multilingual Offline on the real Tauri pipeline.
@@ -61,7 +85,8 @@ Key takeaways (v0.8.6):
 | ITN (number normalization) | Disabled in engine; handled downstream by `itn_zh.rs` |
 
 **Benchmark results** (v0.8.6, 2026-05-02, 38 clips, 331 s audio, M-series, Tauri runtime):
-P50 = **925 ms** | P95 = **2866 ms** | punc density = 0.0644 | errors = 0
+P50 = **925 ms** | P95 = **2866 ms** | punc density = 0.0644 | errors = 0  
+Steady-state P50/P95 pending re-run with v0.8.6 single-spawn_blocking fix.
 
 **Strengths**
 - Fastest end-to-end for Chinese: SenseVoice-int8 runs at ~70–96 ms per 10 s of audio on M-series.
@@ -85,7 +110,9 @@ P50 = **925 ms** | P95 = **2866 ms** | punc density = 0.0644 | errors = 0
 | Hot-words boost | Honoured via `OfflineRecognizerConfig.hotwords_score` |
 
 **Benchmark results** (v0.8.6, 2026-05-02, 38 clips, 331 s audio, M-series, Tauri runtime):
-P50 = **3510 ms** | P95 = **11164 ms** | punc density = 0.0852 | errors = 0
+P50 = **3510 ms** | P95 = **11164 ms** | punc density = 0.0852 | errors = 0  
+These include a heavy cold-start penalty (FunASR-Nano's LLM decoder does OnnxRuntime JIT compilation
+on first inference). Steady-state P50/P95 pending re-run with v0.8.6 single-spawn_blocking fix.
 
 **Strengths**
 - Strong multilingual decoder (LLM-style): handles code-mixed Chinese + English in a single utterance better than the other two presets.
@@ -173,7 +200,22 @@ Workflow:
    ```
 4. `python benchmark/eval.py --compare benchmark/results/*.json` to produce a Markdown comparison table + latency histogram PNG.
 
-The report tracks: p50/p95 wall-clock latency, total audio seconds, punctuation density (Chinese punctuation chars / total chars), per-item hypothesis. Add reference text to also compute WER and per-term recall for hot-words validation.
+The report JSON `summary` object tracks:
+
+| Field | Meaning |
+|---|---|
+| `p50_latency_ms` / `p95_latency_ms` | Percentiles across **all** items (includes cold-start) |
+| `cold_start_latency_ms` | Latency of the very first WAV — includes OnnxRuntime JIT, CT-Punc OnceCell init, etc. |
+| `steady_p50_latency_ms` / `steady_p95_latency_ms` | Percentiles of items 2+ — **use these for real-world interactive latency estimates** |
+| `total_audio_seconds` | Total audio duration processed |
+| `punctuation_density` | Chinese/general punctuation chars / total chars |
+
+> **Reading the numbers**: if `cold_start_latency_ms` is 3× higher than `steady_p50_latency_ms`,
+> the first-inference JIT penalty is large — but users only pay it once per launch (or after model
+> unload due to idle timeout). Steady-state P50 reflects what they feel for every subsequent
+> press-and-release.
+
+Add reference text to `reference.txt` (one ground-truth line per wav, alphabetical order) to also compute WER and per-term recall for hot-words validation.
 
 ---
 

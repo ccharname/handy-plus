@@ -1,0 +1,283 @@
+{
+  "preset_id": "multilingual_offline",
+  "preset_name": "Multilingual Offline",
+  "model_id": "funasr-nano",
+  "language": "auto",
+  "punc_zh_enabled": true,
+  "timestamp": "2026-05-02T01:45:10Z",
+  "items": [
+    {
+      "wav": "edge_1500ms_silence.wav",
+      "hypothesis": "我们修复什么呢？",
+      "latency_ms": 756,
+      "punc_count": 1,
+      "char_count": 8
+    },
+    {
+      "wav": "edge_2s_440hz_tone.wav",
+      "hypothesis": "嗯。",
+      "latency_ms": 758,
+      "punc_count": 1,
+      "char_count": 2
+    },
+    {
+      "wav": "edge_3s_noise.wav",
+      "hypothesis": "900 ~ 400 .。",
+      "latency_ms": 1393,
+      "punc_count": 2,
+      "char_count": 12
+    },
+    {
+      "wav": "edge_500ms_silence.wav",
+      "hypothesis": "嗯。",
+      "latency_ms": 447,
+      "punc_count": 1,
+      "char_count": 2
+    },
+    {
+      "wav": "fn_dia_hunan.wav",
+      "hypothesis": "他总得来讲，顺本搭本花的那个文用比帕专略胜一筹。。",
+      "latency_ms": 3386,
+      "punc_count": 3,
+      "char_count": 25
+    },
+    {
+      "wav": "fn_dia_minnan.wav",
+      "hypothesis": "会买哪有机会吧？，因为即句吼开得吼，赚得再厉害，会会发生啊。。",
+      "latency_ms": 3687,
+      "punc_count": 6,
+      "char_count": 31
+    },
+    {
+      "wav": "fn_dia_sh.wav",
+      "hypothesis": "人跟狗，包括人跟动物接触上了侪有感情，葛末传了阿拉社会个赋予。",
+      "latency_ms": 3325,
+      "punc_count": 3,
+      "char_count": 31
+    },
+    {
+      "wav": "fn_dia_yue.wav",
+      "hypothesis": "啲身体好劲啊，跟住咧佢哋有一个人咧，就突然可能就系高原反应啦，突然间就啊窒息咗，即系晕晕咗。",
+      "latency_ms": 5553,
+      "punc_count": 5,
+      "char_count": 46
+    },
+    {
+      "wav": "fn_far_2.wav",
+      "hypothesis": "然后被冠以了渣兰线的称号，好了，不冠名了。。那么前方即将到达省估公路站。，左边是8号线。",
+      "latency_ms": 4081,
+      "punc_count": 7,
+      "char_count": 44
+    },
+    {
+      "wav": "fn_far_3.wav",
+      "hypothesis": "周末要不要去露营？最近天气超舒服，露营，好怕虫子咬，而且晚上睡帐篷会不会很冷啊？放心，我借了专业装备，还有暖宝宝，再带点火锅食材，边吃边看星星超惬意。",
+      "latency_ms": 11155,
+      "punc_count": 10,
+      "char_count": 75
+    },
+    {
+      "wav": "fn_far_4.wav",
+      "hypothesis": "唯一的遗憾就是他那个8宝鸭还有烤鸭都没吃上，估计得提前预定吧。，只能怪我自己没有做好功课。。",
+      "latency_ms": 4423,
+      "punc_count": 5,
+      "char_count": 46
+    },
+    {
+      "wav": "fn_far_5.wav",
+      "hypothesis": "别紧张，，我只是我是在这边逛街，，然后看到你们在这边拍照。，想跟你交个朋友，认识一下。",
+      "latency_ms": 4381,
+      "punc_count": 8,
+      "char_count": 43
+    },
+    {
+      "wav": "fn_ja.wav",
+      "hypothesis": "緻穏たは金欲しさにオウオのけものにしてしまって、何でもすべて商人のところへ持っていってしまいました。",
+      "latency_ms": 4454,
+      "punc_count": 2,
+      "char_count": 50
+    },
+    {
+      "wav": "fn_ja_en_codeswitch.wav",
+      "hypothesis": "このカフェのワイファイがアンスタイブルすぎてgoogleメイとでディスコネクトされてクライエントに悪い印象を与えてしまった。",
+      "latency_ms": 4560,
+      "punc_count": 1,
+      "char_count": 62
+    },
+    {
+      "wav": "fn_lyrics.wav",
+      "hypothesis": "我看到我的身后，对着我的人群喜欢祸，恨不一样的神情。，我知道，这可能就是所谓的成名。，我知道必须往前一步，一步，不能停。。",
+      "latency_ms": 4319,
+      "punc_count": 11,
+      "char_count": 61
+    },
+    {
+      "wav": "fn_lyrics_2.wav",
+      "hypothesis": "明明那么认为，可却感觉离它那么近。。闭上眼睛。，深深的背负着所有压抑。。虽然都听说唱了，，但你要学会自信。，我代表所有的说唱歌手向你致敬。，不听存在困难的你早已不在高原。。",
+      "latency_ms": 9133,
+      "punc_count": 15,
+      "char_count": 86
+    },
+    {
+      "wav": "fn_lyrics_3.wav",
+      "hypothesis": "你听啊，秋末的落叶，，你听它叹息着，离别，只剩我独自领略海与山风和月。你听啊。",
+      "latency_ms": 7651,
+      "punc_count": 7,
+      "char_count": 39
+    },
+    {
+      "wav": "fn_lyrics_en_1.wav",
+      "hypothesis": "When IOS young，I'd listen to the radio Waiting for my favorite songs When they played，I'd sing along。And made me smile。",
+      "latency_ms": 9292,
+      "punc_count": 4,
+      "char_count": 119
+    },
+    {
+      "wav": "fn_lyrics_en_2.wav",
+      "hypothesis": "I see your monsters ,。I see your pain ,。tell me your problems ,。I'll chase them away .。I'll be your lighthouse . I'll make it okay。when I see your monsters . I'll stand there。so brave and chase them all away .。",
+      "latency_ms": 11802,
+      "punc_count": 14,
+      "char_count": 210
+    },
+    {
+      "wav": "fn_lyrics_en_3.wav",
+      "hypothesis": "An empty street，an empty house，A hole inside my heart。I'm all alone the rooms are getting smaller。I wonder how I wonder why？I wonder where they are The days。",
+      "latency_ms": 11742,
+      "punc_count": 6,
+      "char_count": 157
+    },
+    {
+      "wav": "fn_noise_en.wav",
+      "hypothesis": "So what's interesting here？iOS？I feel that brands knowing this ,，when people sort of speak to the voice assistants at home。and if you want to be the brand .。",
+      "latency_ms": 5473,
+      "punc_count": 7,
+      "char_count": 157
+    },
+    {
+      "wav": "fn_rag_biochemistry.wav",
+      "hypothesis": "利用3磷酸腺苷的水解所产生的能量来驱动其他化学反应。",
+      "latency_ms": 3243,
+      "punc_count": 1,
+      "char_count": 26
+    },
+    {
+      "wav": "fn_rag_chemistry.wav",
+      "hypothesis": "苹果够味甜吗？",
+      "latency_ms": 2015,
+      "punc_count": 1,
+      "char_count": 7
+    },
+    {
+      "wav": "fn_rag_history.wav",
+      "hypothesis": "由罗马皇帝钦点的犹地亚王大西律王统治期间。",
+      "latency_ms": 3174,
+      "punc_count": 1,
+      "char_count": 21
+    },
+    {
+      "wav": "fn_rag_math.wav",
+      "hypothesis": "一、最第一类装置是相对派对，21类是相对派对状态。",
+      "latency_ms": 2801,
+      "punc_count": 3,
+      "char_count": 25
+    },
+    {
+      "wav": "fn_rag_medical.wav",
+      "hypothesis": "肾脏中肾小球囊上的细胞膜孔隙很小。",
+      "latency_ms": 2384,
+      "punc_count": 1,
+      "char_count": 17
+    },
+    {
+      "wav": "fn_rag_physics.wav",
+      "hypothesis": "根据碰撞理论，月面样本，缺少挥发性物质。",
+      "latency_ms": 3760,
+      "punc_count": 3,
+      "char_count": 20
+    },
+    {
+      "wav": "fn_vietnamese.wav",
+      "hypothesis": "idekowallike桃心ktvvayoko lehigh leucendia。",
+      "latency_ms": 3134,
+      "punc_count": 1,
+      "char_count": 41
+    },
+    {
+      "wav": "handy-1777683331.wav",
+      "hypothesis": "它的这个实时写入并不是在嗯输入端，，而是在录音端啊。。",
+      "latency_ms": 2804,
+      "punc_count": 4,
+      "char_count": 27
+    },
+    {
+      "wav": "handy-1777683335.wav",
+      "hypothesis": "但但感觉确实快。",
+      "latency_ms": 1062,
+      "punc_count": 1,
+      "char_count": 8
+    },
+    {
+      "wav": "handy-1777683339.wav",
+      "hypothesis": "很好的一个输入法。",
+      "latency_ms": 1032,
+      "punc_count": 1,
+      "char_count": 9
+    },
+    {
+      "wav": "handy-1777683342.wav",
+      "hypothesis": "特别棒。",
+      "latency_ms": 699,
+      "punc_count": 1,
+      "char_count": 4
+    },
+    {
+      "wav": "handy-1777683357.wav",
+      "hypothesis": "A B C三个sonnet同时跑，A跑bench，上周3帕什比加标用例。B是punch，target加状态提示，下载按钮加进度条。C是启动库目录。",
+      "latency_ms": 7709,
+      "punc_count": 7,
+      "char_count": 73
+    },
+    {
+      "wav": "sv_en.wav",
+      "hypothesis": "the tribal chieftain called for the boy and presented him with fifty pieces of gold。",
+      "latency_ms": 3126,
+      "punc_count": 1,
+      "char_count": 84
+    },
+    {
+      "wav": "sv_ja.wav",
+      "hypothesis": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。",
+      "latency_ms": 3677,
+      "punc_count": 1,
+      "char_count": 35
+    },
+    {
+      "wav": "sv_ko.wav",
+      "hypothesis": "ちょくまんがんはふむさのさあふむかを持ってやるけん。",
+      "latency_ms": 2903,
+      "punc_count": 1,
+      "char_count": 26
+    },
+    {
+      "wav": "sv_yue.wav",
+      "hypothesis": "两个字起都表达唔到我想讲嘅意思。",
+      "latency_ms": 2079,
+      "punc_count": 1,
+      "char_count": 16
+    },
+    {
+      "wav": "sv_zh.wav",
+      "hypothesis": "开饭时间，早上九点至下午五点。",
+      "latency_ms": 2135,
+      "punc_count": 2,
+      "char_count": 15
+    }
+  ],
+  "summary": {
+    "total_items": 38,
+    "total_audio_seconds": 331.1147500000001,
+    "p50_latency_ms": 3386,
+    "p95_latency_ms": 11155,
+    "punctuation_density": 0.08522727272727272
+  }
+}

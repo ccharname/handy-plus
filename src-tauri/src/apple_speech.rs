@@ -14,11 +14,66 @@ pub struct AppleSpeechResponse {
 /// `partial_text` is a transient UTF-8 C string valid only for the callback duration.
 pub type PartialCallback = unsafe extern "C" fn(*const c_char, *mut c_void);
 
+/// Parsed classification of an error string returned by the Swift layer.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AppleSpeechError {
+    /// Speech recognition permission denied or restricted.
+    PermissionDenied(String),
+    /// Authorization dialog timed out (headless / no user present).
+    AuthTimeout(String),
+    /// Recognition timed out (GCD timer fired before completion handler).
+    Timeout(String),
+    /// Framework/engine error (all other errors).
+    Engine(String),
+}
+
+impl std::fmt::Display for AppleSpeechError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AppleSpeechError::PermissionDenied(msg) => write!(
+                f,
+                "Apple Speech permission not granted: {}. Please authorize in System Settings → Privacy & Security → Speech Recognition.",
+                msg
+            ),
+            AppleSpeechError::AuthTimeout(msg) => write!(
+                f,
+                "Apple Speech authorization timed out: {}",
+                msg
+            ),
+            AppleSpeechError::Timeout(msg) => write!(
+                f,
+                "Apple Speech timed out: {}. The recognizer may be stuck on first-use; please try again.",
+                msg
+            ),
+            AppleSpeechError::Engine(msg) => write!(f, "Apple Speech engine error: {}", msg),
+        }
+    }
+}
+
+/// Parse the prefixed error strings returned by the Swift layer into a typed error.
+pub fn parse_apple_speech_error(raw: &str) -> AppleSpeechError {
+    if let Some(rest) = raw.strip_prefix("PERM_DENIED: ") {
+        AppleSpeechError::PermissionDenied(rest.to_owned())
+    } else if let Some(rest) = raw.strip_prefix("AUTH_TIMEOUT: ") {
+        AppleSpeechError::AuthTimeout(rest.to_owned())
+    } else if let Some(rest) = raw.strip_prefix("TIMEOUT: ") {
+        AppleSpeechError::Timeout(rest.to_owned())
+    } else if let Some(rest) = raw.strip_prefix("ENGINE: ") {
+        AppleSpeechError::Engine(rest.to_owned())
+    } else {
+        // Legacy / unprefixed error — treat as engine error.
+        AppleSpeechError::Engine(raw.to_owned())
+    }
+}
+
 // Declarations for the Swift-exported C functions.
 // We use #[link_name] to map Rust identifiers to the actual C symbol names.
 extern "C" {
     #[link_name = "is_apple_speech_available"]
     fn ffi_is_apple_speech_available() -> c_int;
+
+    #[link_name = "apple_speech_get_auth_status"]
+    fn ffi_apple_speech_get_auth_status() -> c_int;
 
     #[link_name = "transcribe_pcm_f32_apple_speech"]
     fn ffi_transcribe_pcm_f32_apple_speech(
@@ -54,6 +109,29 @@ extern "C" {
 /// Does not trigger an authorization dialog — only checks framework availability.
 pub fn is_apple_speech_available() -> bool {
     unsafe { ffi_is_apple_speech_available() == 1 }
+}
+
+/// Speech recognition authorization status (mirrors SFSpeechRecognizerAuthorizationStatus).
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum SpeechAuthStatus {
+    Authorized,
+    Denied,
+    Restricted,
+    NotDetermined,
+    Unsupported,
+}
+
+/// Query the current speech recognition authorization status WITHOUT showing a dialog.
+pub fn get_auth_status() -> SpeechAuthStatus {
+    let raw = unsafe { ffi_apple_speech_get_auth_status() };
+    match raw {
+        3 => SpeechAuthStatus::Authorized,
+        2 => SpeechAuthStatus::Denied,
+        1 => SpeechAuthStatus::Restricted,
+        0 => SpeechAuthStatus::NotDetermined,
+        _ => SpeechAuthStatus::Unsupported,
+    }
 }
 
 /// Transcribe a slice of 16-bit mono f32 PCM samples using Apple SFSpeechRecognizer.
@@ -116,12 +194,14 @@ pub fn transcribe(
             Ok(c_str.to_string_lossy().into_owned())
         }
     } else {
-        let error_c_str = if !response.error_message.is_null() {
+        let raw_err = if !response.error_message.is_null() {
             unsafe { CStr::from_ptr(response.error_message) }
+                .to_string_lossy()
+                .into_owned()
         } else {
-            CStr::from_bytes_with_nul(b"Unknown Apple Speech error\0").unwrap()
+            "Unknown Apple Speech error".to_string()
         };
-        Err(error_c_str.to_string_lossy().into_owned())
+        Err(parse_apple_speech_error(&raw_err).to_string())
     };
 
     // Free the Swift-allocated response
@@ -218,12 +298,14 @@ where
             Ok(c_str.to_string_lossy().into_owned())
         }
     } else {
-        let error_c_str = if !response.error_message.is_null() {
+        let raw_err = if !response.error_message.is_null() {
             unsafe { CStr::from_ptr(response.error_message) }
+                .to_string_lossy()
+                .into_owned()
         } else {
-            CStr::from_bytes_with_nul(b"Unknown Apple Speech error\0").unwrap()
+            "Unknown Apple Speech error".to_string()
         };
-        Err(error_c_str.to_string_lossy().into_owned())
+        Err(parse_apple_speech_error(&raw_err).to_string())
     };
 
     unsafe { ffi_free_apple_speech_response(response_ptr) };

@@ -1,0 +1,3 @@
+fn_ja_en_codeswitch.wav	このカフェのワイファイがアンステーブルすぎてグーグルミートでディスコネクトされてクライエントに悪い印象を与えてしまった。
+fn_noise_en.wav	so what's interesting here? iOS? i feel that you brands knowing this when people sort of speak to the assistants at home. and if you want to be the brand.
+fn_vietnamese.wav	

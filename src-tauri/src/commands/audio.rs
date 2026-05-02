@@ -149,6 +149,28 @@ pub fn open_microphone_privacy_settings() -> Result<(), String> {
     }
 }
 
+/// Query speech recognition authorization status without triggering a permission dialog.
+/// Returns one of: "authorized" | "denied" | "restricted" | "not_determined" | "unsupported"
+#[tauri::command]
+#[specta::specta]
+pub fn get_speech_recognition_permission() -> String {
+    #[cfg(target_os = "macos")]
+    {
+        use crate::apple_speech::{get_auth_status, SpeechAuthStatus};
+        match get_auth_status() {
+            SpeechAuthStatus::Authorized => "authorized".to_string(),
+            SpeechAuthStatus::Denied => "denied".to_string(),
+            SpeechAuthStatus::Restricted => "restricted".to_string(),
+            SpeechAuthStatus::NotDetermined => "not_determined".to_string(),
+            SpeechAuthStatus::Unsupported => "unsupported".to_string(),
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        "unsupported".to_string()
+    }
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn update_microphone_mode(app: AppHandle, always_on: bool) -> Result<(), String> {
