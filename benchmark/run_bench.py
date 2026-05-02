@@ -126,6 +126,58 @@ class FunASRNanoEngine:
         return stream.result.text, latency_ms
 
 
+class CtPuncEngine:
+    """CT-Transformer Chinese punctuation via sherpa-onnx OfflinePunctuation.
+
+    Mirrors the Rust apply_punc_zh_if_applicable logic:
+    - Only applied when punc_zh_enabled=True
+    - Applied whenever text contains CJK characters (content-based fallback)
+    - Returns text unchanged if model is absent or inference fails
+    """
+
+    def __init__(self, models_base: str):
+        import sherpa_onnx
+
+        model_dir = os.path.join(
+            models_base,
+            "sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8",
+        )
+        onnx_path = os.path.join(model_dir, "model.int8.onnx")
+        if not os.path.exists(onnx_path):
+            raise FileNotFoundError(f"CT-Punc model not found: {onnx_path}")
+
+        config = sherpa_onnx.OfflinePunctuationConfig(
+            model=sherpa_onnx.OfflinePunctuationModelConfig(
+                ct_transformer=onnx_path,
+                num_threads=1,
+            )
+        )
+        self.punct = sherpa_onnx.OfflinePunctuation(config)
+
+    @staticmethod
+    def _text_has_cjk(text: str) -> bool:
+        return any(
+            0x3400 <= ord(c) <= 0x4DBF  # CJK Ext A
+            or 0x4E00 <= ord(c) <= 0x9FFF  # CJK Unified
+            or 0xF900 <= ord(c) <= 0xFAFF  # CJK Compatibility
+            or 0x3000 <= ord(c) <= 0x303F  # CJK Symbols & Punctuation
+            for c in text
+        )
+
+    def apply(self, text: str, lang: str = "auto") -> str:
+        """Apply punctuation if conditions match (mirrors Rust logic)."""
+        if not text:
+            return text
+        lang_says_zh = lang.split("-")[0] == "zh" or lang == "yue"
+        if not lang_says_zh and not self._text_has_cjk(text):
+            return text
+        try:
+            result = self.punct.add_punctuation(text)
+            return result if result else text
+        except Exception:
+            return text
+
+
 class AppleSpeechEngine:
     """Apple Speech via compiled Swift binary."""
 
@@ -250,6 +302,20 @@ def run_preset(
     load_ms = int((time.monotonic() - t_load) * 1000)
     print(f"ready ({load_ms} ms)")
 
+    # Load CT-Punc engine for presets that have punc_zh_enabled=True.
+    # This mirrors Rust apply_punc_zh_if_applicable which is always in the pipeline.
+    punc_engine: Optional[CtPuncEngine] = None
+    if meta.get("punc_zh_enabled"):
+        try:
+            print("Loading CT-Punc model... ", end="", flush=True)
+            t_punc_load = time.monotonic()
+            punc_engine = CtPuncEngine(models_base)
+            print(f"ready ({int((time.monotonic() - t_punc_load) * 1000)} ms)")
+        except FileNotFoundError as exc:
+            print(f"SKIP (not found: {exc})")
+        except Exception as exc:
+            print(f"SKIP (error: {exc})")
+
     items = []
     total_audio_seconds = 0.0
     errors = 0
@@ -286,6 +352,10 @@ def run_preset(
             text = f"[TRANSCRIBE_ERROR: {exc}]"
             latency_ms = 0
             errors += 1
+
+        # Apply CT-Punc post-processing (mirrors Rust pipeline).
+        if punc_engine is not None and text and not text.startswith("["):
+            text = punc_engine.apply(text, lang=meta.get("language", "auto"))
 
         punc = count_punc(text)
         chars = len(text)

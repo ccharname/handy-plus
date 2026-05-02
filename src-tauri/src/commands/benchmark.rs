@@ -181,7 +181,10 @@ pub async fn run_asr_benchmark(
 ) -> Result<BenchmarkReport, String> {
     // Parse mode string (None or missing → Asr for backward-compat).
     let bench_mode = match mode.as_deref() {
-        Some("punc_only") | Some("PuncOnly") => BenchMode::PuncOnly,
+        // Accept both hyphenated (clap CLI output: "punc-only") and underscore
+        // forms (camelCase legacy) so that the single-instance forwarder works
+        // regardless of which serialisation clap produces.
+        Some("punc-only") | Some("punc_only") | Some("PuncOnly") => BenchMode::PuncOnly,
         Some("chain") | Some("Chain") => BenchMode::Chain,
         Some("swap") | Some("Swap") => BenchMode::Swap,
         _ => BenchMode::Asr,

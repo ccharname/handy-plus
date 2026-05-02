@@ -550,7 +550,7 @@ pub fn run(cli_args: CliArgs) {
                 crate::utils::cancel_current_operation(app);
             } else if let Some(preset_pos) = args.iter().position(|a| a == "--bench-preset") {
                 // Benchmark trigger: --bench-preset <id> --bench-dataset <dir> --bench-output <dir>
-                //                    [--bench-mode asr|punc_only|chain|swap]
+                //                    [--bench-mode asr|punc-only|chain|swap]
                 let preset_id = args.get(preset_pos + 1).cloned().unwrap_or_default();
                 let dataset_dir = args
                     .iter()

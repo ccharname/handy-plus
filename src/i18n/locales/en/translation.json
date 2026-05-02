@@ -617,7 +617,14 @@
       "title": "About",
       "version": {
         "title": "Version",
-        "description": "Current version of Handy"
+        "description": "Current version of Handy+ (this fork)"
+      },
+      "fork": {
+        "title": "Fork",
+        "description": "This is Handy+, a community fork maintained by @ccharname. See the upstream link for the original project.",
+        "forkLabel": "handy-plus by @ccharname",
+        "viewFork": "View fork on GitHub",
+        "viewUpstream": "View upstream (cjpais/Handy)"
       },
       "appDataDirectory": {
         "title": "App Data Directory",

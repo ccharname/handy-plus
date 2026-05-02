@@ -49,26 +49,44 @@ export const AboutSettings: React.FC = () => {
         </SettingContainer>
 
         <SettingContainer
+          title={t("settings.about.fork.title")}
+          description={t("settings.about.fork.description")}
+          grouped={true}
+          layout="stacked"
+        >
+          <div className="flex flex-col gap-2">
+            {/* eslint-disable-next-line i18next/no-literal-string */}
+            <span className="text-sm font-mono text-mid-gray">
+              {t("settings.about.fork.forkLabel")}
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() =>
+                  openUrl("https://github.com/ccharname/handy-plus")
+                }
+              >
+                {t("settings.about.fork.viewFork")}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => openUrl("https://github.com/cjpais/Handy")}
+              >
+                {t("settings.about.fork.viewUpstream")}
+              </Button>
+            </div>
+          </div>
+        </SettingContainer>
+
+        <SettingContainer
           title={t("settings.about.supportDevelopment.title")}
           description={t("settings.about.supportDevelopment.description")}
           grouped={true}
         >
           <Button variant="primary" size="md" onClick={handleDonateClick}>
             {t("settings.about.supportDevelopment.button")}
-          </Button>
-        </SettingContainer>
-
-        <SettingContainer
-          title={t("settings.about.sourceCode.title")}
-          description={t("settings.about.sourceCode.description")}
-          grouped={true}
-        >
-          <Button
-            variant="secondary"
-            size="md"
-            onClick={() => openUrl("https://github.com/cjpais/Handy")}
-          >
-            {t("settings.about.sourceCode.button")}
           </Button>
         </SettingContainer>
 

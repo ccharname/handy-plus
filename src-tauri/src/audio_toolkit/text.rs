@@ -100,7 +100,7 @@ fn find_best_match<'a>(
 /// # Returns
 /// The corrected text with custom words applied
 pub fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -> String {
-    if custom_words.is_empty() {
+    if custom_words.is_empty() || text.trim().is_empty() {
         return text.to_string();
     }
 
@@ -112,6 +112,16 @@ pub fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -
         .iter()
         .map(|w| w.replace(' ', ""))
         .collect();
+
+    // Precompute the maximum custom word length (in bytes) to skip n-grams that
+    // are already too long to match any custom word. This avoids calling
+    // find_best_match (which iterates all M words) for n-grams that will always
+    // exceed the 25%-length-difference guard.
+    let max_custom_len = custom_words_nospace
+        .iter()
+        .map(|w| w.len())
+        .max()
+        .unwrap_or(0);
 
     let words: Vec<&str> = text.split_whitespace().collect();
     let mut result = Vec::new();
@@ -128,6 +138,15 @@ pub fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -
 
             let ngram_words = &words[i..i + n];
             let ngram = build_ngram(ngram_words);
+
+            // Quick guard: if the ngram is much longer than the longest custom
+            // word it can never match — skip the full O(M) find_best_match scan.
+            // The threshold inside find_best_match uses 25% length tolerance.
+            let max_tolerated = (max_custom_len as f64 * 1.35).ceil() as usize + 2;
+            if ngram.len() > max_tolerated.max(51) {
+                // Also handles the find_best_match internal >50 guard.
+                continue;
+            }
 
             if let Some((replacement, _score)) =
                 find_best_match(&ngram, custom_words, &custom_words_nospace, threshold)

@@ -779,6 +779,8 @@ impl TranscriptionManager {
             }
         };
 
+        let engine_ms = st.elapsed().as_millis();
+
         let skip_word_correction = self
             .model_manager
             .get_model_info(&settings.selected_model)
@@ -790,6 +792,7 @@ impl TranscriptionManager {
             })
             .unwrap_or(false);
 
+        let t_custom_words = std::time::Instant::now();
         let corrected_result = if !settings.custom_words.is_empty() && !skip_word_correction {
             apply_custom_words(
                 &result.text,
@@ -799,14 +802,18 @@ impl TranscriptionManager {
         } else {
             result.text
         };
+        let custom_words_ms = t_custom_words.elapsed().as_millis();
 
+        let t_filter = std::time::Instant::now();
         let filtered_result = filter_transcription_output(
             &corrected_result,
             &settings.app_language,
             &settings.custom_filler_words,
         );
+        let filter_ms = t_filter.elapsed().as_millis();
 
         // Apply CT-Transformer Chinese punctuation when enabled and language is Chinese.
+        let t_punc = std::time::Instant::now();
         let final_result = apply_punc_zh_if_applicable(
             filtered_result,
             &validated_language,
@@ -814,11 +821,17 @@ impl TranscriptionManager {
             settings.punc_zh_enabled,
             &self.app_handle,
         );
+        let punc_ms = t_punc.elapsed().as_millis();
 
         let et = std::time::Instant::now();
+        let total_ms = (et - st).as_millis();
         info!(
             "Transcription (with language override) completed in {}ms",
-            (et - st).as_millis()
+            total_ms
+        );
+        debug!(
+            "Pipeline timing (override): engine={}ms custom_words={}ms filter={}ms punc={}ms total={}ms",
+            engine_ms, custom_words_ms, filter_ms, punc_ms, total_ms
         );
 
         if final_result.is_empty() {
@@ -1198,6 +1211,8 @@ impl TranscriptionManager {
             }
         };
 
+        let engine_ms = st.elapsed().as_millis();
+
         // Apply word correction if custom words are configured.
         // Skip for Whisper (custom words passed as initial_prompt) and Apple Speech
         // (custom words passed as contextual hints to SFSpeechRecognizer).
@@ -1212,6 +1227,7 @@ impl TranscriptionManager {
             })
             .unwrap_or(false);
 
+        let t_custom_words = std::time::Instant::now();
         let corrected_result = if !settings.custom_words.is_empty() && !skip_word_correction {
             apply_custom_words(
                 &result.text,
@@ -1221,15 +1237,19 @@ impl TranscriptionManager {
         } else {
             result.text
         };
+        let custom_words_ms = t_custom_words.elapsed().as_millis();
 
         // Filter out filler words and hallucinations
+        let t_filter = std::time::Instant::now();
         let filtered_result = filter_transcription_output(
             &corrected_result,
             &settings.app_language,
             &settings.custom_filler_words,
         );
+        let filter_ms = t_filter.elapsed().as_millis();
 
         // Apply CT-Transformer Chinese punctuation when enabled and language is Chinese.
+        let t_punc = std::time::Instant::now();
         let final_result = apply_punc_zh_if_applicable(
             filtered_result,
             &validated_language,
@@ -1237,8 +1257,10 @@ impl TranscriptionManager {
             settings.punc_zh_enabled,
             &self.app_handle,
         );
+        let punc_ms = t_punc.elapsed().as_millis();
 
         let et = std::time::Instant::now();
+        let total_ms = (et - st).as_millis();
         let translation_note = if settings.translate_to_english {
             " (translated)"
         } else {
@@ -1246,8 +1268,11 @@ impl TranscriptionManager {
         };
         info!(
             "Transcription completed in {}ms{}",
-            (et - st).as_millis(),
-            translation_note
+            total_ms, translation_note
+        );
+        debug!(
+            "Pipeline timing: engine={}ms custom_words={}ms filter={}ms punc={}ms total={}ms",
+            engine_ms, custom_words_ms, filter_ms, punc_ms, total_ms
         );
 
         if final_result.is_empty() {
@@ -1274,6 +1299,11 @@ fn apply_punc_zh_if_applicable(
     app_handle: &tauri::AppHandle,
 ) -> String {
     if !punc_zh_enabled || text.is_empty() {
+        debug!(
+            "punc_zh: skipped (enabled={} empty={})",
+            punc_zh_enabled,
+            text.is_empty()
+        );
         return text;
     }
 
@@ -1309,8 +1339,22 @@ fn apply_punc_zh_if_applicable(
             || (0x3000..=0x303F).contains(&cp) // CJK Symbols and Punctuation
     });
 
+    debug!(
+        "punc_zh: validated_lang={} app_lang={} lang_to_check={} language_says_zh={} text_has_cjk={} text_len={}",
+        validated_language,
+        app_language,
+        lang_to_check,
+        language_says_zh,
+        text_has_cjk,
+        text.len()
+    );
+
     if !language_says_zh && !text_has_cjk {
         // Neither metadata nor content suggests Chinese — skip punc layer
+        debug!(
+            "punc_zh: skipped — neither language nor content suggests Chinese (text='{}')",
+            text.chars().take(50).collect::<String>()
+        );
         return text;
     }
 
