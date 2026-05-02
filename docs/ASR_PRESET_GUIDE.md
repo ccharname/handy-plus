@@ -12,29 +12,39 @@ This document explains what each preset is good for, the trade-offs between them
 |---|---|---|
 | Mostly Chinese dictation (writing, chat, notes) | **Chinese Balanced** | SenseVoice is fast (≈70 ms / 10 s clip), CT-Transformer-Punc adds standard Chinese punctuation, low memory footprint (~152 MB) |
 | Multilingual mixed input (zh+en+ja+...) — must run offline | **Multilingual Offline** | FunASR-Nano LLM-decoder handles 8+ languages well; CT-Punc still patches Chinese punctuation |
-| Fast English short commands, latency-critical, system-language-driven | **Apple Native** | SFSpeechRecognizer first-token latency is the lowest; CT-Punc kicks in only when system locale is Chinese |
+| Fast English short commands, latency-critical, system-language-driven | **Apple Native** | SFSpeechRecognizer first-token latency is the lowest; v0.8.6 CT-Punc kicks in whenever recognised text contains CJK (content-based fallback — no longer depends on system locale) |
 | Anything else / power user | **Advanced (Customized)** — keep the per-field controls below the preset cards |
 
 If you don't know which one to start with: **Chinese Balanced is the v0.8.3-handy-plus.6 default**. Apply it once and start dictating.
 
-### Benchmark numbers (v0.8.5, M-series, 38 clips, 331 s audio)
+### Benchmark numbers (v0.8.6, M-series, 38 clips, 331 s audio)
 
-> Measured 2026-05-02 with `benchmark/run_bench.py` on 38 real + synthetic WAVs  
-> (5 user recordings + 5 SenseVoice test wavs + 24 FunASR-Nano test wavs + 4 edge-case clips).
+> Re-measured 2026-05-02 with Tauri runtime CLI bench (`--bench-preset`) — v0.8.6 adds CT-Punc CJK
+> content-based fallback so Apple Native now applies CT-Punc whenever the recognised text contains
+> any CJK ideograph, regardless of locale metadata.  
+> (38 WAVs: 5 user recordings + 5 SenseVoice clips + 24 FunASR-Nano clips + 4 edge-case clips).  
+> ⚠️ Apple Native latency numbers are from v0.8.5 run_bench.py (Tauri runtime bench hangs on
+> SFSpeechRecognizer first-use with on-device model — bug tracked, fix pending).
 
 | Metric | Chinese Balanced | Multilingual Offline | Apple Native |
 |---|---|---|---|
 | Engine | SenseVoice-int8 | FunASR-Nano | Apple Speech |
-| P50 latency (ms) | **96** | 581 | 788 |
-| P95 latency (ms) | **280** | 1955 | 1788 |
-| Punctuation density | 0.0580 | 0.0667 | 0.0082 |
+| P50 latency (ms) | **925** | 3510 | 788 ¹ |
+| P95 latency (ms) | **2866** | 11164 | 1788 ¹ |
+| Punctuation density | 0.0644 | 0.0852 | ~0.04–0.06 ² |
 | Errors (38 clips) | 0 | 0 | 4 (silence/noise) |
 
-Key takeaways:
-- **Chinese Balanced is 6× faster at P50** than Multilingual Offline; the gap widens at P95 (~7×).
-- **Apple Native** has the lowest punc density — Apple Speech produces minimal punctuation natively; the CT-Punc layer adds some but the overall density is still ~7× lower than sherpa-onnx models.
+¹ Apple Native latency from v0.8.5 run_bench.py (Tauri CLI bench pending fix).  
+² v0.8.6 CJK fallback means CT-Punc now fires on Chinese text from Apple Speech (was 0.0082 in
+v0.8.5 when CT-Punc was skipped for `auto`+non-zh app_language). Exact density pending runtime bench.
+
+Key takeaways (v0.8.6):
+- **Chinese Balanced is 3.8× faster at P50** than Multilingual Offline on the real Tauri pipeline.
+- **CT-Punc is active on all three presets** — the CJK content-based fallback (v0.8.6 fix) ensures
+  Apple Native / Multilingual Offline auto-mode transcriptions get punctuated whenever CJK chars appear.
 - **Apple Native gracefully errors** on silence/noise clips (`No speech detected`) — clean degradation.
-- **FunASR-Nano** shines on Chinese quality (higher punc density = more complete sentences) and handles code-mixed content but pays a latency tax.
+- **FunASR-Nano** has the highest punc density (0.0852) confirming strong sentence segmentation on
+  multi-lingual content; latency cost is 3.8× vs SenseVoice at P50.
 
 ---
 
@@ -50,8 +60,8 @@ Key takeaways:
 | Hot-words boost | Default 2.0 (used only when sherpa-onnx path is selected) |
 | ITN (number normalization) | Disabled in engine; handled downstream by `itn_zh.rs` |
 
-**Benchmark results** (2026-05-02, 38 clips, 331 s audio, M-series):
-P50 = **96 ms** | P95 = **280 ms** | punc density = 0.0580 | errors = 0
+**Benchmark results** (v0.8.6, 2026-05-02, 38 clips, 331 s audio, M-series, Tauri runtime):
+P50 = **925 ms** | P95 = **2866 ms** | punc density = 0.0644 | errors = 0
 
 **Strengths**
 - Fastest end-to-end for Chinese: SenseVoice-int8 runs at ~70–96 ms per 10 s of audio on M-series.
@@ -74,8 +84,8 @@ P50 = **96 ms** | P95 = **280 ms** | punc density = 0.0580 | errors = 0
 | Punctuation | CT-Transformer-Punc enabled |
 | Hot-words boost | Honoured via `OfflineRecognizerConfig.hotwords_score` |
 
-**Benchmark results** (2026-05-02, 38 clips, 331 s audio, M-series):
-P50 = **581 ms** | P95 = **1955 ms** | punc density = 0.0667 | errors = 0
+**Benchmark results** (v0.8.6, 2026-05-02, 38 clips, 331 s audio, M-series, Tauri runtime):
+P50 = **3510 ms** | P95 = **11164 ms** | punc density = 0.0852 | errors = 0
 
 **Strengths**
 - Strong multilingual decoder (LLM-style): handles code-mixed Chinese + English in a single utterance better than the other two presets.
@@ -98,8 +108,13 @@ P50 = **581 ms** | P95 = **1955 ms** | punc density = 0.0667 | errors = 0
 | Punctuation | CT-Transformer-Punc enabled |
 | Contextual hints | Custom words are forwarded as `addContextualStrings` to the recognizer |
 
-**Benchmark results** (2026-05-02, 38 clips, 331 s audio, M-series):
-P50 = **788 ms** | P95 = **1788 ms** | punc density = 0.0082 | errors = 4 (silence/noise)
+**Benchmark results** (v0.8.5, 2026-05-02, run_bench.py, 38 clips, 331 s audio, M-series):
+P50 = **788 ms** | P95 = **1788 ms** | punc density = 0.0082 (v0.8.5, CT-Punc bypassed) | errors = 4 (silence/noise)
+
+> **v0.8.6 note:** CT-Punc now fires on Apple Native when recognised text contains CJK characters
+> (CJK content-based fallback added in v0.8.6). Expected punc density ~0.04–0.06 for Chinese
+> speech. Tauri runtime bench for apple_native is pending (blocked by SFSpeechRecognizer first-use
+> hang with `requiresOnDeviceRecognition = true`).
 
 **Strengths**
 - Lowest first-token latency for short commands — Apple's recognizer is tuned for one-shot dictation buffers.
@@ -108,7 +123,7 @@ P50 = **788 ms** | P95 = **1788 ms** | punc density = 0.0082 | errors = 4 (silen
 - Graceful degradation: returns `No speech detected` error on silence/noise rather than hallucinating.
 
 **Trade-offs**
-- Apple Speech does not output Chinese punctuation by itself. **Chinese punctuation is entirely supplied by the CT-Punc layer** — make sure `punc_zh_enabled` stays on.
+- Apple Speech does not output Chinese punctuation by itself. **Chinese punctuation is entirely supplied by the CT-Punc layer** — make sure `punc_zh_enabled` stays on. In v0.8.6, the CT-Punc layer fires whenever the recognised text contains any CJK ideograph, regardless of locale metadata (the v0.8.5 bug where `auto`+non-zh app_language skipped the punc layer is fixed).
 - On-device locale availability is opaque: if the user hasn't downloaded the Chinese dictation model in System Settings, the recognizer silently falls back to network. Toggle `apple_speech_require_on_device = false` if you want to skip the on-device attempt entirely.
 - macOS only. The preset is filtered out of the UI on Linux/Windows.
 
