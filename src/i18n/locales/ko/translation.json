@@ -12,6 +12,7 @@
     "general": "일반",
     "models": "모델",
     "advanced": "고급",
+    "vocabulary": "Vocabulary",
     "postProcessing": "후처리",
     "history": "히스토리",
     "debug": "디버그",
@@ -396,6 +397,10 @@
         "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
         "retry": "다시 시도"
       }
+    },
+    "vocabulary": {
+      "title": "Custom Words",
+      "description": "Words the model often gets wrong — manage your hot-word list here."
     },
     "postProcessing": {
       "title": "후처리",

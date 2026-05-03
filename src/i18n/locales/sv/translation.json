@@ -12,6 +12,7 @@
     "general": "Allmänt",
     "models": "Modeller",
     "advanced": "Avancerat",
+    "vocabulary": "Vocabulary",
     "postProcessing": "Efterbearbetning",
     "history": "Historik",
     "debug": "Felsökning",
@@ -396,6 +397,10 @@
         "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
         "retry": "Försök igen"
       }
+    },
+    "vocabulary": {
+      "title": "Custom Words",
+      "description": "Words the model often gets wrong — manage your hot-word list here."
     },
     "postProcessing": {
       "title": "Efterbearbetning",

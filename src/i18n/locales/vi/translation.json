@@ -12,6 +12,7 @@
     "general": "Chung",
     "models": "Mô hình",
     "advanced": "Nâng cao",
+    "vocabulary": "Vocabulary",
     "postProcessing": "Xử lý sau",
     "history": "Lịch sử",
     "debug": "Gỡ lỗi",
@@ -396,6 +397,10 @@
         "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
         "retry": "Thử lại"
       }
+    },
+    "vocabulary": {
+      "title": "Custom Words",
+      "description": "Words the model often gets wrong — manage your hot-word list here."
     },
     "postProcessing": {
       "title": "Xử lý sau",

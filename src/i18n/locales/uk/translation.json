@@ -12,6 +12,7 @@
     "general": "Загальні",
     "models": "Моделі",
     "advanced": "Розширені",
+    "vocabulary": "Vocabulary",
     "postProcessing": "Постобробка",
     "history": "Історія",
     "debug": "Дебаг",
@@ -396,6 +397,10 @@
         "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
         "retry": "Повторити"
       }
+    },
+    "vocabulary": {
+      "title": "Custom Words",
+      "description": "Words the model often gets wrong — manage your hot-word list here."
     },
     "postProcessing": {
       "title": "Постобробка",

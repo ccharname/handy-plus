@@ -12,6 +12,7 @@
     "general": "Allgemein",
     "models": "Modelle",
     "advanced": "Erweitert",
+    "vocabulary": "Vocabulary",
     "postProcessing": "Nachbearbeitung",
     "history": "Verlauf",
     "debug": "Debug",
@@ -396,6 +397,10 @@
         "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
         "retry": "Erneut versuchen"
       }
+    },
+    "vocabulary": {
+      "title": "Custom Words",
+      "description": "Words the model often gets wrong — manage your hot-word list here."
     },
     "postProcessing": {
       "title": "Nachbearbeitung",

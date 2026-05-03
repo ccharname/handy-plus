@@ -12,6 +12,7 @@
     "general": "一般",
     "models": "模型",
     "advanced": "進階",
+    "vocabulary": "詞彙",
     "postProcessing": "後處理",
     "history": "歷史紀錄",
     "debug": "偵錯",
@@ -396,6 +397,10 @@
         "progressText": "{{percentage}}%（{{downloaded}} / {{total}}）",
         "retry": "重試"
       }
+    },
+    "vocabulary": {
+      "title": "自訂詞彙",
+      "description": "模型常聽錯的詞，在這裡管理你的熱詞清單。"
     },
     "postProcessing": {
       "title": "後處理",

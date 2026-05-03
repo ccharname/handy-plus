@@ -12,6 +12,7 @@
     "general": "כללי",
     "models": "מודלים",
     "advanced": "מתקדם",
+    "vocabulary": "Vocabulary",
     "postProcessing": "עיבוד משלים",
     "history": "היסטוריה",
     "debug": "ניפוי שגיאות",
@@ -396,6 +397,10 @@
         "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
         "retry": "נסה שוב"
       }
+    },
+    "vocabulary": {
+      "title": "Custom Words",
+      "description": "Words the model often gets wrong — manage your hot-word list here."
     },
     "postProcessing": {
       "title": "עיבוד משלים",

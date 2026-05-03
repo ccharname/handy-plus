@@ -12,6 +12,7 @@
     "general": "一般",
     "models": "モデル",
     "advanced": "詳細設定",
+    "vocabulary": "Vocabulary",
     "postProcessing": "後処理",
     "history": "履歴",
     "debug": "デバッグ",
@@ -396,6 +397,10 @@
         "progressText": "{{percentage}}%（{{downloaded}} / {{total}}）",
         "retry": "再試行"
       }
+    },
+    "vocabulary": {
+      "title": "Custom Words",
+      "description": "Words the model often gets wrong — manage your hot-word list here."
     },
     "postProcessing": {
       "title": "後処理",

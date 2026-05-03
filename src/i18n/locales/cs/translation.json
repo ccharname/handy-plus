@@ -12,6 +12,7 @@
     "general": "Obecné",
     "models": "Modely",
     "advanced": "Pokročilé",
+    "vocabulary": "Vocabulary",
     "postProcessing": "Následné zpracování",
     "history": "Historie",
     "debug": "Ladění",
@@ -396,6 +397,10 @@
         "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
         "retry": "Zkusit znovu"
       }
+    },
+    "vocabulary": {
+      "title": "Custom Words",
+      "description": "Words the model often gets wrong — manage your hot-word list here."
     },
     "postProcessing": {
       "title": "Následné zpracování",

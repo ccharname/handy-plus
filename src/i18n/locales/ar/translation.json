@@ -11,6 +11,7 @@
   "sidebar": {
     "general": "عام",
     "advanced": "متقدم",
+    "vocabulary": "Vocabulary",
     "postProcessing": "معالجة لاحقة",
     "history": "السجل",
     "debug": "تصحيح الأخطاء",
@@ -374,6 +375,10 @@
         "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
         "retry": "إعادة المحاولة"
       }
+    },
+    "vocabulary": {
+      "title": "Custom Words",
+      "description": "Words the model often gets wrong — manage your hot-word list here."
     },
     "postProcessing": {
       "title": "معالجة لاحقة",

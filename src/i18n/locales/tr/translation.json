@@ -12,6 +12,7 @@
     "general": "Genel",
     "models": "Modeller",
     "advanced": "Gelişmiş",
+    "vocabulary": "Vocabulary",
     "postProcessing": "Son İşlem",
     "history": "Geçmiş",
     "debug": "Hata Ayıklama",
@@ -396,6 +397,10 @@
         "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
         "retry": "Yeniden dene"
       }
+    },
+    "vocabulary": {
+      "title": "Custom Words",
+      "description": "Words the model often gets wrong — manage your hot-word list here."
     },
     "postProcessing": {
       "title": "Son İşlem",

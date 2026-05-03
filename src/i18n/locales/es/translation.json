@@ -12,6 +12,7 @@
     "general": "General",
     "models": "Modelos",
     "advanced": "Avanzado",
+    "vocabulary": "Vocabulary",
     "postProcessing": "Post Proceso",
     "history": "Historial",
     "debug": "Depuración",
@@ -396,6 +397,10 @@
         "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
         "retry": "Reintentar"
       }
+    },
+    "vocabulary": {
+      "title": "Custom Words",
+      "description": "Words the model often gets wrong — manage your hot-word list here."
     },
     "postProcessing": {
       "title": "Post Proceso",

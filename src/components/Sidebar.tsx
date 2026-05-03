@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import {
+  BookOpen,
   Cog,
   FlaskConical,
   History,
@@ -21,6 +22,7 @@ import {
   PostProcessingSettings,
   ModelsSettings,
   ProfilesPage,
+  VocabularySettings,
 } from "./settings";
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
@@ -57,6 +59,12 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.advanced",
     icon: Cog,
     component: AdvancedSettings,
+    enabled: () => true,
+  },
+  vocabulary: {
+    labelKey: "sidebar.vocabulary",
+    icon: BookOpen,
+    component: VocabularySettings,
     enabled: () => true,
   },
   history: {
