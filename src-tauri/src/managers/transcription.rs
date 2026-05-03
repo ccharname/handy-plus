@@ -560,15 +560,22 @@ impl TranscriptionManager {
                         // slot in OfflineQwen3ASRModelConfig — language field does
                         // not exist on this struct.
 
-                        // Same LLM-decoder context-budget concern as FunASR-Nano
-                        // (same Qwen3 family). Cap: 48 entries × 500 total chars.
-                        // 48 was chosen as a safer interim over FunASR-Nano's 32 —
-                        // it adds headroom for phonetic aliases without hitting EOS
-                        // truncation on typical 30s audio. Run the bench harness
-                        // (HANDY_QWEN3_HOTWORDS_BENCH=1) to find the true threshold.
-                        // TODO(bench): empirically probe N=16,32,48,64,96,128 hotwords
-                        //   at 30 s audio → find threshold where output truncates.
-                        const QWEN3_HOTWORDS_MAX_ENTRIES: usize = 48;
+                        // LLM-decoder context budget cap: 64 entries × 500 chars.
+                        //
+                        // Empirically validated 2026-05-03 via qwen3_hotwords_bench
+                        // on a 25s zh-CN sample: N=16/32/48/64/96/128 all produced
+                        // identical 113-char output, no EOS truncation. Sherpa's own
+                        // budget log confirmed 96 hotwords = 309 prompt tokens
+                        // (well within max_total_len=8192).
+                        //
+                        // FunASR-Nano's 32-cap gotcha was model-specific; Qwen3-ASR
+                        // has substantially more headroom. We pick 64 as a balance:
+                        //   - 2× the bench-safe floor for 25s audio
+                        //   - ~1.4× safety margin for 45s VAD chunks
+                        //   - Plenty of room for phonetic alias L2 layer
+                        // If you exceed this in practice, re-run the bench at the
+                        // 45s chunk size to find the true ceiling.
+                        const QWEN3_HOTWORDS_MAX_ENTRIES: usize = 64;
                         const QWEN3_HOTWORDS_MAX_CHARS: usize = 500;
 
                         let settings = get_settings(&self.app_handle);
@@ -2044,10 +2051,10 @@ mod qwen3_bench {
                 ..Default::default()
             };
 
-            let recognizer = match sherpa_onnx::OfflineRecognizer::new(&config) {
+            let recognizer = match sherpa_onnx::OfflineRecognizer::create(&config) {
                 Some(r) => r,
                 None => {
-                    eprintln!("N={n}: OfflineRecognizer::new returned None — THRESHOLD FOUND");
+                    eprintln!("N={n}: OfflineRecognizer::create returned None — THRESHOLD FOUND");
                     break;
                 }
             };
@@ -2067,7 +2074,7 @@ mod qwen3_bench {
             eprintln!(
                 "N={n:4}: {char_count:5} chars  truncated={}  text={:.80}",
                 truncated,
-                &text[..text.len().min(80)],
+                text.chars().take(80).collect::<String>(),
             );
 
             if truncated {
