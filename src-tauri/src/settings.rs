@@ -672,6 +672,12 @@ pub struct AppSettings {
     /// so corrections feed the punctuation model.
     #[serde(default)]
     pub custom_word_aliases: HashMap<String, Vec<String>>,
+    /// When true (default), Apple Speech partials are progressively pasted into
+    /// the active application as the user speaks — matching the behaviour of
+    /// Wispr Flow / macOS native dictation.  Set to false to revert to the
+    /// original batch-paste-after-completion behaviour.
+    #[serde(default = "default_apple_speech_incremental_paste")]
+    pub apple_speech_incremental_paste: bool,
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -1012,6 +1018,10 @@ fn default_hotwords_boost() -> f32 {
     2.0
 }
 
+fn default_apple_speech_incremental_paste() -> bool {
+    true
+}
+
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let mut changed = false;
     for provider in default_post_process_providers() {
@@ -1250,6 +1260,7 @@ pub fn get_default_settings() -> AppSettings {
         active_preset_id: None,
         migration_applied: HashMap::new(),
         custom_word_aliases: HashMap::new(),
+        apple_speech_incremental_paste: default_apple_speech_incremental_paste(),
     }
 }
 

@@ -17,7 +17,7 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard, OnceLock};
 use std::thread;
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, Instant, SystemTime};
 use tauri::{AppHandle, Emitter, Manager};
 use transcribe_rs::{
     onnx::{
@@ -96,6 +96,13 @@ pub struct TranscriptionManager {
     watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
     is_loading: Arc<Mutex<bool>>,
     loading_condvar: Arc<Condvar>,
+    /// Cumulative text already incrementally pasted to the target app for the
+    /// current Apple Speech transcription run.  Cleared at the start of each
+    /// new transcription (same point `transcription-partial-clear` is emitted).
+    incremental_paste_cursor: Arc<Mutex<String>>,
+    /// Timestamp of the last incremental paste.  Used to debounce clipboard-
+    /// based paste methods so CJK IMEs are not overwhelmed by rapid Cmd+V.
+    last_incremental_paste_at: Arc<Mutex<Option<Instant>>>,
 }
 
 impl TranscriptionManager {
@@ -110,6 +117,8 @@ impl TranscriptionManager {
             watcher_handle: Arc::new(Mutex::new(None)),
             is_loading: Arc::new(Mutex::new(false)),
             loading_condvar: Arc::new(Condvar::new()),
+            incremental_paste_cursor: Arc::new(Mutex::new(String::new())),
+            last_incremental_paste_at: Arc::new(Mutex::new(None)),
         };
 
         // Start the idle watcher
@@ -271,6 +280,26 @@ impl TranscriptionManager {
                 warn!("Failed to immediately unload model: {}", e);
             }
         }
+    }
+
+    /// Clear the incremental paste cursor.  Call this at the same point
+    /// `transcription-partial-clear` is emitted (start of each new transcription).
+    pub fn reset_incremental_paste(&self) {
+        let mut cursor = self.incremental_paste_cursor.lock().unwrap_or_else(|p| p.into_inner());
+        cursor.clear();
+        let mut ts = self.last_incremental_paste_at.lock().unwrap_or_else(|p| p.into_inner());
+        *ts = None;
+    }
+
+    /// Atomically read and clear the incremental paste cursor.
+    /// Returns the cumulative text already pasted to the target app, then resets
+    /// the cursor to empty.  Called by `actions.rs` during final-paste to compute
+    /// the residual delta.
+    pub fn take_incremental_paste_cursor(&self) -> String {
+        let mut cursor = self.incremental_paste_cursor.lock().unwrap_or_else(|p| p.into_inner());
+        let value = cursor.clone();
+        cursor.clear();
+        value
     }
 
     pub fn load_model(&self, model_id: &str) -> Result<()> {
@@ -1165,15 +1194,27 @@ impl TranscriptionManager {
                 let bcp47 = map_to_bcp47(validated_language);
                 let contextual: Vec<String> = settings.custom_words.clone();
                 let require_on_device = settings.apple_speech_require_on_device;
+                let incremental_paste_enabled = settings.apple_speech_incremental_paste;
+                let paste_method = settings.paste_method;
 
                 info!(
-                    "Apple Speech: locale={} require_on_device={}",
-                    bcp47, require_on_device
+                    "Apple Speech: locale={} require_on_device={} incremental_paste={}",
+                    bcp47, require_on_device, incremental_paste_enabled
                 );
+
+                // Debounce interval for clipboard-based paste methods (CJK IME safety).
+                // Direct typing is not debounced — naturally throttled by Enigo.
+                const INCREMENTAL_DEBOUNCE_MS: u64 = 200;
 
                 let partial_app_handle = partial_emit_handle.clone();
                 let bcp47_clone = bcp47.clone();
                 let contextual_clone = contextual.clone();
+
+                // Clones of the shared incremental-paste state for the closure.
+                let cursor_arc = Arc::clone(&self.incremental_paste_cursor);
+                let last_paste_arc = Arc::clone(&self.last_incremental_paste_at);
+                let app_handle_for_paste = self.app_handle.clone();
+
                 let first_result = crate::apple_speech::transcribe_with_partials(
                     audio,
                     16000.0,
@@ -1185,6 +1226,47 @@ impl TranscriptionManager {
                         debug!("Apple Speech partial: {}", text);
                         let _ = partial_app_handle
                             .emit("transcription-partial", serde_json::json!({ "text": text }));
+
+                        if incremental_paste_enabled {
+                            let mut cursor = cursor_arc.lock().unwrap_or_else(|p| p.into_inner());
+                            if let Some(delta) = crate::clipboard::compute_delta(&cursor, text) {
+                                // Debounce clipboard methods — Direct typing skips the gate.
+                                let should_paste = match paste_method {
+                                    crate::settings::PasteMethod::Direct => true,
+                                    crate::settings::PasteMethod::None => false,
+                                    _ => {
+                                        let mut last = last_paste_arc
+                                            .lock()
+                                            .unwrap_or_else(|p| p.into_inner());
+                                        let elapsed = last
+                                            .map(|t: Instant| t.elapsed().as_millis() as u64)
+                                            .unwrap_or(u64::MAX);
+                                        if elapsed >= INCREMENTAL_DEBOUNCE_MS {
+                                            *last = Some(Instant::now());
+                                            true
+                                        } else {
+                                            false
+                                        }
+                                    }
+                                };
+
+                                if should_paste {
+                                    // Advance cursor before releasing the lock so
+                                    // the next partial fires correctly even if paste
+                                    // itself is slow.
+                                    *cursor = text.to_string();
+                                    drop(cursor); // release lock before paste I/O
+                                    if let Err(e) = crate::clipboard::paste_incremental(
+                                        delta,
+                                        app_handle_for_paste.clone(),
+                                    ) {
+                                        warn!("Incremental paste failed: {}", e);
+                                    }
+                                }
+                                // else: debounced — cursor unchanged, will retry on
+                                // next partial when combined delta is larger
+                            }
+                        }
                     },
                 );
 
@@ -1204,7 +1286,14 @@ impl TranscriptionManager {
                             "Apple Speech on-device attempt failed ({}); retrying with network recognition",
                             e
                         );
+                        // Reset the incremental cursor before the network retry so
+                        // the second pass starts fresh.
+                        self.reset_incremental_paste();
+
                         let partial_app_handle2 = partial_emit_handle.clone();
+                        let cursor_arc2 = Arc::clone(&self.incremental_paste_cursor);
+                        let last_paste_arc2 = Arc::clone(&self.last_incremental_paste_at);
+                        let app_handle_for_paste2 = self.app_handle.clone();
                         crate::apple_speech::transcribe_with_partials(
                             audio,
                             16000.0,
@@ -1218,6 +1307,49 @@ impl TranscriptionManager {
                                     "transcription-partial",
                                     serde_json::json!({ "text": text }),
                                 );
+
+                                if incremental_paste_enabled {
+                                    let mut cursor = cursor_arc2
+                                        .lock()
+                                        .unwrap_or_else(|p| p.into_inner());
+                                    if let Some(delta) =
+                                        crate::clipboard::compute_delta(&cursor, text)
+                                    {
+                                        let should_paste = match paste_method {
+                                            crate::settings::PasteMethod::Direct => true,
+                                            crate::settings::PasteMethod::None => false,
+                                            _ => {
+                                                let mut last = last_paste_arc2
+                                                    .lock()
+                                                    .unwrap_or_else(|p| p.into_inner());
+                                                let elapsed = last
+                                                    .map(|t: Instant| {
+                                                        t.elapsed().as_millis() as u64
+                                                    })
+                                                    .unwrap_or(u64::MAX);
+                                                if elapsed >= INCREMENTAL_DEBOUNCE_MS {
+                                                    *last = Some(Instant::now());
+                                                    true
+                                                } else {
+                                                    false
+                                                }
+                                            }
+                                        };
+                                        if should_paste {
+                                            *cursor = text.to_string();
+                                            drop(cursor);
+                                            if let Err(e) = crate::clipboard::paste_incremental(
+                                                delta,
+                                                app_handle_for_paste2.clone(),
+                                            ) {
+                                                warn!(
+                                                    "Incremental paste (network retry) failed: {}",
+                                                    e
+                                                );
+                                            }
+                                        }
+                                    }
+                                }
                             },
                         )
                         .map(|text| transcribe_rs::TranscriptionResult {

@@ -779,6 +779,9 @@ impl ShortcutAction for TranscribeAction {
             // Clear any partial text from a previous session as soon as we enter
             // the transcribing state.
             let _ = ah.emit("transcription-partial-clear", ());
+            // Also reset the incremental-paste cursor so the new run starts
+            // from an empty baseline (Apple Speech path only; no-op for others).
+            tm.reset_incremental_paste();
 
             let stop_recording_time = Instant::now();
             if let Some(samples) = rm.stop_recording(&binding_id) {
@@ -886,9 +889,47 @@ impl ShortcutAction for TranscribeAction {
                                     .matched_profile_name
                                     .as_ref()
                                     .map(|_| effective.auto_submit);
+
+                                // For Apple Speech incremental paste: take the cursor
+                                // (cumulative text already pasted during recognition) and
+                                // compute the residual — only that suffix still needs to
+                                // be passed to paste_with_overrides so that trailing-space
+                                // and auto-submit are applied correctly.
+                                // For all other engines the cursor is empty, so the full
+                                // final_text is pasted as before.
+                                let already_pasted = tm.take_incremental_paste_cursor();
+                                let text_to_paste = if already_pasted.is_empty() {
+                                    // Normal path: no incremental paste happened.
+                                    final_text.clone()
+                                } else if final_text.starts_with(&already_pasted) {
+                                    // Clean case: paste only the residual suffix.
+                                    let residual = final_text[already_pasted.len()..].to_string();
+                                    debug!(
+                                        "Incremental paste finalisation: {} chars already pasted, {} residual",
+                                        already_pasted.len(),
+                                        residual.len()
+                                    );
+                                    residual
+                                } else {
+                                    // The final text diverged from what we pasted
+                                    // (e.g. post-processing rewrote it). Paste the
+                                    // full final text — the user will see a duplicate
+                                    // but correctness wins over cosmetics.
+                                    warn!(
+                                        "Final text does not start with incremental cursor \
+                                         (post-processing rewrite?); pasting full final text"
+                                    );
+                                    final_text.clone()
+                                };
+
                                 ah.run_on_main_thread(move || {
+                                    // If the residual is empty the incremental paste
+                                    // already delivered all text; we still need to fire
+                                    // trailing-space / auto-submit if configured.
+                                    // paste_with_overrides("", ...) handles that
+                                    // correctly (it appends space / submits on "").
                                     match crate::clipboard::paste_with_overrides(
-                                        final_text,
+                                        text_to_paste,
                                         ah_clone.clone(),
                                         eff_paste_method,
                                         eff_trailing_space,
@@ -917,6 +958,9 @@ impl ShortcutAction for TranscribeAction {
                             debug!("Global Shortcut Transcription error: {}", err);
                             // Clear any partial text that may have accumulated before the error.
                             let _ = ah.emit("transcription-partial-clear", ());
+                            // Also clear the incremental-paste cursor so the next run
+                            // does not inherit stale state from a failed session.
+                            tm.reset_incremental_paste();
                             // Save entry with empty text so user can retry
                             if wav_saved {
                                 if let Err(save_err) = hm.save_entry(

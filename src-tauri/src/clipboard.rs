@@ -9,6 +9,91 @@ use std::time::Duration;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Incremental paste helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Compute the string that needs to be appended to reach `new_cumulative` from
+/// `prev_cumulative`.
+///
+/// Returns `Some(delta)` only when `new_cumulative` is a strict prefix-extension
+/// of `prev_cumulative` (i.e. the ASR emitted a clean append with no retroactive
+/// edit).  Returns `None` in all other cases so the caller can skip the paste
+/// and wait for the next stable partial.
+///
+/// # Examples
+/// ```
+/// use handy_lib::clipboard::compute_delta;
+/// assert_eq!(compute_delta("你好", "你好世界"), Some("世界".to_string()));
+/// assert_eq!(compute_delta("", "Hello"), Some("Hello".to_string()));
+/// assert_eq!(compute_delta("你好", "你好"), None);   // no change
+/// assert_eq!(compute_delta("你好世界", "你好"), None); // regression
+/// assert_eq!(compute_delta("你好", "你嗷世界"), None); // rewrite
+/// ```
+pub fn compute_delta(prev_cumulative: &str, new_cumulative: &str) -> Option<String> {
+    if new_cumulative.len() > prev_cumulative.len()
+        && new_cumulative.starts_with(prev_cumulative)
+    {
+        Some(new_cumulative[prev_cumulative.len()..].to_string())
+    } else {
+        None
+    }
+}
+
+/// Paste only a delta string into the active application.
+///
+/// This is intentionally a thin wrapper — it reuses all existing paste helpers
+/// and respects the user's configured `paste_method`.  It deliberately does NOT:
+/// - append a trailing space (that is a final-paste responsibility)
+/// - fire auto-submit (same reason)
+/// - write to the clipboard save after pasting (final paste handles that once)
+pub fn paste_incremental(delta: String, app_handle: AppHandle) -> Result<(), String> {
+    if delta.is_empty() {
+        return Ok(());
+    }
+
+    let settings = get_settings(&app_handle);
+    let paste_method = settings.paste_method;
+    let paste_delay_ms = settings.paste_delay_ms;
+
+    info!("Incremental paste ({} chars) via {:?}", delta.len(), paste_method);
+
+    let enigo_state = app_handle
+        .try_state::<EnigoState>()
+        .ok_or("Enigo state not initialized")?;
+    let mut enigo = enigo_state
+        .0
+        .lock()
+        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
+
+    match paste_method {
+        PasteMethod::None => {
+            // User disabled paste — skip silently.
+        }
+        PasteMethod::Direct => {
+            paste_direct(
+                &mut enigo,
+                &delta,
+                #[cfg(target_os = "linux")]
+                settings.typing_tool,
+            )?;
+        }
+        PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
+            paste_via_clipboard(&mut enigo, &delta, &app_handle, &paste_method, paste_delay_ms)?;
+        }
+        PasteMethod::ExternalScript => {
+            let script_path = settings
+                .external_script_path
+                .as_ref()
+                .filter(|p| !p.is_empty())
+                .ok_or("External script path is not configured")?;
+            paste_via_external_script(&delta, script_path)?;
+        }
+    }
+
+    Ok(())
+}
+
 #[cfg(target_os = "linux")]
 use crate::utils::{is_kde_wayland, is_wayland};
 
@@ -768,5 +853,53 @@ mod tests {
         assert!(should_send_auto_submit(true, PasteMethod::Direct));
         assert!(should_send_auto_submit(true, PasteMethod::CtrlShiftV));
         assert!(should_send_auto_submit(true, PasteMethod::ShiftInsert));
+    }
+
+    // ── compute_delta unit tests ──────────────────────────────────────────────
+
+    #[test]
+    fn compute_delta_clean_append_ascii() {
+        assert_eq!(
+            compute_delta("Hello", "Hello world"),
+            Some(" world".to_string())
+        );
+    }
+
+    #[test]
+    fn compute_delta_clean_append_cjk() {
+        assert_eq!(
+            compute_delta("你好", "你好世界"),
+            Some("世界".to_string())
+        );
+    }
+
+    #[test]
+    fn compute_delta_empty_prev_returns_full_new() {
+        assert_eq!(
+            compute_delta("", "你好世界今天天气真好"),
+            Some("你好世界今天天气真好".to_string())
+        );
+    }
+
+    #[test]
+    fn compute_delta_no_change_returns_none() {
+        assert_eq!(compute_delta("你好", "你好"), None);
+    }
+
+    #[test]
+    fn compute_delta_regression_shorter_returns_none() {
+        // Previous partial was longer — ASR rewound, skip.
+        assert_eq!(compute_delta("你好世界", "你好"), None);
+    }
+
+    #[test]
+    fn compute_delta_retroactive_edit_returns_none() {
+        // First char changed — full rewrite, skip.
+        assert_eq!(compute_delta("你好", "你嗷世界"), None);
+    }
+
+    #[test]
+    fn compute_delta_completely_different_returns_none() {
+        assert_eq!(compute_delta("Hello there", "Something else entirely"), None);
     }
 }
