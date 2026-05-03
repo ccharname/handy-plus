@@ -741,8 +741,8 @@ pub fn default_asr_presets() -> Vec<AsrPreset> {
         },
         AsrPreset {
             id: "experimental_qwen3".to_string(),
-            name: "Experimental — Qwen3-ASR".to_string(),
-            description: "Qwen3-ASR 0.6B (sherpa)，实验档位。中文 SOTA + 52 语言，~2.5 GB int8。不替换默认。".to_string(),
+            name: "Qwen3-ASR (实验)".to_string(),
+            description: "Tongyi 2026-01 SOTA，~2.5 GB int8。中文优秀，52 语言自动识别。长音频自动分段。".to_string(),
             icon: "🧪".to_string(),
             model_id: "qwen3-asr".to_string(),
             language: "zh-Hans".to_string(),

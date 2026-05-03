@@ -1,4 +1,4 @@
-use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
+use crate::audio_toolkit::{apply_custom_words, filter_transcription_output, VoiceActivityDetector};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager, SherpaModelKind};
 use crate::profile_resolver::resolve_effective_settings;
@@ -37,8 +37,7 @@ use transcribe_rs::{
 /// transcribe dispatch knows which recognition path to use.
 struct SherpaSession {
     recognizer: OfflineRecognizer,
-    /// Retained for future per-call language override and diagnostic logging.
-    #[allow(dead_code)]
+    /// Model family — used for dispatch (e.g. Qwen3Asr VAD chunking path).
     kind: SherpaModelKind,
 }
 
@@ -67,7 +66,7 @@ enum LoadedEngine {
         _default_locale: String,
     },
     /// sherpa-onnx offline recognizer (k2-fsa upstream crate).
-    /// Supports SenseVoice and FunASR-Nano model families.
+    /// Supports SenseVoice, FunASR-Nano, and Qwen3-ASR model families.
     Sherpa(SherpaSession),
 }
 
@@ -562,8 +561,14 @@ impl TranscriptionManager {
                         // not exist on this struct.
 
                         // Same LLM-decoder context-budget concern as FunASR-Nano
-                        // (same Qwen3 family). Cap: 32 entries × 500 total chars.
-                        const QWEN3_HOTWORDS_MAX_ENTRIES: usize = 32;
+                        // (same Qwen3 family). Cap: 48 entries × 500 total chars.
+                        // 48 was chosen as a safer interim over FunASR-Nano's 32 —
+                        // it adds headroom for phonetic aliases without hitting EOS
+                        // truncation on typical 30s audio. Run the bench harness
+                        // (HANDY_QWEN3_HOTWORDS_BENCH=1) to find the true threshold.
+                        // TODO(bench): empirically probe N=16,32,48,64,96,128 hotwords
+                        //   at 30 s audio → find threshold where output truncates.
+                        const QWEN3_HOTWORDS_MAX_ENTRIES: usize = 48;
                         const QWEN3_HOTWORDS_MAX_CHARS: usize = 500;
 
                         let settings = get_settings(&self.app_handle);
@@ -640,6 +645,10 @@ impl TranscriptionManager {
                             // silently truncate long audio (same gotcha as FunASR-Nano).
                             max_new_tokens: 4096,
                             max_total_len: 8192,
+                            // temperature: keep at 1e-6 (upstream default from
+                            // python-api-examples/offline-qwen3-asr-decode-files.py).
+                            // Setting 0.0 risks sampler degeneracy. 1e-6 is effectively
+                            // greedy while remaining numerically stable.
                             hotwords: hotwords_str,
                             ..Default::default()
                         };
@@ -1225,23 +1234,168 @@ impl TranscriptionManager {
                 Err(anyhow::anyhow!("Apple Speech is only available on macOS"))
             }
             LoadedEngine::Sherpa(session) => {
-                let sherpa_lang = match validated_language {
-                    "zh" | "zh-Hans" | "zh-Hant" => "zh",
-                    "en" => "en",
-                    "ja" => "ja",
-                    "ko" => "ko",
-                    "yue" => "yue",
-                    _ => "auto",
-                };
-                let stream = session.recognizer.create_stream();
-                stream.accept_waveform(16000, audio);
-                session.recognizer.decode(&stream);
-                let text = stream.get_result().map(|r| r.text).unwrap_or_default();
-                let _ = sherpa_lang;
-                Ok(transcribe_rs::TranscriptionResult {
-                    text,
-                    segments: None,
-                })
+                // VERIFIED Qwen3 → custom_words → punc_zh pipeline:
+                // skip_word_correction only gates Whisper | AppleSpeech; Sherpa
+                // (including Qwen3Asr) flows through apply_custom_words + punc_zh
+                // in the post-processing pipeline above do_transcribe.
+
+                // For Qwen3-ASR: use VAD-aware chunking on long audio.
+                // Other Sherpa models (SenseVoice, FunASR-Nano) use the direct path.
+                if matches!(session.kind, SherpaModelKind::Qwen3Asr)
+                    && audio.len() > 16_000 * 90
+                {
+                    // Long audio path: split at VAD boundaries, ≤45 s per chunk.
+                    let t0 = std::time::Instant::now();
+                    let vad_path_result = self
+                        .app_handle
+                        .path()
+                        .resolve(
+                            "resources/models/silero_vad_v4.onnx",
+                            tauri::path::BaseDirectory::Resource,
+                        );
+
+                    // Constants used across all chunking paths
+                    const FRAME_SAMPLES: usize = 480; // 30 ms @ 16 kHz
+                    const MAX_CHUNK_SAMPLES: usize = 16_000 * 45; // 45 s
+
+                    let chunks: Vec<Vec<f32>> = match vad_path_result {
+                        Ok(vad_path) => {
+                            match crate::audio_toolkit::SileroVad::new(&vad_path, 0.3) {
+                                Ok(mut vad) => {
+                                    // Segment the full audio into speech chunks using
+                                    // the same 30 ms frame size Silero was trained on.
+                                    let mut all_chunks: Vec<Vec<f32>> = Vec::new();
+                                    let mut current_chunk: Vec<f32> = Vec::new();
+
+                                    let frames = audio.chunks(FRAME_SAMPLES);
+                                    for frame in frames {
+                                        if frame.len() < FRAME_SAMPLES {
+                                            // Trailing partial frame — append to current
+                                            current_chunk.extend_from_slice(frame);
+                                            continue;
+                                        }
+                                        let is_speech = vad
+                                            .is_voice(frame)
+                                            .unwrap_or(true); // on error, treat as speech
+
+                                        if is_speech {
+                                            current_chunk.extend_from_slice(frame);
+                                            // Flush when chunk hits max size
+                                            if current_chunk.len() >= MAX_CHUNK_SAMPLES {
+                                                all_chunks.push(std::mem::take(&mut current_chunk));
+                                            }
+                                        } else {
+                                            // Silence boundary: if current chunk is
+                                            // substantial (>300 ms), flush it.
+                                            if current_chunk.len() >= FRAME_SAMPLES * 10 {
+                                                all_chunks.push(std::mem::take(&mut current_chunk));
+                                            }
+                                            // otherwise accumulate small leftovers
+                                        }
+                                    }
+                                    if !current_chunk.is_empty() {
+                                        all_chunks.push(current_chunk);
+                                    }
+
+                                    if all_chunks.is_empty() {
+                                        debug!("Qwen3-ASR: VAD found no speech in long audio");
+                                        return Ok(transcribe_rs::TranscriptionResult {
+                                            text: String::new(),
+                                            segments: None,
+                                        });
+                                    }
+                                    debug!(
+                                        "Qwen3-ASR: split {}s audio into {} VAD chunks",
+                                        audio.len() / 16_000,
+                                        all_chunks.len()
+                                    );
+                                    all_chunks
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Qwen3-ASR: VAD init failed ({}); falling back to naive 45s split",
+                                        e
+                                    );
+                                    audio
+                                        .chunks(MAX_CHUNK_SAMPLES)
+                                        .map(|c| c.to_vec())
+                                        .collect()
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            warn!(
+                                "Qwen3-ASR: VAD model path resolution failed ({}); falling back to naive 45s split",
+                                e
+                            );
+                            audio
+                                .chunks(MAX_CHUNK_SAMPLES)
+                                .map(|c| c.to_vec())
+                                .collect()
+                        }
+                    };
+
+                    let n_chunks = chunks.len();
+                    let mut parts: Vec<String> = Vec::with_capacity(n_chunks);
+
+                    for (i, chunk) in chunks.iter().enumerate() {
+                        // Emit progress event so the overlay can show progress
+                        let elapsed_ms = t0.elapsed().as_millis() as u64;
+                        let _ = partial_emit_handle.emit(
+                            "transcription-progress",
+                            serde_json::json!({
+                                "phase": "qwen3_chunk",
+                                "current": i,
+                                "total": n_chunks,
+                                "elapsed_ms": elapsed_ms,
+                            }),
+                        );
+
+                        let stream = session.recognizer.create_stream();
+                        stream.accept_waveform(16000, chunk.as_slice());
+                        session.recognizer.decode(&stream);
+                        let chunk_text =
+                            stream.get_result().map(|r| r.text).unwrap_or_default();
+
+                        if !chunk_text.is_empty() {
+                            parts.push(chunk_text);
+                        }
+                        debug!(
+                            "Qwen3-ASR chunk {}/{}: {} chars in {}ms",
+                            i + 1,
+                            n_chunks,
+                            parts.last().map(|s| s.chars().count()).unwrap_or(0),
+                            t0.elapsed().as_millis()
+                        );
+                    }
+
+                    // Final progress event (done)
+                    let _ = partial_emit_handle.emit(
+                        "transcription-progress",
+                        serde_json::json!({
+                            "phase": "qwen3_chunk",
+                            "current": n_chunks,
+                            "total": n_chunks,
+                            "elapsed_ms": t0.elapsed().as_millis() as u64,
+                        }),
+                    );
+
+                    let text = parts.join(" ");
+                    Ok(transcribe_rs::TranscriptionResult {
+                        text,
+                        segments: None,
+                    })
+                } else {
+                    // Short audio path (or non-Qwen3 Sherpa): direct transcription.
+                    let stream = session.recognizer.create_stream();
+                    stream.accept_waveform(16000, audio);
+                    session.recognizer.decode(&stream);
+                    let text = stream.get_result().map(|r| r.text).unwrap_or_default();
+                    Ok(transcribe_rs::TranscriptionResult {
+                        text,
+                        segments: None,
+                    })
+                }
             }
         }
     }
@@ -1807,6 +1961,118 @@ impl Drop for TranscriptionManager {
                 warn!("Failed to join idle watcher thread: {:?}", e);
             } else {
                 debug!("Idle watcher thread joined successfully");
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Qwen3-ASR hotwords cap bench harness
+//
+// Run: HANDY_QWEN3_HOTWORDS_BENCH=1 cargo test qwen3_hotwords_bench -- --nocapture
+//
+// The test loads the Qwen3-ASR model from $HANDY_QWEN3_MODEL_DIR and a 30 s
+// reference .wav file from $HANDY_QWEN3_BENCH_WAV, then probes hotwords counts
+// N = 16, 32, 48, 64, 96, 128 to find the threshold where output truncates.
+//
+// EOS truncation is suspected when:
+//   output_chars < expected_chars * 0.5
+// where expected_chars is from the N=16 baseline run.
+// ─────────────────────────────────────────────────────────────────────────────
+#[cfg(test)]
+mod qwen3_bench {
+    use super::*;
+
+    /// Hotwords bench — skipped unless HANDY_QWEN3_HOTWORDS_BENCH=1
+    #[test]
+    #[ignore] // run with: cargo test qwen3_hotwords_bench -- --ignored --nocapture
+    fn qwen3_hotwords_bench() {
+        if std::env::var("HANDY_QWEN3_HOTWORDS_BENCH").as_deref() != Ok("1") {
+            eprintln!("Skipped — set HANDY_QWEN3_HOTWORDS_BENCH=1 to run");
+            return;
+        }
+
+        let model_dir = std::env::var("HANDY_QWEN3_MODEL_DIR")
+            .expect("HANDY_QWEN3_MODEL_DIR must point to the extracted model directory");
+        let wav_path = std::env::var("HANDY_QWEN3_BENCH_WAV")
+            .expect("HANDY_QWEN3_BENCH_WAV must point to a 16 kHz mono WAV file (>=30 s)");
+
+        let audio = crate::audio_toolkit::read_wav_samples(&wav_path)
+            .expect("Failed to read bench WAV");
+
+        // Generate a synthetic vocabulary of N unique single-character Chinese words
+        let full_vocab: Vec<String> = (0x4E00_u32..0x4E00 + 200)
+            .map(|cp| char::from_u32(cp).unwrap().to_string())
+            .collect();
+
+        let probe_counts: [u32; 6] = [16, 32, 48, 64, 96, 128];
+        let mut baseline_chars: Option<usize> = None;
+
+        for &n in &probe_counts {
+            let hotwords_str = {
+                let words: Vec<&str> = full_vocab
+                    .iter()
+                    .take(n as usize)
+                    .map(|s| s.as_str())
+                    .collect();
+                Some(words.join("\n"))
+            };
+
+            let model_path = std::path::Path::new(&model_dir);
+            let config = sherpa_onnx::OfflineRecognizerConfig {
+                model_config: sherpa_onnx::OfflineModelConfig {
+                    qwen3_asr: sherpa_onnx::OfflineQwen3ASRModelConfig {
+                        conv_frontend: Some(
+                            model_path.join("conv_frontend.onnx").to_string_lossy().into_owned(),
+                        ),
+                        encoder: Some(
+                            model_path.join("encoder.int8.onnx").to_string_lossy().into_owned(),
+                        ),
+                        decoder: Some(
+                            model_path.join("decoder.int8.onnx").to_string_lossy().into_owned(),
+                        ),
+                        tokenizer: Some(
+                            model_path.join("tokenizer").to_string_lossy().into_owned(),
+                        ),
+                        max_new_tokens: 4096,
+                        max_total_len: 8192,
+                        hotwords: hotwords_str,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+
+            let recognizer = match sherpa_onnx::OfflineRecognizer::new(&config) {
+                Some(r) => r,
+                None => {
+                    eprintln!("N={n}: OfflineRecognizer::new returned None — THRESHOLD FOUND");
+                    break;
+                }
+            };
+
+            let stream = recognizer.create_stream();
+            stream.accept_waveform(16000, &audio);
+            recognizer.decode(&stream);
+            let text = stream.get_result().map(|r| r.text).unwrap_or_default();
+            let char_count = text.chars().count();
+
+            if baseline_chars.is_none() {
+                baseline_chars = Some(char_count);
+            }
+            let expected = baseline_chars.unwrap_or(1);
+            let truncated = char_count < expected / 2;
+
+            eprintln!(
+                "N={n:4}: {char_count:5} chars  truncated={}  text={:.80}",
+                truncated,
+                &text[..text.len().min(80)],
+            );
+
+            if truncated {
+                eprintln!(">>> EOS truncation suspected at N={n}. Recommended cap = {}", n / 2);
+                break;
             }
         }
     }

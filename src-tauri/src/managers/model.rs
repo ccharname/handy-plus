@@ -742,11 +742,16 @@ impl ModelManager {
         // Qwen3-ASR-0.6B (int8) — Tongyi Lab 2026-01 release, ~2.5 GB int8
         // Supports 52 languages and 22 Chinese dialects. LLM decoder (Qwen3 family).
         // Experimental — not the default preset.
-        let sherpa_qwen3_asr_languages: Vec<String> =
-            vec!["zh", "zh-Hans", "zh-Hant", "en"]
-                .into_iter()
-                .map(String::from)
-                .collect();
+        // Qwen3-ASR officially supports 52 languages + 22 Chinese dialects.
+        // This list covers the most likely user languages; adding entries here
+        // is advisory only — Qwen3 auto-detects regardless.
+        let sherpa_qwen3_asr_languages: Vec<String> = vec![
+            "zh", "zh-Hans", "zh-Hant", "yue", "en", "ja", "ko",
+            "es", "fr", "de", "ru", "pt", "ar", "it",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
 
         available_models.insert(
             "qwen3-asr".to_string(),
