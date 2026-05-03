@@ -557,14 +557,21 @@ impl TranscriptionManager {
                         }
                     }
                     SherpaModelKind::FunAsrNano => {
-                        // CAUTION: keep this block minimal until the long-audio
-                        // empty-output regression is bisected. 2026-05-03 logs
-                        // showed audio ≥10s returning empty text in ~210ms (RTF
-                        // 0.014, well below physical floor) when ANY of
-                        // {temperature=0, max_new_tokens=512, hotwords=large
-                        // string, language hint} were set. Hypothesis: Qwen3
-                        // LLM context budget is exhausted by audio embedding +
-                        // hotwords prompt. Restore tuning fields one at a time.
+                        // Bisect step 1 (2026-05-03): re-introduce language hint
+                        // + max_new_tokens cap. Hotwords stays OFF for now —
+                        // it is the prime suspect for the long-audio empty-output
+                        // regression (large prompt vs Qwen3 context budget).
+                        let settings = get_settings(&self.app_handle);
+                        let lang_hint: Option<String> = match settings.selected_language.as_str() {
+                            "auto" => None,
+                            "zh" | "zh-Hans" | "zh-Hant" => Some("zh".into()),
+                            "en" => Some("en".into()),
+                            "ja" => Some("ja".into()),
+                            "ko" => Some("ko".into()),
+                            "yue" => Some("yue".into()),
+                            other => Some(other.to_string()),
+                        };
+
                         config.model_config.funasr_nano = OfflineFunASRNanoModelConfig {
                             encoder_adaptor: Some(
                                 model_path
@@ -587,6 +594,11 @@ impl TranscriptionManager {
                             tokenizer: Some(
                                 model_path.join("Qwen3-0.6B").to_string_lossy().into_owned(),
                             ),
+                            // Cap LLM output to prevent runaway repetition loops.
+                            // 512 tokens covers ~120 Chinese chars / ~50 English
+                            // words — enough for ~30s of speech.
+                            max_new_tokens: 512,
+                            language: lang_hint,
                             ..Default::default()
                         };
                     }
