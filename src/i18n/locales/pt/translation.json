@@ -382,7 +382,6 @@
         "fileTypes": ".txt / .csv / .json",
         "fromFile": "Ou carregar de arquivo",
         "import": "Importar",
-        "layerHint": "Essas palavras são usadas para (1) substituição aproximada após transcrição (2) dicas de bias de decodificação",
         "preview": "{{add}} nova · {{skip}} duplicada · {{invalid}} inválida"
       },
       "puncZh": {
@@ -478,7 +477,7 @@
       "deleteError": "Falha ao excluir entrada. Por favor, tente novamente.",
       "retranscribe": "Re-transcrever",
       "retranscribeError": "Falha ao re-transcrever. Por favor, tente novamente.",
-      "transcribing": "Transcrevendo...",
+      "transcribing": "Transcrevendo",
       "transcriptionFailed": "A transcrição falhou. Você pode re-transcrever usando o ícone de tentar novamente.",
       "retranscribeModal": {
         "cancelButton": "Cancelar",
@@ -749,7 +748,7 @@
     "description": "Alterar o idioma da interface do Handy"
   },
   "overlay": {
-    "transcribing": "Transcrevendo...",
+    "transcribing": "Transcrevendo",
     "processing": "Processando..."
   },
   "toast": {

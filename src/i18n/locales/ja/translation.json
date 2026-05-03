@@ -382,7 +382,6 @@
         "fileTypes": ".txt / .csv / .json",
         "fromFile": "またはファイルから読み込む",
         "import": "インポート",
-        "layerHint": "これらの単語は（1）文字起こし後のファジー置換、（2）デコードバイアスヒントに使用されます",
         "preview": "{{add}}件新規 · {{skip}}件重複 · {{invalid}}件無効"
       },
       "puncZh": {
@@ -478,7 +477,7 @@
       "deleteError": "エントリーの削除に失敗しました。もう一度お試しください。",
       "retranscribe": "再文字起こし",
       "retranscribeError": "再文字起こしに失敗しました。もう一度お試しください。",
-      "transcribing": "文字起こし中...",
+      "transcribing": "文字起こし中",
       "transcriptionFailed": "文字起こしに失敗しました。リトライアイコンを使用して再文字起こしできます。",
       "retranscribeModal": {
         "cancelButton": "キャンセル",
@@ -749,7 +748,7 @@
     "description": "Handyインターフェースの言語を変更"
   },
   "overlay": {
-    "transcribing": "文字起こし中...",
+    "transcribing": "文字起こし中",
     "processing": "処理中..."
   },
   "toast": {

@@ -382,7 +382,6 @@
         "fileTypes": ".txt / .csv / .json",
         "fromFile": "או טען מקובץ",
         "import": "ייבוא",
-        "layerHint": "מילים אלה משמשות ל-(1) החלפה מטושטשת לאחר תמלול (2) רמזי הטיית פענוח",
         "preview": "{{add}} חדשות · {{skip}} כפולות · {{invalid}} לא חוקיות"
       },
       "puncZh": {
@@ -478,7 +477,7 @@
       "deleteError": "מחיקת הרשומה נכשלה. נסה שוב.",
       "retranscribe": "תמלל מחדש",
       "retranscribeError": "תמלול מחדש נכשל. נסה שוב.",
-      "transcribing": "מתמלל...",
+      "transcribing": "מתמלל",
       "transcriptionFailed": "התמלול נכשל. אפשר לתמלל מחדש באמצעות אייקון הניסיון החוזר.",
       "retranscribeModal": {
         "cancelButton": "ביטול",
@@ -749,7 +748,7 @@
     "description": "שנה את שפת הממשק של Handy"
   },
   "overlay": {
-    "transcribing": "מתמלל...",
+    "transcribing": "מתמלל",
     "processing": "מעבד..."
   },
   "toast": {

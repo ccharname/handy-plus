@@ -382,7 +382,6 @@
         "fileTypes": ".txt / .csv / .json",
         "fromFile": "Nebo načíst ze souboru",
         "import": "Importovat",
-        "layerHint": "Tato slova se používají pro (1) přibližné nahrazení po přepisu (2) nápovědy k biasu dekódování",
         "preview": "{{add}} nových · {{skip}} duplicitních · {{invalid}} neplatných"
       },
       "puncZh": {
@@ -478,7 +477,7 @@
       "deleteError": "Nepodařilo se smazat záznam. Zkuste to prosím znovu.",
       "retranscribe": "Přepsat znovu",
       "retranscribeError": "Opětovný přepis se nezdařil. Zkuste to prosím znovu.",
-      "transcribing": "Přepisuji...",
+      "transcribing": "Přepisuji",
       "transcriptionFailed": "Přepis selhal. Můžete zkusit přepis znovu pomocí ikony opakování.",
       "retranscribeModal": {
         "cancelButton": "Zrušit",
@@ -749,7 +748,7 @@
     "description": "Změňte jazyk rozhraní Handy"
   },
   "overlay": {
-    "transcribing": "Přepisuji...",
+    "transcribing": "Přepisuji",
     "processing": "Zpracovávám..."
   },
   "toast": {

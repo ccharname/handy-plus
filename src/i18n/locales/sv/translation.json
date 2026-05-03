@@ -382,7 +382,6 @@
         "fileTypes": ".txt / .csv / .json",
         "fromFile": "Eller läs in från fil",
         "import": "Importera",
-        "layerHint": "Dessa ord används för (1) suddig ersättning efter transkription (2) avkodnings-bias-tips",
         "preview": "{{add}} nya · {{skip}} dubbletter · {{invalid}} ogiltiga"
       },
       "puncZh": {
@@ -478,7 +477,7 @@
       "deleteError": "Misslyckades med att ta bort post. Försök igen.",
       "retranscribe": "Transkribera igen",
       "retranscribeError": "Misslyckades med att transkribera igen. Försök igen.",
-      "transcribing": "Transkriberar...",
+      "transcribing": "Transkriberar",
       "transcriptionFailed": "Transkribering misslyckades. Du kan transkribera igen med hjälp av ikonen för nytt försök.",
       "retranscribeModal": {
         "cancelButton": "Avbryt",
@@ -749,7 +748,7 @@
     "description": "Ändra språket i Handy-gränssnittet"
   },
   "overlay": {
-    "transcribing": "Transkriberar...",
+    "transcribing": "Transkriberar",
     "processing": "Bearbetar..."
   },
   "toast": {

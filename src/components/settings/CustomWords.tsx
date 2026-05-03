@@ -14,13 +14,16 @@ interface CustomWordsProps {
 
 // ---------- Parsing helpers ----------
 
-const ILLEGAL_CHARS = /[<>"'&]/g;
+// Strip only characters that would break HTML rendering / hotwords file format.
+// Keep `'` and `"` so brand names like O'Reilly and "AI Lab" survive.
+const ILLEGAL_CHARS = /[<>&]/g;
+const MAX_WORD_LEN = 80;
 
 function parseRawText(raw: string): string[] {
   return raw
-    .split(/[\n,，、]+/)
+    .split(/[\n,，、；;]+/)
     .map((w) => w.trim().replace(ILLEGAL_CHARS, ""))
-    .filter((w) => w.length > 0 && w.length <= 50);
+    .filter((w) => w.length > 0 && w.length <= MAX_WORD_LEN);
 }
 
 function parseInput(raw: string): string[] {
@@ -35,7 +38,7 @@ function parseInput(raw: string): string[] {
       ) {
         return parsed
           .map((w: string) => w.trim().replace(ILLEGAL_CHARS, ""))
-          .filter((w: string) => w.length > 0 && w.length <= 50);
+          .filter((w: string) => w.length > 0 && w.length <= MAX_WORD_LEN);
       }
     } catch {
       // fall through to text parsing
@@ -112,7 +115,7 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
     const handleAddWord = () => {
       const trimmedWord = newWord.trim();
       const sanitizedWord = trimmedWord.replace(ILLEGAL_CHARS, "");
-      if (sanitizedWord && sanitizedWord.length <= 50) {
+      if (sanitizedWord && sanitizedWord.length <= MAX_WORD_LEN) {
         if (customWords.includes(sanitizedWord)) {
           toast.error(
             t("settings.advanced.customWords.duplicate", {
@@ -195,15 +198,10 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
           descriptionMode={descriptionMode}
           grouped={grouped}
         >
-          {/* Layer hint */}
-          <p className="text-text/60 text-xs mb-2">
-            {t("settings.advanced.customWords.layerHint")}
-          </p>
-
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <Input
               type="text"
-              className="max-w-40"
+              className="max-w-44"
               value={newWord}
               onChange={(e) => setNewWord(e.target.value)}
               onKeyDown={handleKeyPress}
@@ -215,30 +213,38 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
               onClick={handleAddWord}
               disabled={
                 !newWord.trim() ||
-                newWord.trim().length > 50 ||
+                newWord.trim().length > MAX_WORD_LEN ||
                 isUpdating("custom_words")
               }
               variant="primary"
-              size="md"
+              size="sm"
             >
               {t("settings.advanced.customWords.add")}
             </Button>
-            <Button
+            <button
+              type="button"
               onClick={() => setShowImportModal(true)}
               disabled={isUpdating("custom_words")}
-              variant="secondary"
-              size="md"
+              title={t("settings.advanced.customWords.import")}
+              aria-label={t("settings.advanced.customWords.import")}
+              className="ml-1 p-1.5 rounded text-text/50 hover:text-text hover:bg-mid-gray/15 disabled:opacity-40 transition-colors"
             >
-              {t("settings.advanced.customWords.import")}
-            </Button>
-            <Button
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" />
+              </svg>
+            </button>
+            <button
+              type="button"
               onClick={handleExport}
               disabled={customWords.length === 0 || isUpdating("custom_words")}
-              variant="secondary"
-              size="md"
+              title={t("settings.advanced.customWords.export")}
+              aria-label={t("settings.advanced.customWords.export")}
+              className="p-1.5 rounded text-text/50 hover:text-text hover:bg-mid-gray/15 disabled:opacity-40 transition-colors"
             >
-              {t("settings.advanced.customWords.export")}
-            </Button>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 21V9m0 0l-4 4m4-4l4 4M5 3h14" />
+              </svg>
+            </button>
           </div>
         </SettingContainer>
 

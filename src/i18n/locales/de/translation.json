@@ -382,7 +382,6 @@
         "fileTypes": ".txt / .csv / .json",
         "fromFile": "Oder aus Datei laden",
         "import": "Importieren",
-        "layerHint": "Diese Wörter werden verwendet für (1) unscharfe Ersetzung nach der Transkription (2) Dekodierungs-Bias-Hinweise",
         "preview": "{{add}} neu · {{skip}} doppelt · {{invalid}} ungültig"
       },
       "puncZh": {
@@ -478,7 +477,7 @@
       "deleteError": "Eintrag konnte nicht gelöscht werden. Bitte versuche es erneut.",
       "retranscribe": "Erneut transkribieren",
       "retranscribeError": "Erneute Transkription fehlgeschlagen. Bitte versuche es erneut.",
-      "transcribing": "Transkribiere...",
+      "transcribing": "Transkribiere",
       "transcriptionFailed": "Transkription fehlgeschlagen. Du kannst über das Wiederholen-Symbol erneut transkribieren.",
       "retranscribeModal": {
         "cancelButton": "Abbrechen",
@@ -749,7 +748,7 @@
     "description": "Sprache der Handy-Oberfläche ändern"
   },
   "overlay": {
-    "transcribing": "Transkribiere...",
+    "transcribing": "Transkribiere",
     "processing": "Verarbeite..."
   },
   "toast": {

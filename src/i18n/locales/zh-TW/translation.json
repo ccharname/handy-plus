@@ -382,7 +382,6 @@
         "fileTypes": ".txt / .csv / .json",
         "fromFile": "或從檔案載入",
         "import": "匯入",
-        "layerHint": "這些詞彙用於（1）轉錄後的模糊替換（2）解碼偏置提示",
         "preview": "{{add}} 個新增 · {{skip}} 個重複 · {{invalid}} 個無效"
       },
       "puncZh": {
@@ -478,7 +477,7 @@
       "deleteError": "刪除條目失敗，請重試",
       "retranscribe": "重新轉錄",
       "retranscribeError": "重新轉錄失敗，請重試。",
-      "transcribing": "轉錄中...",
+      "transcribing": "轉錄中",
       "transcriptionFailed": "轉錄失敗。您可以使用重試圖示重新轉錄。",
       "retranscribeModal": {
         "cancelButton": "取消",
@@ -749,7 +748,7 @@
     "description": "變更 Handy 介面的語言"
   },
   "overlay": {
-    "transcribing": "正在轉錄...",
+    "transcribing": "正在轉錄",
     "processing": "處理中..."
   },
   "toast": {

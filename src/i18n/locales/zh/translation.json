@@ -369,16 +369,15 @@
       },
       "customWords": {
         "title": "自定义词汇",
-        "description": "添加经常被误听或拼写错误的词汇。系统将自动将发音相似的词汇修正为您列表中的词汇。",
-        "placeholder": "添加词汇",
+        "description": "模型常听错的词，加进来。",
+        "placeholder": "比如 GitHub Copilot",
         "add": "添加",
         "remove": "删除 {{word}}",
         "duplicate": "\"{{word}}\" 已存在",
-        "layerHint": "这些词将用于 (1) 强制替换音近字 (2) 提示模型解码",
-        "import": "导入",
+        "import": "批量导入",
         "export": "导出",
-        "bulkImportTitle": "批量导入自定义词汇",
-        "bulkImportPlaceholder": "粘贴用换行或逗号分隔的词汇...",
+        "bulkImportTitle": "批量导入",
+        "bulkImportPlaceholder": "一行一个，或用逗号 / 分号分隔。例如：\nChatGPT\nGitHub Copilot, Claude Code\n魔方; 量化交易",
         "fromFile": "或从文件加载",
         "preview": "新增 {{add}} · 重复 {{skip}} · 非法 {{invalid}}",
         "confirmAdd": "全部添加",
@@ -478,7 +477,7 @@
       "deleteError": "删除条目失败，请重试。",
       "retranscribe": "重新转录",
       "retranscribeError": "重新转录失败。请重试。",
-      "transcribing": "转录中...",
+      "transcribing": "转录中",
       "transcriptionFailed": "转录失败。您可以使用重试图标重新转录。",
       "retranscribeModal": {
         "cancelButton": "取消",
@@ -749,7 +748,7 @@
     "description": "更改 Handy 界面的语言"
   },
   "overlay": {
-    "transcribing": "正在转录...",
+    "transcribing": "正在转录",
     "processing": "处理中..."
   },
   "toast": {

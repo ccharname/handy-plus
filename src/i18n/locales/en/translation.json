@@ -381,16 +381,15 @@
       },
       "customWords": {
         "title": "Custom Words",
-        "description": "Add words that are often misheard or misspelled during transcription. The system will automatically correct similar-sounding words to match your list.",
-        "placeholder": "Add a word",
+        "description": "Words the model often gets wrong — add them.",
+        "placeholder": "e.g. GitHub Copilot",
         "add": "Add",
         "remove": "Remove {{word}}",
         "duplicate": "\"{{word}}\" already exists",
-        "layerHint": "These words are used for (1) fuzzy replacement after transcription (2) decoding bias hints",
-        "import": "Import",
+        "import": "Bulk import",
         "export": "Export",
-        "bulkImportTitle": "Bulk import custom words",
-        "bulkImportPlaceholder": "Paste words separated by newlines or commas...",
+        "bulkImportTitle": "Bulk import",
+        "bulkImportPlaceholder": "One per line, or separate with commas / semicolons. e.g.:\nChatGPT\nGitHub Copilot, Claude Code\nKubernetes; rsync",
         "fromFile": "Or load from file",
         "preview": "{{add}} new · {{skip}} duplicate · {{invalid}} invalid",
         "confirmAdd": "Add all",
@@ -478,7 +477,7 @@
       "deleteError": "Failed to delete entry. Please try again.",
       "retranscribe": "Re-transcribe",
       "retranscribeError": "Failed to re-transcribe. Please try again.",
-      "transcribing": "Transcribing...",
+      "transcribing": "Transcribing",
       "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon.",
       "retranscribeOptions": "Re-transcribe with options",
       "retranscribeModal": {
@@ -749,7 +748,7 @@
     "description": "Change the language of the Handy interface"
   },
   "overlay": {
-    "transcribing": "Transcribing...",
+    "transcribing": "Transcribing",
     "processing": "Processing..."
   },
   "toast": {

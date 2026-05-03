@@ -360,7 +360,6 @@
         "fileTypes": ".txt / .csv / .json",
         "fromFile": "أو تحميل من ملف",
         "import": "استيراد",
-        "layerHint": "تُستخدم هذه الكلمات لـ (1) الاستبدال التقريبي بعد النسخ (2) تلميحات التحيّز في فك التشفير",
         "preview": "{{add}} جديدة · {{skip}} مكررة · {{invalid}} غير صالحة"
       },
       "puncZh": {
@@ -456,7 +455,7 @@
       "deleteError": ".فشل حذف الإدخال. يرجى المحاولة مرة أخرى",
       "retranscribe": "إعادة النسخ",
       "retranscribeError": "فشلت إعادة النسخ. يرجى المحاولة مرة أخرى.",
-      "transcribing": "جارٍ النسخ...",
+      "transcribing": "جارٍ النسخ",
       "transcriptionFailed": "فشل النسخ. يمكنك إعادة النسخ باستخدام أيقونة إعادة المحاولة.",
       "retranscribeModal": {
         "cancelButton": "إلغاء",
@@ -749,7 +748,7 @@
     "description": "تغيير لغة واجهة Handy"
   },
   "overlay": {
-    "transcribing": "...جاري التفريغ",
+    "transcribing": "جاري التفريغ",
     "processing": "...جاري المعالجة"
   },
   "toast": {

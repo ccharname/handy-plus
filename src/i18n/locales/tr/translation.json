@@ -382,7 +382,6 @@
         "fileTypes": ".txt / .csv / .json",
         "fromFile": "Veya dosyadan yükle",
         "import": "İçe aktar",
-        "layerHint": "Bu kelimeler (1) transkripsiyon sonrası bulanık değiştirme (2) kod çözme önyargı ipuçları için kullanılır",
         "preview": "{{add}} yeni · {{skip}} tekrarlı · {{invalid}} geçersiz"
       },
       "puncZh": {
@@ -478,7 +477,7 @@
       "deleteError": "Kayıt silinemedi. Lütfen tekrar deneyin.",
       "retranscribe": "Yeniden yazıya dök",
       "retranscribeError": "Yeniden yazıya dökme başarısız oldu. Lütfen tekrar deneyin.",
-      "transcribing": "Yazıya döküyor...",
+      "transcribing": "Yazıya döküyor",
       "transcriptionFailed": "Transkripsiyon başarısız oldu. Yeniden deneme simgesini kullanarak tekrar yazıya dökebilirsiniz.",
       "retranscribeModal": {
         "cancelButton": "İptal",
@@ -749,7 +748,7 @@
     "description": "Handy arayüzünün dilini değiştirin"
   },
   "overlay": {
-    "transcribing": "Transkribe ediliyor...",
+    "transcribing": "Transkribe ediliyor",
     "processing": "İşleniyor..."
   },
   "toast": {

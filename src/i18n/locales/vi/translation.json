@@ -382,7 +382,6 @@
         "fileTypes": ".txt / .csv / .json",
         "fromFile": "Hoặc tải từ tệp",
         "import": "Nhập",
-        "layerHint": "Các từ này được dùng cho (1) thay thế mờ sau phiên âm (2) gợi ý độ lệch giải mã",
         "preview": "{{add}} mới · {{skip}} trùng lặp · {{invalid}} không hợp lệ"
       },
       "puncZh": {
@@ -478,7 +477,7 @@
       "deleteError": "Không thể xóa mục. Vui lòng thử lại.",
       "retranscribe": "Phiên âm lại",
       "retranscribeError": "Không thể phiên âm lại. Vui lòng thử lại.",
-      "transcribing": "Đang phiên âm...",
+      "transcribing": "Đang phiên âm",
       "transcriptionFailed": "Phiên âm thất bại. Bạn có thể phiên âm lại bằng biểu tượng thử lại.",
       "retranscribeModal": {
         "cancelButton": "Hủy",
@@ -749,7 +748,7 @@
     "description": "Thay đổi ngôn ngữ giao diện của Handy"
   },
   "overlay": {
-    "transcribing": "Đang chuyển đổi...",
+    "transcribing": "Đang chuyển đổi",
     "processing": "Đang xử lý..."
   },
   "toast": {
