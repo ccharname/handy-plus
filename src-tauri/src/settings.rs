@@ -739,6 +739,18 @@ pub fn default_asr_presets() -> Vec<AsrPreset> {
             require_apple_speech_on_device: Some(true),
             builtin: true,
         },
+        AsrPreset {
+            id: "experimental_qwen3".to_string(),
+            name: "Experimental — Qwen3-ASR".to_string(),
+            description: "Qwen3-ASR 0.6B (sherpa)，实验档位。中文 SOTA + 52 语言，~2.5 GB int8。不替换默认。".to_string(),
+            icon: "🧪".to_string(),
+            model_id: "qwen3-asr".to_string(),
+            language: "zh-Hans".to_string(),
+            punc_zh_enabled: true,
+            require_post_process_chain: None,
+            require_apple_speech_on_device: None,
+            builtin: false,
+        },
     ]
 }
 

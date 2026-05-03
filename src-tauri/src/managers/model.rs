@@ -24,6 +24,7 @@ use tauri::{AppHandle, Emitter, Manager};
 pub enum SherpaModelKind {
     SenseVoice,
     FunAsrNano,
+    Qwen3Asr,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -733,6 +734,44 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: sherpa_funasr_nano_languages,
+                supports_language_selection: true,
+                is_custom: false,
+            },
+        );
+
+        // Qwen3-ASR-0.6B (int8) — Tongyi Lab 2026-01 release, ~2.5 GB int8
+        // Supports 52 languages and 22 Chinese dialects. LLM decoder (Qwen3 family).
+        // Experimental — not the default preset.
+        let sherpa_qwen3_asr_languages: Vec<String> =
+            vec!["zh", "zh-Hans", "zh-Hant", "en"]
+                .into_iter()
+                .map(String::from)
+                .collect();
+
+        available_models.insert(
+            "qwen3-asr".to_string(),
+            ModelInfo {
+                id: "qwen3-asr".to_string(),
+                name: "Qwen3-ASR 0.6B (sherpa)".to_string(),
+                description: "Tongyi Lab 2026-01 release. 52 languages, 22 Chinese dialects. ~2.5 GB int8. Experimental — long-audio EOS truncation risk if max_new_tokens too low.".to_string(),
+                // The archive extracts to a directory named:
+                // sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25
+                filename: "sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25".to_string(),
+                url: Some(
+                    "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2".to_string(),
+                ),
+                sha256: None,
+                size_mb: 2500,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::Sherpa(SherpaModelKind::Qwen3Asr),
+                accuracy_score: 0.95,
+                speed_score: 0.40,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: sherpa_qwen3_asr_languages,
                 supports_language_selection: true,
                 is_custom: false,
             },

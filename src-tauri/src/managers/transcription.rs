@@ -9,8 +9,8 @@ use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::Serialize;
 use sherpa_onnx::{
-    OfflineFunASRNanoModelConfig, OfflineRecognizer, OfflineRecognizerConfig,
-    OfflineSenseVoiceModelConfig,
+    OfflineFunASRNanoModelConfig, OfflineQwen3ASRModelConfig, OfflineRecognizer,
+    OfflineRecognizerConfig, OfflineSenseVoiceModelConfig,
 };
 use specta::Type;
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -555,6 +555,94 @@ impl TranscriptionManager {
                                 }
                             }
                         }
+                    }
+                    SherpaModelKind::Qwen3Asr => {
+                        // NOTE: Qwen3-ASR auto-detects language; no per-call hint
+                        // slot in OfflineQwen3ASRModelConfig — language field does
+                        // not exist on this struct.
+
+                        // Same LLM-decoder context-budget concern as FunASR-Nano
+                        // (same Qwen3 family). Cap: 32 entries × 500 total chars.
+                        const QWEN3_HOTWORDS_MAX_ENTRIES: usize = 32;
+                        const QWEN3_HOTWORDS_MAX_CHARS: usize = 500;
+
+                        let settings = get_settings(&self.app_handle);
+
+                        let hotwords_str: Option<String> = if settings.custom_words.is_empty() {
+                            None
+                        } else {
+                            let mut acc = String::new();
+                            let mut count = 0usize;
+                            for w in &settings.custom_words {
+                                let w = w.trim();
+                                if w.is_empty() {
+                                    continue;
+                                }
+                                if count >= QWEN3_HOTWORDS_MAX_ENTRIES {
+                                    break;
+                                }
+                                let projected_len =
+                                    acc.chars().count() + w.chars().count() + 1; // +1 for \n
+                                if projected_len > QWEN3_HOTWORDS_MAX_CHARS {
+                                    break;
+                                }
+                                if !acc.is_empty() {
+                                    acc.push('\n');
+                                }
+                                acc.push_str(w);
+                                count += 1;
+                            }
+                            if acc.is_empty() {
+                                None
+                            } else {
+                                debug!(
+                                    "Qwen3-ASR: hotwords {} entries / {} chars (capped from {} total)",
+                                    count,
+                                    acc.chars().count(),
+                                    settings.custom_words.len()
+                                );
+                                Some(acc)
+                            }
+                        };
+
+                        // File layout verified against upstream Python example
+                        // (python-api-examples/offline-qwen3-asr-decode-files.py):
+                        //   conv_frontend.onnx  — no int8 suffix on conv_frontend
+                        //   encoder.int8.onnx
+                        //   decoder.int8.onnx
+                        //   tokenizer/          — a subdirectory (not Qwen3-0.6B)
+                        config.model_config.qwen3_asr = OfflineQwen3ASRModelConfig {
+                            conv_frontend: Some(
+                                model_path
+                                    .join("conv_frontend.onnx")
+                                    .to_string_lossy()
+                                    .into_owned(),
+                            ),
+                            encoder: Some(
+                                model_path
+                                    .join("encoder.int8.onnx")
+                                    .to_string_lossy()
+                                    .into_owned(),
+                            ),
+                            decoder: Some(
+                                model_path
+                                    .join("decoder.int8.onnx")
+                                    .to_string_lossy()
+                                    .into_owned(),
+                            ),
+                            tokenizer: Some(
+                                model_path
+                                    .join("tokenizer")
+                                    .to_string_lossy()
+                                    .into_owned(),
+                            ),
+                            // CRITICAL: override landmine defaults (128 / 512) that
+                            // silently truncate long audio (same gotcha as FunASR-Nano).
+                            max_new_tokens: 4096,
+                            max_total_len: 8192,
+                            hotwords: hotwords_str,
+                            ..Default::default()
+                        };
                     }
                     SherpaModelKind::FunAsrNano => {
                         // Bisect step 2 (2026-05-03): re-introduce hotwords
