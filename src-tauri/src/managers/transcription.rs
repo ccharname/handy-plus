@@ -557,51 +557,14 @@ impl TranscriptionManager {
                         }
                     }
                     SherpaModelKind::FunAsrNano => {
-                        // The archive has encoder_adaptor.int8.onnx, embedding.int8.onnx,
-                        // llm.int8.onnx at root, and Qwen3-0.6B/{merges,tokenizer,vocab}.json
-                        // for the sub-tokenizer.  The OfflineFunASRNanoModelConfig `tokenizer`
-                        // field points to the Qwen3-0.6B directory (sherpa-onnx resolves files
-                        // inside it automatically when it is a directory path).
-                        let settings = get_settings(&self.app_handle);
-
-                        // Map the user's selected_language to FunASR-Nano's expected
-                        // hint code. The model accepts a hint to skip its language-
-                        // detection token; "auto" → None lets it fall back to its own
-                        // detector. Whisper-style zh-Hans / zh-Hant collapse to "zh".
-                        let lang_hint: Option<String> = match settings.selected_language.as_str() {
-                            "auto" => None,
-                            "zh" | "zh-Hans" | "zh-Hant" => Some("zh".into()),
-                            "en" => Some("en".into()),
-                            "ja" => Some("ja".into()),
-                            "ko" => Some("ko".into()),
-                            "yue" => Some("yue".into()),
-                            other => Some(other.to_string()),
-                        };
-
-                        // Hotwords: FunASR-Nano expects a single string, one phrase
-                        // per line, that is injected into the Qwen3 LLM prompt as
-                        // bias terms. Distinct from Transducer-style hotwords_file.
-                        let hotwords_str: Option<String> = if settings.custom_words.is_empty() {
-                            None
-                        } else {
-                            let joined = settings
-                                .custom_words
-                                .iter()
-                                .map(|w| w.trim())
-                                .filter(|w| !w.is_empty())
-                                .collect::<Vec<_>>()
-                                .join("\n");
-                            if joined.is_empty() {
-                                None
-                            } else {
-                                debug!(
-                                    "FunASR-Nano: hotwords ({} entries) injected into LLM prompt",
-                                    settings.custom_words.len()
-                                );
-                                Some(joined)
-                            }
-                        };
-
+                        // CAUTION: keep this block minimal until the long-audio
+                        // empty-output regression is bisected. 2026-05-03 logs
+                        // showed audio ≥10s returning empty text in ~210ms (RTF
+                        // 0.014, well below physical floor) when ANY of
+                        // {temperature=0, max_new_tokens=512, hotwords=large
+                        // string, language hint} were set. Hypothesis: Qwen3
+                        // LLM context budget is exhausted by audio embedding +
+                        // hotwords prompt. Restore tuning fields one at a time.
                         config.model_config.funasr_nano = OfflineFunASRNanoModelConfig {
                             encoder_adaptor: Some(
                                 model_path
@@ -624,22 +587,6 @@ impl TranscriptionManager {
                             tokenizer: Some(
                                 model_path.join("Qwen3-0.6B").to_string_lossy().into_owned(),
                             ),
-                            // CAUTION: do NOT set temperature=0 / pure greedy here.
-                            // Empirical finding (2026-05-03 logs): on audio
-                            // ≥10s the Qwen3-0.6B LLM decoder collapsed to an
-                            // immediate-EOS degeneracy under T=0, returning
-                            // empty text in ~200ms regardless of content.
-                            // Short clips (<2s) survived because their token
-                            // distributions were narrow enough. Keep the
-                            // upstream defaults (T=1.0, top_p=1.0) — sampling
-                            // noise is harmless compared to silent failure.
-                            // Cap LLM output to prevent runaway repetition
-                            // loops on noisy / silent input. 512 tokens covers
-                            // ~120 Chinese chars or ~50 English words — enough
-                            // for ~30s of speech.
-                            max_new_tokens: 512,
-                            language: lang_hint,
-                            hotwords: hotwords_str,
                             ..Default::default()
                         };
                     }
