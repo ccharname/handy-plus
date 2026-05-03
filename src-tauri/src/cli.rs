@@ -16,6 +16,10 @@ pub enum BenchMode {
     /// Engine hot-swap: [sense-voice-int8 → funasr-nano → sense-voice-int8] × 3.
     /// Measures unload+load lifecycle time, no actual transcription.
     Swap,
+    /// Accuracy benchmark: transcribe a manifest of reference-labelled WAV files
+    /// and compute per-item CER + RTF, plus aggregate mean/median CER and
+    /// p50/p95/p99 RTF.  Dataset: `<bench-dataset>/manifest.jsonl`.
+    Accuracy,
 }
 
 #[derive(Parser, Debug, Clone, Default)]

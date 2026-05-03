@@ -1,4 +1,5 @@
 pub mod audio;
+pub mod cer;
 pub mod constants;
 pub mod itn_zh;
 pub mod punc_zh;

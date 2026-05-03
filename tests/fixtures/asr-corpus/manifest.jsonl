@@ -1,0 +1,5 @@
+{"wav": "01_pure_zh.wav", "ref": "你好世界这是一段纯中文测试", "tags": ["pure_zh"]}
+{"wav": "02_zh_en_mix.wav", "ref": "我用 Rust 写了一个 ASR demo", "tags": ["zh_en_mix"]}
+{"wav": "03_numbers_dates.wav", "ref": "今天是二零二六年五月三日下午三点", "tags": ["numbers"]}
+{"wav": "04_long_sentence.wav", "ref": "在调优过程中我们发现温度参数被错误地设置为一", "tags": ["long"]}
+{"wav": "05_tech_terms.wav", "ref": "Tauri 应用的 sherpa-onnx FunASR Nano 推理性能", "tags": ["tech"]}

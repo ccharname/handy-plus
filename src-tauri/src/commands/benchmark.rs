@@ -16,6 +16,19 @@ pub struct BenchmarkItem {
     pub latency_ms: u64,
     pub punc_count: usize,
     pub char_count: usize,
+    // ── Accuracy mode extras ─────────────────────────────────────────────────
+    /// Reference transcript (Accuracy mode only).
+    #[serde(default)]
+    pub reference: Option<String>,
+    /// Character Error Rate = levenshtein(ref, hyp) / len(ref).  Accuracy mode only.
+    #[serde(default)]
+    pub cer: Option<f64>,
+    /// Audio duration in milliseconds (Accuracy mode only; used to compute RTF).
+    #[serde(default)]
+    pub audio_ms: Option<u64>,
+    /// Real-Time Factor = latency_ms / audio_ms (Accuracy mode only).
+    #[serde(default)]
+    pub rtf: Option<f64>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
@@ -44,6 +57,22 @@ pub struct BenchmarkSummary {
     /// P95 swap latency (BenchMode::Swap only). 0 for other modes.
     #[serde(default)]
     pub swap_p95_latency_ms: u64,
+    // ── Accuracy mode extras ─────────────────────────────────────────────────
+    /// Mean CER across all items (Accuracy mode only).
+    #[serde(default)]
+    pub mean_cer: f64,
+    /// Median CER across all items (Accuracy mode only).
+    #[serde(default)]
+    pub median_cer: f64,
+    /// P50 RTF across all items (Accuracy mode only).
+    #[serde(default)]
+    pub p50_rtf: f64,
+    /// P95 RTF across all items (Accuracy mode only).
+    #[serde(default)]
+    pub p95_rtf: f64,
+    /// P99 RTF across all items (Accuracy mode only).
+    #[serde(default)]
+    pub p99_rtf: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
@@ -155,6 +184,11 @@ fn make_summary(items: &[BenchmarkItem], total_audio_seconds: f64) -> BenchmarkS
         steady_p95_latency_ms: percentile(&steady_latencies, 95),
         swap_p50_latency_ms: 0,
         swap_p95_latency_ms: 0,
+        mean_cer: 0.0,
+        median_cer: 0.0,
+        p50_rtf: 0.0,
+        p95_rtf: 0.0,
+        p99_rtf: 0.0,
     }
 }
 
@@ -166,6 +200,7 @@ fn make_summary(items: &[BenchmarkItem], total_audio_seconds: f64) -> BenchmarkS
 /// * `BenchMode::PuncOnly` — punctuation-only loop, 100 iterations
 /// * `BenchMode::Chain`    — post-process chain timing
 /// * `BenchMode::Swap`     — engine hot-swap lifecycle timing
+/// * `BenchMode::Accuracy` — CER + RTF evaluation against a reference manifest
 ///
 /// The `preset_id`, `dataset_dir`, and `output_dir` parameters remain unchanged
 /// so the existing ASR path and CLI dispatcher are fully backward-compatible.
@@ -187,6 +222,7 @@ pub async fn run_asr_benchmark(
         Some("punc-only") | Some("punc_only") | Some("PuncOnly") => BenchMode::PuncOnly,
         Some("chain") | Some("Chain") => BenchMode::Chain,
         Some("swap") | Some("Swap") => BenchMode::Swap,
+        Some("accuracy") | Some("Accuracy") => BenchMode::Accuracy,
         _ => BenchMode::Asr,
     };
 
@@ -223,6 +259,16 @@ pub async fn run_asr_benchmark(
         }
         BenchMode::Swap => {
             run_swap_mode(
+                app,
+                transcription_manager,
+                preset_id,
+                dataset_dir,
+                output_dir,
+            )
+            .await
+        }
+        BenchMode::Accuracy => {
+            run_accuracy_mode(
                 app,
                 transcription_manager,
                 preset_id,
@@ -410,6 +456,10 @@ async fn run_asr_mode(
                     latency_ms,
                     punc_count,
                     char_count,
+                    reference: None,
+                    cer: None,
+                    audio_ms: None,
+                    rtf: None,
                 });
             }
 
@@ -560,6 +610,10 @@ async fn run_punc_only_mode(
                     latency_ms,
                     punc_count,
                     char_count,
+                    reference: None,
+                    cer: None,
+                    audio_ms: None,
+                    rtf: None,
                 });
             }
         }
@@ -761,6 +815,10 @@ async fn run_chain_mode(
         latency_ms: total_latency_ms,
         punc_count,
         char_count,
+        reference: None,
+        cer: None,
+        audio_ms: None,
+        rtf: None,
     }];
 
     // Build per-step summary metrics.
@@ -790,6 +848,11 @@ async fn run_chain_mode(
         },
         swap_p50_latency_ms: 0,
         swap_p95_latency_ms: 0,
+        mean_cer: 0.0,
+        median_cer: 0.0,
+        p50_rtf: 0.0,
+        p95_rtf: 0.0,
+        p99_rtf: 0.0,
     };
 
     // Write report.
@@ -955,6 +1018,10 @@ async fn run_swap_mode(
             latency_ms: r.total_ms,
             punc_count: 0,
             char_count: 0,
+            reference: None,
+            cer: None,
+            audio_ms: None,
+            rtf: None,
         })
         .collect();
 
@@ -977,6 +1044,11 @@ async fn run_swap_mode(
         steady_p95_latency_ms: percentile(&steady_totals, 95),
         swap_p50_latency_ms: percentile(&swap_totals, 50),
         swap_p95_latency_ms: percentile(&swap_totals, 95),
+        mean_cer: 0.0,
+        median_cer: 0.0,
+        p50_rtf: 0.0,
+        p95_rtf: 0.0,
+        p99_rtf: 0.0,
     };
 
     // Write report.
@@ -1012,3 +1084,326 @@ async fn run_swap_mode(
 
     Ok(report)
 }
+
+// ── BenchMode::Accuracy ───────────────────────────────────────────────────────
+
+/// One entry from the manifest.jsonl corpus file.
+#[derive(Deserialize, Debug)]
+struct ManifestEntry {
+    wav: String,
+    #[serde(rename = "ref")]
+    reference: String,
+    #[serde(default)]
+    tags: Vec<String>,
+}
+
+/// Compute f64 percentile (0–100) from a sorted slice of f64 values.
+fn percentile_f64(sorted: &[f64], p: u8) -> f64 {
+    if sorted.is_empty() {
+        return 0.0;
+    }
+    let idx = ((p as f64 / 100.0) * (sorted.len() - 1) as f64).round() as usize;
+    sorted[idx.min(sorted.len() - 1)]
+}
+
+/// Run the accuracy benchmark.
+///
+/// Reads `<dataset_dir>/manifest.jsonl` (one JSON object per line):
+/// ```json
+/// {"wav": "01_pure_zh.wav", "ref": "你好世界", "tags": ["pure_zh"]}
+/// ```
+///
+/// For each entry the function:
+/// 1. Reads the WAV file with `read_wav_samples` (assumes 16 kHz mono).
+/// 2. Transcribes via the loaded model.
+/// 3. Computes CER and RTF.
+///
+/// Aggregate statistics (mean/median CER, p50/p95/p99 RTF) are stored in the
+/// `BenchmarkSummary` extension fields added for accuracy mode.
+///
+/// The preset is applied exactly the same way as in `run_asr_mode` so the
+/// engine under test is fully configured before transcription begins.
+async fn run_accuracy_mode(
+    app: AppHandle,
+    transcription_manager: State<'_, Arc<TranscriptionManager>>,
+    preset_id: String,
+    dataset_dir: String,
+    output_dir: String,
+) -> Result<BenchmarkReport, String> {
+    // ── Step 1: apply preset (same logic as run_asr_mode) ──────────────────
+    let preset = crate::settings::default_asr_presets()
+        .into_iter()
+        .find(|p| p.id == preset_id)
+        .ok_or_else(|| format!("Preset '{}' not found", preset_id))?;
+
+    {
+        use crate::settings::{get_settings, write_settings};
+        let mut settings = get_settings(&app);
+        settings.selected_language = preset.language.clone();
+        settings.punc_zh_enabled = preset.punc_zh_enabled;
+        if let Some(chain) = preset.require_post_process_chain.clone() {
+            settings.post_process_chain = Some(chain);
+        }
+        if let Some(on_device) = preset.require_apple_speech_on_device {
+            settings.apple_speech_require_on_device = on_device;
+        }
+        settings.active_preset_id = Some(preset.id.clone());
+        settings.selected_model = preset.model_id.clone();
+        write_settings(&app, settings);
+    }
+
+    let model_id_for_load = preset.model_id.clone();
+    let tm_load = Arc::clone(&*transcription_manager);
+    tauri::async_runtime::spawn_blocking(move || tm_load.load_model(&model_id_for_load))
+        .await
+        .map_err(|e| format!("Model load task panicked: {}", e))?
+        .map_err(|e| format!("Failed to load preset model: {}", e))?;
+
+    // Wait for model to be ready (poll up to 30 s).
+    {
+        let tm_check = Arc::clone(&*transcription_manager);
+        tauri::async_runtime::spawn_blocking(move || {
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
+            while !tm_check.is_model_loaded() {
+                if std::time::Instant::now() >= deadline {
+                    return Err("Timed out waiting for model to load".to_string());
+                }
+                std::thread::sleep(std::time::Duration::from_millis(500));
+            }
+            Ok(())
+        })
+        .await
+        .map_err(|e| format!("Model readiness check panicked: {}", e))??;
+    }
+
+    // ── Step 2: read manifest.jsonl ─────────────────────────────────────────
+    let dataset_path = std::path::PathBuf::from(&dataset_dir);
+    let manifest_path = dataset_path.join("manifest.jsonl");
+    if !manifest_path.exists() {
+        return Err(format!(
+            "manifest.jsonl not found at {}",
+            manifest_path.display()
+        ));
+    }
+
+    let manifest_content = std::fs::read_to_string(&manifest_path)
+        .map_err(|e| format!("Cannot read manifest.jsonl: {}", e))?;
+
+    let entries: Vec<ManifestEntry> = manifest_content
+        .lines()
+        .enumerate()
+        .filter(|(_, line)| !line.trim().is_empty())
+        .map(|(line_no, line)| {
+            serde_json::from_str::<ManifestEntry>(line).map_err(|e| {
+                format!("manifest.jsonl line {}: parse error: {}", line_no + 1, e)
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
+    if entries.is_empty() {
+        return Err("manifest.jsonl contains no entries".to_string());
+    }
+
+    let total = entries.len();
+
+    // ── Step 3: transcribe each entry on a blocking thread ─────────────────
+    let lang_override: Option<String> = if preset.language == "auto" {
+        None
+    } else {
+        Some(preset.language.clone())
+    };
+
+    let tm_bench = Arc::clone(&*transcription_manager);
+    let app_bench = app.clone();
+    let preset_id_bench = preset_id.clone();
+    let lang_override_bench = lang_override.clone();
+
+    let items: Vec<BenchmarkItem> = tauri::async_runtime::spawn_blocking(move || {
+        let mut items: Vec<BenchmarkItem> = Vec::with_capacity(total);
+
+        for (idx, entry) in entries.iter().enumerate() {
+            let wav_name = entry.wav.clone();
+
+            // Emit progress.
+            let _ = app_bench.emit(
+                "bench-progress",
+                BenchProgressPayload {
+                    preset_id: preset_id_bench.clone(),
+                    completed: idx,
+                    total,
+                    current_wav: wav_name.clone(),
+                },
+            );
+
+            // Resolve WAV path relative to the manifest directory.
+            let wav_path = dataset_path.join(&wav_name);
+
+            // Read samples (16 kHz mono assumed; format matches fixture generation).
+            let samples = match crate::audio_toolkit::read_wav_samples(&wav_path) {
+                Ok(s) => s,
+                Err(e) => {
+                    log::warn!(
+                        "Accuracy bench: failed to read {}: {}; skipping",
+                        wav_name,
+                        e
+                    );
+                    continue;
+                }
+            };
+
+            // Audio duration in milliseconds (assumes 16 kHz).
+            let audio_ms = (samples.len() as f64 / 16000.0 * 1000.0) as u64;
+
+            // Transcribe.
+            let t0 = Instant::now();
+            let hypothesis = tm_bench
+                .transcribe_with_language_override(samples, lang_override_bench.clone())
+                .unwrap_or_else(|e| {
+                    log::warn!("Accuracy bench: transcription error for {}: {}", wav_name, e);
+                    String::new()
+                });
+            let latency_ms = t0.elapsed().as_millis() as u64;
+
+            // CER and RTF.
+            let cer = crate::audio_toolkit::cer::character_error_rate(&entry.reference, &hypothesis);
+            let rtf = if audio_ms > 0 {
+                latency_ms as f64 / audio_ms as f64
+            } else {
+                0.0
+            };
+
+            let punc_count = count_punc(&hypothesis);
+            let char_count = hypothesis.chars().count();
+
+            items.push(BenchmarkItem {
+                wav: wav_name,
+                hypothesis,
+                latency_ms,
+                punc_count,
+                char_count,
+                reference: Some(entry.reference.clone()),
+                cer: Some(cer),
+                audio_ms: Some(audio_ms),
+                rtf: Some(rtf),
+            });
+
+            log::debug!(
+                "Accuracy bench [{}/{}] {} — latency={}ms audio={}ms RTF={:.3} CER={:.3}",
+                idx + 1,
+                total,
+                entry.wav,
+                latency_ms,
+                audio_ms,
+                rtf,
+                cer
+            );
+
+            // Log tag info for filtered analysis.
+            if !entry.tags.is_empty() {
+                log::debug!("  tags: {}", entry.tags.join(", "));
+            }
+        }
+
+        items
+    })
+    .await
+    .map_err(|e| format!("Accuracy bench loop task panicked: {}", e))?;
+
+    // Emit final progress.
+    let _ = app.emit(
+        "bench-progress",
+        BenchProgressPayload {
+            preset_id: preset_id.clone(),
+            completed: total,
+            total,
+            current_wav: String::new(),
+        },
+    );
+
+    // ── Step 4: aggregate statistics ────────────────────────────────────────
+
+    // Collect CER and RTF values for items that were successfully processed.
+    let mut cer_values: Vec<f64> = items
+        .iter()
+        .filter_map(|it| it.cer)
+        .collect();
+    let mut rtf_values: Vec<f64> = items
+        .iter()
+        .filter_map(|it| it.rtf)
+        .collect();
+    cer_values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    rtf_values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+
+    let mean_cer = if cer_values.is_empty() {
+        0.0
+    } else {
+        cer_values.iter().sum::<f64>() / cer_values.len() as f64
+    };
+    let median_cer = percentile_f64(&cer_values, 50);
+    let p50_rtf = percentile_f64(&rtf_values, 50);
+    let p95_rtf = percentile_f64(&rtf_values, 95);
+    let p99_rtf = percentile_f64(&rtf_values, 99);
+
+    // Build the core summary using the shared helper, then patch accuracy fields.
+    let total_audio_seconds: f64 = items
+        .iter()
+        .filter_map(|it| it.audio_ms)
+        .map(|ms| ms as f64 / 1000.0)
+        .sum();
+
+    let mut summary = make_summary(&items, total_audio_seconds);
+    summary.mean_cer = mean_cer;
+    summary.median_cer = median_cer;
+    summary.p50_rtf = p50_rtf;
+    summary.p95_rtf = p95_rtf;
+    summary.p99_rtf = p99_rtf;
+
+    log::info!(
+        "Accuracy bench summary — items={} mean_CER={:.4} median_CER={:.4} \
+         p50_RTF={:.3} p95_RTF={:.3} p99_RTF={:.3}",
+        items.len(),
+        mean_cer,
+        median_cer,
+        p50_rtf,
+        p95_rtf,
+        p99_rtf,
+    );
+
+    // ── Step 5: write JSON report ────────────────────────────────────────────
+    let timestamp = chrono::Utc::now().format("%Y-%m-%dT%H-%M-%SZ").to_string();
+    let report_filename = format!("{}_accuracy_{}.json", preset_id, timestamp);
+
+    let output_path = std::path::PathBuf::from(&output_dir);
+    std::fs::create_dir_all(&output_path)
+        .map_err(|e| format!("Cannot create output_dir '{}': {}", output_dir, e))?;
+
+    let report = BenchmarkReport {
+        preset_id: preset_id.clone(),
+        preset_name: preset.name.clone(),
+        model_id: preset.model_id.clone(),
+        language: preset.language.clone(),
+        punc_zh_enabled: preset.punc_zh_enabled,
+        timestamp: chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+        bench_mode: "accuracy".to_string(),
+        items,
+        summary,
+        chain_steps: vec![],
+        swap_records: vec![],
+    };
+
+    let json = serde_json::to_string_pretty(&report)
+        .map_err(|e| format!("Failed to serialize report: {}", e))?;
+
+    let report_path = output_path.join(&report_filename);
+    std::fs::write(&report_path, &json)
+        .map_err(|e| format!("Failed to write report to {}: {}", report_path.display(), e))?;
+
+    log::info!(
+        "Accuracy benchmark report written to: {}",
+        report_path.display()
+    );
+
+    Ok(report)
+}
+
+// ── BenchMode::Accuracy (in-progress) ───────────────────────────────────────
