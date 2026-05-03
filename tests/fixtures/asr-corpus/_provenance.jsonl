@@ -1,0 +1,36 @@
+{"wav": "sn_dia_hunan.wav", "ref": "但总来讲孙膑对兵法的理解运用比庞涓略胜一筹。", "tags": ["pure_zh", "dialect"], "_source": "sherpa-onnx-funasr-nano/test_wavs (FunAudioLLM, Apache-2.0)", "_origin_id": "dia_hunan.wav"}
+{"wav": "sn_dia_minnan.wav", "ref": "嗯，下摆若有机会吧，因为即久吼开了吼卷啊遮厉害，会倒贴钱啊。", "tags": ["dialect"], "_source": "sherpa-onnx-funasr-nano/test_wavs (FunAudioLLM, Apache-2.0)", "_origin_id": "dia_minnan.wav"}
+{"wav": "sn_dia_sh.wav", "ref": "人跟狗，包括人跟动物接触长了，全有感情。葛末随了阿拉社会个富裕。", "tags": ["dialect"], "_source": "sherpa-onnx-funasr-nano/test_wavs (FunAudioLLM, Apache-2.0)", "_origin_id": "dia_sh.wav"}
+{"wav": "sn_dia_yue.wav", "ref": "啲身体好劲啊，跟住咧佢哋有一个人咧就突然可能就有高原反应啦，突然间就啊窒息咗，即系晕晕咗。", "tags": ["dialect"], "_source": "sherpa-onnx-funasr-nano/test_wavs (FunAudioLLM, Apache-2.0)", "_origin_id": "dia_yue.wav"}
+{"wav": "sn_far_2.wav", "ref": "然后被冠以了渣男线的称号，好了，不管这个，那么前方即将到达沈杜公路站，左边是8号线。", "tags": ["pure_zh", "numbers_dates"], "_source": "sherpa-onnx-funasr-nano/test_wavs (FunAudioLLM, Apache-2.0)", "_origin_id": "far_2.wav"}
+{"wav": "sn_far_4.wav", "ref": "唯一的遗憾就是他那个八宝鸭还有烤鸭都没吃上，估计得提前预定吧，只能怪我自己没有做好功课。", "tags": ["pure_zh"], "_source": "sherpa-onnx-funasr-nano/test_wavs (FunAudioLLM, Apache-2.0)", "_origin_id": "far_4.wav"}
+{"wav": "sn_far_5.wav", "ref": "别紧张，我只是在这边逛街，然后看到你们在这边拍照，想跟你交个朋友认识一下。", "tags": ["pure_zh"], "_source": "sherpa-onnx-funasr-nano/test_wavs (FunAudioLLM, Apache-2.0)", "_origin_id": "far_5.wav"}
+{"wav": "sn_lyrics.wav", "ref": "我看到我的身后盯着我的人群，喜欢或恨不一样的神情，我知道这可能就是所谓的成名，我知道必须往前一步也不能停。", "tags": ["pure_zh", "long"], "_source": "sherpa-onnx-funasr-nano/test_wavs (FunAudioLLM, Apache-2.0)", "_origin_id": "lyrics.wav"}
+{"wav": "sn_lyrics_2.wav", "ref": "明明那么远，为何却感觉离他那么近？闭上眼，你甚至能背出他所有押韵。虽然不听说唱了，但你已学会自信。我代表所有中文说唱歌手向你致敬。如今面对困难的你，早已不再抱怨。", "tags": ["pure_zh", "long"], "_source": "sherpa-onnx-funasr-nano/test_wavs (FunAudioLLM, Apache-2.0)", "_origin_id": "lyrics_2.wav"}
+{"wav": "sn_lyrics_3.wav", "ref": "你听啊秋末的落叶，你听它叹息着离别，只剩我独自领略海与山风和月，你听啊。", "tags": ["pure_zh", "long"], "_source": "sherpa-onnx-funasr-nano/test_wavs (FunAudioLLM, Apache-2.0)", "_origin_id": "lyrics_3.wav"}
+{"wav": "sn_rag_biochemistry.wav", "ref": "利用三磷酸腺苷的水解所产生的能量来驱动其他化学反应。", "tags": ["pure_zh", "tech_terms"], "_source": "sherpa-onnx-funasr-nano/test_wavs (FunAudioLLM, Apache-2.0)", "_origin_id": "rag_biochemistry.wav"}
+{"wav": "sn_rag_chemistry.wav", "ref": "比如说酯在当时被认为是一种含氧酸盐。", "tags": ["pure_zh", "tech_terms"], "_source": "sherpa-onnx-funasr-nano/test_wavs (FunAudioLLM, Apache-2.0)", "_origin_id": "rag_chemistry.wav"}
+{"wav": "sn_rag_history.wav", "ref": "由罗马皇帝钦点的犹地亚王大希律王统治期间。", "tags": ["pure_zh"], "_source": "sherpa-onnx-funasr-nano/test_wavs (FunAudioLLM, Apache-2.0)", "_origin_id": "rag_history.wav"}
+{"wav": "sn_rag_math.wav", "ref": "对微分形式的积分是微分几何中的基本概念。", "tags": ["pure_zh", "tech_terms"], "_source": "sherpa-onnx-funasr-nano/test_wavs (FunAudioLLM, Apache-2.0)", "_origin_id": "rag_math.wav"}
+{"wav": "sn_rag_medical.wav", "ref": "肾脏中肾小球囊上的细胞膜孔隙很小。", "tags": ["pure_zh", "tech_terms"], "_source": "sherpa-onnx-funasr-nano/test_wavs (FunAudioLLM, Apache-2.0)", "_origin_id": "rag_medical.wav"}
+{"wav": "sn_rag_physics.wav", "ref": "根据碰撞理论月面样本缺少挥发性物质。", "tags": ["pure_zh", "tech_terms"], "_source": "sherpa-onnx-funasr-nano/test_wavs (FunAudioLLM, Apache-2.0)", "_origin_id": "rag_physics.wav"}
+{"wav": "as1_BAC009S0002W0122.wav", "ref": "而对楼市成交抑制作用最大的限购", "tags": ["pure_zh", "tech_terms"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0122"}
+{"wav": "as1_BAC009S0002W0123.wav", "ref": "也成为地方政府的眼中钉", "tags": ["pure_zh"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0123"}
+{"wav": "as1_BAC009S0002W0124.wav", "ref": "自六月底呼和浩特市率先宣布取消限购后", "tags": ["pure_zh", "numbers_dates", "tech_terms"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0124"}
+{"wav": "as1_BAC009S0002W0125.wav", "ref": "各地政府便纷纷跟进", "tags": ["pure_zh"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0125"}
+{"wav": "as1_BAC009S0002W0126.wav", "ref": "仅一个多月的时间里", "tags": ["pure_zh", "numbers_dates"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0126"}
+{"wav": "as1_BAC009S0002W0127.wav", "ref": "除了北京上海广州深圳四个一线城市和三亚之外", "tags": ["pure_zh"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0127"}
+{"wav": "as1_BAC009S0002W0128.wav", "ref": "四十六个限购城市当中", "tags": ["pure_zh", "numbers_dates", "tech_terms"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0128"}
+{"wav": "as1_BAC009S0002W0129.wav", "ref": "四十一个已正式取消或变相放松了限购", "tags": ["pure_zh", "numbers_dates", "tech_terms"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0129"}
+{"wav": "as1_BAC009S0002W0130.wav", "ref": "财政金融政策紧随其后而来", "tags": ["pure_zh", "tech_terms"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0130"}
+{"wav": "as1_BAC009S0002W0131.wav", "ref": "显示出了极强的威力", "tags": ["pure_zh"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0131"}
+{"wav": "as1_BAC009S0002W0132.wav", "ref": "放松了与自往需求密切相关的房贷政策", "tags": ["pure_zh", "tech_terms"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0132"}
+{"wav": "as1_BAC009S0002W0133.wav", "ref": "其中包括对拥有一套住房并已结清相应购房贷款的家庭", "tags": ["pure_zh", "tech_terms"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0133"}
+{"wav": "as1_BAC009S0002W0134.wav", "ref": "为改善居住条件再次申请贷款购买普通商品住房", "tags": ["pure_zh", "tech_terms"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0134"}
+{"wav": "as1_BAC009S0002W0135.wav", "ref": "银行业金融机构执行首套房贷款政策", "tags": ["pure_zh", "tech_terms"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0135"}
+{"wav": "as1_BAC009S0002W0136.wav", "ref": "这个后来被称为九三零新政策的措施", "tags": ["pure_zh", "numbers_dates", "tech_terms"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0136"}
+{"wav": "as1_BAC009S0002W0137.wav", "ref": "被市场公认为是今年对楼市影响最大的一个政策", "tags": ["pure_zh", "numbers_dates", "tech_terms"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0137"}
+{"wav": "as1_BAC009S0002W0138.wav", "ref": "以提高住房公积金缴存职工住房消费能力", "tags": ["pure_zh", "tech_terms"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0138"}
+{"wav": "as1_BAC009S0002W0139.wav", "ref": "支持缴存职工购买首套和改善型自住住房", "tags": ["pure_zh", "tech_terms"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0139"}
+{"wav": "as1_BAC009S0002W0140.wav", "ref": "通过财政补贴手段鼓励购房的地区也在不断增加", "tags": ["pure_zh"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0140"}
+{"wav": "as1_BAC009S0002W0141.wav", "ref": "其中多项政策惠及购房者", "tags": ["pure_zh", "tech_terms"], "_source": "AISHELL/AISHELL-1 (CC BY-SA 4.0, openslr.org/33)", "_origin_id": "BAC009S0002W0141"}
