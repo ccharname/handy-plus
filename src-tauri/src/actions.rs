@@ -911,14 +911,35 @@ impl ShortcutAction for TranscribeAction {
                                     );
                                     residual
                                 } else {
-                                    // The final text diverged from what we pasted
-                                    // (e.g. post-processing rewrote it). Paste the
-                                    // full final text — the user will see a duplicate
-                                    // but correctness wins over cosmetics.
+                                    // The final text diverged from what was already pasted
+                                    // (e.g. post-processing rewrote it, or partial stream
+                                    // had a retroactive edit we couldn't follow). Erase the
+                                    // already-pasted prefix via backspaces, then paste the
+                                    // full final. Without erasing, the user sees a duplicate.
+                                    let backspace_count = already_pasted.chars().count();
                                     warn!(
-                                        "Final text does not start with incremental cursor \
-                                         (post-processing rewrite?); pasting full final text"
+                                        "Final text diverged from incremental cursor; \
+                                         erasing {} chars via backspace then pasting full final \
+                                         (already_pasted={:?}, final_text={:?})",
+                                        backspace_count,
+                                        already_pasted.chars().take(20).collect::<String>(),
+                                        final_text.chars().take(20).collect::<String>()
                                     );
+                                    if let Some(enigo_state) =
+                                        ah_clone.try_state::<crate::input::EnigoState>()
+                                    {
+                                        if let Ok(mut enigo) = enigo_state.0.lock() {
+                                            if let Err(e) = crate::input::send_backspaces(
+                                                &mut enigo,
+                                                backspace_count,
+                                            ) {
+                                                error!(
+                                                    "Failed to erase already-pasted prefix: {}",
+                                                    e
+                                                );
+                                            }
+                                        }
+                                    }
                                     final_text.clone()
                                 };
 

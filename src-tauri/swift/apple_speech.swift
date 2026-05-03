@@ -454,12 +454,19 @@ private func transcribeImplLegacy(
     // search query or confirmation. Available since macOS 10.15.
     request.taskHint = .dictation
 
-    // Native punctuation: Apple inserts locale-appropriate commas, periods, and
-    // (for CJK) fullwidth punctuation directly during recognition. This reduces the
-    // post-processing burden downstream. Requires macOS 13+; silently skipped on older OS.
-    if #available(macOS 13.0, *) {
-        request.addsPunctuation = true
-    }
+    // Native punctuation is intentionally DISABLED for incremental-paste safety.
+    // When addsPunctuation = true, Apple's partial result stream retroactively
+    // INSERTS punctuation into earlier positions ("你好世界" → "你好，世界").
+    // The cumulative partial then no longer extends as a clean prefix, breaking
+    // compute_delta() in clipboard.rs which relies on prefix-monotonic growth
+    // for safe incremental paste to the target app's cursor.
+    // We rely on the downstream punc_zh.rs post-processing for Chinese punctuation.
+    //
+    // To re-enable, we would need a non-trivial fuzzy-prefix matcher in
+    // compute_delta plus a backspace-and-rewrite fallback for diverged finals.
+    // if #available(macOS 13.0, *) {
+    //     request.addsPunctuation = true
+    // }
 
     // requiresOnDeviceRecognition is correctly set on the request (not the recognizer).
     // Setting it on the recognizer object itself was available in older SDKs but the

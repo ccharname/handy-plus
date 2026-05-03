@@ -121,3 +121,16 @@ pub fn paste_text_direct(enigo: &mut Enigo, text: &str) -> Result<(), String> {
 
     Ok(())
 }
+
+/// Sends N Backspace key clicks via the managed Enigo instance.
+/// Used by the incremental-paste finalisation path to erase the partial-only
+/// pastes when the final transcription text diverges from what was already
+/// streamed (e.g. hotword replacement rewrote a chunk).
+pub fn send_backspaces(enigo: &mut Enigo, count: usize) -> Result<(), String> {
+    for _ in 0..count {
+        enigo
+            .key(Key::Backspace, enigo::Direction::Click)
+            .map_err(|e| format!("Failed to send Backspace: {}", e))?;
+    }
+    Ok(())
+}
