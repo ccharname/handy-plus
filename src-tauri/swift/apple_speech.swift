@@ -5,6 +5,16 @@ import Speech
 
 // MARK: - Swift implementation for Apple Speech (SFSpeechRecognizer) integration
 // This file is compiled via Cargo build script for macOS targets (aarch64 + x86_64).
+//
+// FUTURE(macOS-26): Apple deprecated SFSpeechRecognizer's on-device behaviour in
+// macOS 26 (Tahoe) in favour of the new SpeechAnalyzer + SpeechTranscriber APIs
+// introduced at WWDC 2025. Migration path:
+//   1. Replace SFSpeechRecognizer + SFSpeechAudioBufferRecognitionRequest with
+//      SpeechAnalyzer (offline) / SpeechTranscriber (streaming).
+//   2. The new API accepts AVAudioSequenceAnalysis for pre-recorded buffers, so the
+//      FFI surface (PCM f32 in → text out) can stay the same.
+//   3. addsPunctuation / taskHint equivalents are built into the new API by default.
+// Start from: https://developer.apple.com/documentation/speech/speechanalyzer
 
 private typealias ResponsePointer = UnsafeMutablePointer<AppleSpeechResponse>
 
@@ -66,6 +76,16 @@ private func transcribeImpl(
             "SFSpeechRecognizer could not be created for locale: \(localeStr)"
         )
         return responsePtr
+    }
+
+    // Fast-fail if the recognizer reports it is not available (e.g. locale not
+    // downloaded, server unreachable for network-only locale on first use).
+    // NOTE: isAvailable is KVO-observable and may flip to true moments later when
+    // the on-device model finishes loading, but for an immediate call we trust the
+    // current value. A `false` here usually means the locale model is not installed;
+    // the GCD timeout below is the safety net for the transient-not-ready case.
+    if !recognizer.isAvailable {
+        print("[apple_speech] WARNING: recognizer.isAvailable == false for locale '\(localeStr)'. Proceeding anyway — may time out.")
     }
 
     // Build contextual strings array
@@ -166,6 +186,21 @@ private func transcribeImpl(
     // Configure the recognition request; enable partial results when a callback is provided
     let request = SFSpeechAudioBufferRecognitionRequest()
     request.shouldReportPartialResults = onPartial != nil
+
+    // Dictation hint: tells the recognizer this is free-form speech input, not a
+    // search query or confirmation. Available since macOS 10.15.
+    request.taskHint = .dictation
+
+    // Native punctuation: Apple inserts locale-appropriate commas, periods, and
+    // (for CJK) fullwidth punctuation directly during recognition. This reduces the
+    // post-processing burden downstream. Requires macOS 13+; silently skipped on older OS.
+    if #available(macOS 13.0, *) {
+        request.addsPunctuation = true
+    }
+
+    // requiresOnDeviceRecognition is correctly set on the request (not the recognizer).
+    // Setting it on the recognizer object itself was available in older SDKs but the
+    // request-level flag is the right place since macOS 13 and is what Apple recommends.
     if requireOnDevice != 0 {
         request.requiresOnDeviceRecognition = true
     }

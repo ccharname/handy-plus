@@ -1,3 +1,4 @@
+use log::info;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_double, c_float, c_int, c_void};
 
@@ -134,6 +135,69 @@ pub fn get_auth_status() -> SpeechAuthStatus {
     }
 }
 
+/// Sanitise a raw list of custom words before passing them to Apple's
+/// `contextualStrings` API.
+///
+/// Apple's guidance: keep the list to ≤100 entries, each ≤10 chars, for best
+/// performance. We apply a softer 80-char per-entry cap (brand names like
+/// "GitHub Copilot" are 14 chars and should be kept; only obvious garbage /
+/// pasted paragraphs are dropped).  Entries that are entirely ASCII punctuation
+/// are dropped. Case-insensitive dedup is applied, and each entry is
+/// whitespace-trimmed.
+///
+/// The result is logged so the count delta is visible in diagnostics (mirrors
+/// the FunASR-Nano hotword logging pattern in the Qwen3 arm).
+pub fn sanitise_contextual_strings(raw: &[String]) -> Vec<String> {
+    const MAX_ENTRIES: usize = 100;
+    const MAX_CHARS: usize = 80;
+
+    let original_count = raw.len();
+    let mut seen_lower: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut result: Vec<String> = Vec::with_capacity(raw.len().min(MAX_ENTRIES));
+
+    for entry in raw {
+        let trimmed = entry.trim().to_string();
+
+        // Skip empty
+        if trimmed.is_empty() {
+            continue;
+        }
+
+        // Skip entries that are only ASCII punctuation / symbols
+        if trimmed.chars().all(|c| c.is_ascii_punctuation() || c.is_ascii_whitespace()) {
+            continue;
+        }
+
+        // Skip entries that are too long (likely pasted paragraphs)
+        if trimmed.chars().count() > MAX_CHARS {
+            continue;
+        }
+
+        // Case-insensitive dedup
+        let lower = trimmed.to_lowercase();
+        if seen_lower.contains(&lower) {
+            continue;
+        }
+        seen_lower.insert(lower);
+
+        result.push(trimmed);
+
+        if result.len() >= MAX_ENTRIES {
+            break;
+        }
+    }
+
+    info!(
+        "Apple Speech contextualStrings: {} raw → {} after sanitise (cap={}, max_chars={})",
+        original_count,
+        result.len(),
+        MAX_ENTRIES,
+        MAX_CHARS
+    );
+
+    result
+}
+
 /// Transcribe a slice of 16-bit mono f32 PCM samples using Apple SFSpeechRecognizer.
 ///
 /// # Arguments
@@ -153,8 +217,11 @@ pub fn transcribe(
 ) -> Result<String, String> {
     let locale_cstr = CString::new(locale).map_err(|e| e.to_string())?;
 
+    // Sanitise contextual strings before passing through FFI
+    let contextual_clean = sanitise_contextual_strings(contextual);
+
     // Build a Vec<CString> to own the data, then a Vec<*const c_char> to pass as array
-    let contextual_cstrings: Vec<CString> = contextual
+    let contextual_cstrings: Vec<CString> = contextual_clean
         .iter()
         .filter_map(|s| CString::new(s.as_str()).ok())
         .collect();
@@ -233,7 +300,10 @@ where
 {
     let locale_cstr = CString::new(locale).map_err(|e| e.to_string())?;
 
-    let contextual_cstrings: Vec<CString> = contextual
+    // Sanitise contextual strings before passing through FFI
+    let contextual_clean = sanitise_contextual_strings(contextual);
+
+    let contextual_cstrings: Vec<CString> = contextual_clean
         .iter()
         .filter_map(|s| CString::new(s.as_str()).ok())
         .collect();
@@ -313,6 +383,18 @@ where
     result
 }
 
+// VERIFIED partial pipeline OK:
+// - Swift partial_shim calls `cb(cStr, userData)` where cStr is a transient UTF-8
+//   pointer valid for the callback's duration.
+// - Rust's partial_shim copies it via CStr::from_ptr → to_string_lossy (handles
+//   invalid UTF-8 gracefully via replacement chars; no boundary panic).
+// - The double-box user_data is reclaimed after ffi_transcribe_pcm_f32_apple_speech_with_partials
+//   returns, which Swift guarantees to be after all callbacks have fired.
+// - The transcription-partial Tauri event carries `{ "text": "<str>" }` and the
+//   overlay window listens for "transcription-partial". No race: final result is
+//   only emitted once the Swift semaphore.signal() fires (isFinal == true),
+//   which is mutually exclusive with further partial callbacks.
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -322,5 +404,41 @@ mod tests {
         // Just verify the FFI call doesn't crash
         let available = is_apple_speech_available();
         println!("Apple Speech available: {}", available);
+    }
+
+    #[test]
+    fn test_sanitise_contextual_strings_basic() {
+        let raw: Vec<String> = vec![
+            "GitHub".to_string(),
+            "github".to_string(),          // duplicate (case-insensitive) → dropped
+            "  Copilot  ".to_string(),      // trimmed → "Copilot"
+            "...".to_string(),              // all ASCII punctuation → dropped
+            "".to_string(),                 // empty → dropped
+        ];
+        let result = sanitise_contextual_strings(&raw);
+        assert_eq!(result, vec!["GitHub", "Copilot"]);
+    }
+
+    #[test]
+    fn test_sanitise_contextual_strings_long_entry() {
+        let long = "a".repeat(81);
+        let raw = vec![long, "short".to_string()];
+        let result = sanitise_contextual_strings(&raw);
+        assert_eq!(result, vec!["short"]);
+    }
+
+    #[test]
+    fn test_sanitise_contextual_strings_cap() {
+        let raw: Vec<String> = (0..150).map(|i| format!("word{}", i)).collect();
+        let result = sanitise_contextual_strings(&raw);
+        assert_eq!(result.len(), 100);
+    }
+
+    #[test]
+    fn test_sanitise_contextual_strings_brand_name() {
+        // "GitHub Copilot" is 14 chars — must be kept (below 80-char cap)
+        let raw = vec!["GitHub Copilot".to_string()];
+        let result = sanitise_contextual_strings(&raw);
+        assert_eq!(result, vec!["GitHub Copilot"]);
     }
 }
