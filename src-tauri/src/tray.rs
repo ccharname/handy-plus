@@ -1,5 +1,4 @@
 use crate::managers::history::{HistoryEntry, HistoryManager};
-use crate::managers::model::ModelManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings;
 use crate::tray_i18n::get_tray_translations;
@@ -138,30 +137,30 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
         .expect("failed to create quit item");
     let separator = || PredefinedMenuItem::separator(app).expect("failed to create separator");
 
-    // Build model submenu — label is the active model name
-    let model_manager = app.state::<Arc<ModelManager>>();
-    let models = model_manager.get_available_models();
-    let current_model_id = &settings.selected_model;
-
-    let mut downloaded: Vec<_> = models.into_iter().filter(|m| m.is_downloaded).collect();
-    downloaded.sort_by(|a, b| a.name.cmp(&b.name));
-
-    let submenu_label = downloaded
-        .iter()
-        .find(|m| m.id == *current_model_id)
-        .map(|m| m.name.clone())
-        .unwrap_or_else(|| strings.model.clone());
+    // Build preset submenu — mirrors Settings → ASR presets so the tray
+    // always offers the same three switchable bundles. Submenu label is the
+    // localized "Model" string, items list each preset with its emoji icon
+    // and check-marks the currently active one.
+    let active_preset_id = settings.active_preset_id.as_deref();
+    let presets: Vec<_> = crate::settings::default_asr_presets()
+        .into_iter()
+        .filter(|p| p.builtin)
+        .collect();
 
     let model_submenu = {
-        let submenu = Submenu::with_id(app, "model_submenu", &submenu_label, true)
+        let submenu = Submenu::with_id(app, "model_submenu", &strings.model, true)
             .expect("failed to create model submenu");
 
-        for model in &downloaded {
-            let is_active = model.id == *current_model_id;
-            let item_id = format!("model_select:{}", model.id);
-            let item =
-                CheckMenuItem::with_id(app, &item_id, &model.name, true, is_active, None::<&str>)
-                    .expect("failed to create model item");
+        for preset in &presets {
+            let is_active = active_preset_id == Some(preset.id.as_str());
+            let item_id = format!("preset_select:{}", preset.id);
+            let label = if preset.icon.is_empty() {
+                preset.name.clone()
+            } else {
+                format!("{} {}", preset.icon, preset.name)
+            };
+            let item = CheckMenuItem::with_id(app, &item_id, &label, true, is_active, None::<&str>)
+                .expect("failed to create preset item");
             let _ = submenu.append(&item);
         }
 

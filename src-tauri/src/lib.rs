@@ -282,20 +282,53 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             "quit" => {
                 app.exit(0);
             }
-            id if id.starts_with("model_select:") => {
-                let model_id = id.strip_prefix("model_select:").unwrap().to_string();
-                let current_model = settings::get_settings(app).selected_model;
-                if model_id == current_model {
+            id if id.starts_with("preset_select:") => {
+                let preset_id = id.strip_prefix("preset_select:").unwrap().to_string();
+                let current_preset = settings::get_settings(app).active_preset_id;
+                if current_preset.as_deref() == Some(preset_id.as_str()) {
                     return;
                 }
+                // Mirror commands::asr_presets::apply_asr_preset on the menu thread.
+                // We replicate the logic here (rather than calling the command)
+                // because the command is async and the menu event handler is sync.
                 let app_clone = app.clone();
                 std::thread::spawn(move || {
-                    match commands::models::switch_active_model(&app_clone, &model_id) {
+                    let preset = match settings::default_asr_presets()
+                        .into_iter()
+                        .find(|p| p.id == preset_id)
+                    {
+                        Some(p) => p,
+                        None => {
+                            log::error!("Tray preset_select: preset {} not found", preset_id);
+                            return;
+                        }
+                    };
+
+                    let mut s = settings::get_settings(&app_clone);
+                    s.selected_language = preset.language.clone();
+                    s.punc_zh_enabled = preset.punc_zh_enabled;
+                    if let Some(chain) = preset.require_post_process_chain.clone() {
+                        s.post_process_chain = Some(chain);
+                    }
+                    if let Some(on_device) = preset.require_apple_speech_on_device {
+                        s.apple_speech_require_on_device = on_device;
+                    }
+                    s.active_preset_id = Some(preset.id.clone());
+                    s.selected_model = preset.model_id.clone();
+                    settings::write_settings(&app_clone, s);
+
+                    match commands::models::switch_active_model(
+                        &app_clone,
+                        &preset.model_id,
+                    ) {
                         Ok(()) => {
-                            log::info!("Model switched to {} via tray.", model_id);
+                            log::info!(
+                                "ASR preset switched to {} (model={}) via tray.",
+                                preset.id, preset.model_id
+                            );
                         }
                         Err(e) => {
-                            log::error!("Failed to switch model via tray: {}", e);
+                            log::error!("Failed to switch preset via tray: {}", e);
                         }
                     }
                     tray::update_tray_menu(&app_clone, &tray::TrayIconState::Idle, None);
