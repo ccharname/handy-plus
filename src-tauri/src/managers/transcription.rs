@@ -498,21 +498,44 @@ impl TranscriptionManager {
                             Some(model_path.join("tokens.txt").to_string_lossy().into_owned());
 
                         // Inject hotwords from settings.custom_words (L2 bias).
-                        // hotwords_file / hotwords_score live on OfflineRecognizerConfig
-                        // (top level), not inside OfflineSenseVoiceModelConfig.
+                        // sherpa-onnx requires the model_config.modeling_unit +
+                        // bpe_vocab to be set so it can tokenize hotwords against
+                        // the model's actual vocabulary; without this the file is
+                        // written but contributes ~no bias for CJK or English BPE
+                        // tokens. SenseVoice ships a SentencePiece BPE tokens.txt
+                        // (rows like `▁the`), which doubles as the bpe_vocab.
                         let settings = get_settings(&self.app_handle);
                         if !settings.custom_words.is_empty() {
                             match crate::portable::app_data_dir(&self.app_handle) {
                                 Ok(data_dir) => {
                                     let hw_path = data_dir.join("sense_voice_hotwords.txt");
-                                    let contents = settings.custom_words.join("\n");
+                                    // One word per line; sherpa-onnx tokenizes
+                                    // each line via modeling_unit + bpe_vocab.
+                                    let contents = settings
+                                        .custom_words
+                                        .iter()
+                                        .map(|w| w.trim())
+                                        .filter(|w| !w.is_empty())
+                                        .collect::<Vec<_>>()
+                                        .join("\n");
                                     match std::fs::write(&hw_path, &contents) {
                                         Ok(()) => {
                                             config.hotwords_file =
                                                 Some(hw_path.to_string_lossy().into_owned());
                                             config.hotwords_score = settings.hotwords_boost;
+                                            // Critical: enable cjkchar+bpe tokenization
+                                            // for hotwords. Without it CJK words and
+                                            // English BPE pieces can't be biased.
+                                            config.model_config.modeling_unit =
+                                                Some("cjkchar+bpe".into());
+                                            config.model_config.bpe_vocab = Some(
+                                                model_path
+                                                    .join("tokens.txt")
+                                                    .to_string_lossy()
+                                                    .into_owned(),
+                                            );
                                             debug!(
-                                                "SenseVoice sherpa: hotwords_file={:?} score={}",
+                                                "SenseVoice sherpa: hotwords_file={:?} score={} modeling_unit=cjkchar+bpe",
                                                 hw_path, settings.hotwords_boost
                                             );
                                         }
@@ -539,6 +562,46 @@ impl TranscriptionManager {
                         // for the sub-tokenizer.  The OfflineFunASRNanoModelConfig `tokenizer`
                         // field points to the Qwen3-0.6B directory (sherpa-onnx resolves files
                         // inside it automatically when it is a directory path).
+                        let settings = get_settings(&self.app_handle);
+
+                        // Map the user's selected_language to FunASR-Nano's expected
+                        // hint code. The model accepts a hint to skip its language-
+                        // detection token; "auto" → None lets it fall back to its own
+                        // detector. Whisper-style zh-Hans / zh-Hant collapse to "zh".
+                        let lang_hint: Option<String> = match settings.selected_language.as_str() {
+                            "auto" => None,
+                            "zh" | "zh-Hans" | "zh-Hant" => Some("zh".into()),
+                            "en" => Some("en".into()),
+                            "ja" => Some("ja".into()),
+                            "ko" => Some("ko".into()),
+                            "yue" => Some("yue".into()),
+                            other => Some(other.to_string()),
+                        };
+
+                        // Hotwords: FunASR-Nano expects a single string, one phrase
+                        // per line, that is injected into the Qwen3 LLM prompt as
+                        // bias terms. Distinct from Transducer-style hotwords_file.
+                        let hotwords_str: Option<String> = if settings.custom_words.is_empty() {
+                            None
+                        } else {
+                            let joined = settings
+                                .custom_words
+                                .iter()
+                                .map(|w| w.trim())
+                                .filter(|w| !w.is_empty())
+                                .collect::<Vec<_>>()
+                                .join("\n");
+                            if joined.is_empty() {
+                                None
+                            } else {
+                                debug!(
+                                    "FunASR-Nano: hotwords ({} entries) injected into LLM prompt",
+                                    settings.custom_words.len()
+                                );
+                                Some(joined)
+                            }
+                        };
+
                         config.model_config.funasr_nano = OfflineFunASRNanoModelConfig {
                             encoder_adaptor: Some(
                                 model_path
@@ -561,7 +624,19 @@ impl TranscriptionManager {
                             tokenizer: Some(
                                 model_path.join("Qwen3-0.6B").to_string_lossy().into_owned(),
                             ),
-                            // Use default generation parameters
+                            // ASR is a deterministic mapping: greedy decoding (T=0)
+                            // eliminates the upstream Default::default() temperature=1.0
+                            // sampling which introduces hallucinations and inconsistent
+                            // results for the same input. seed pinned for reproducibility.
+                            temperature: 0.0,
+                            top_p: 1.0,
+                            seed: 42,
+                            // Cap LLM output to prevent runaway repetition loops on
+                            // noisy / silent input. 512 tokens covers ~120 Chinese
+                            // chars or ~50 English words — enough for ~30s of speech.
+                            max_new_tokens: 512,
+                            language: lang_hint,
+                            hotwords: hotwords_str,
                             ..Default::default()
                         };
                     }
@@ -1361,6 +1436,46 @@ fn apply_punc_zh_if_applicable(
             text.chars().take(50).collect::<String>()
         );
         return text;
+    }
+
+    // Density short-circuit: if the upstream engine (e.g. FunASR-Nano LLM) already
+    // produced punctuation, running CT-Punc again is wasted work that can also
+    // distort spacing around existing marks. Threshold 2% is empirically the
+    // floor below which a Chinese sentence almost certainly lacks proper marks.
+    let total_chars = text.chars().count();
+    if total_chars > 0 {
+        let punct_count = text
+            .chars()
+            .filter(|c| {
+                matches!(
+                    *c,
+                    '。' | '，'
+                        | '！'
+                        | '？'
+                        | '；'
+                        | '：'
+                        | '、'
+                        | '\u{201C}'
+                        | '\u{201D}'
+                        | '\u{2018}'
+                        | '\u{2019}'
+                        | '.'
+                        | ','
+                        | '!'
+                        | '?'
+                        | ';'
+                        | ':'
+                )
+            })
+            .count();
+        let density = punct_count as f32 / total_chars as f32;
+        if density >= 0.02 {
+            debug!(
+                "punc_zh: skipped (already punctuated, density={:.3} {}/{})",
+                density, punct_count, total_chars
+            );
+            return text;
+        }
     }
 
     // Build path: <app_data_dir>/models/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8
