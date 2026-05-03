@@ -557,10 +557,18 @@ impl TranscriptionManager {
                         }
                     }
                     SherpaModelKind::FunAsrNano => {
-                        // Bisect step 1 (2026-05-03): re-introduce language hint
-                        // + max_new_tokens cap. Hotwords stays OFF for now —
-                        // it is the prime suspect for the long-audio empty-output
-                        // regression (large prompt vs Qwen3 context budget).
+                        // Bisect step 2 (2026-05-03): re-introduce hotwords
+                        // with hard caps. Bisect confirmed step 1 (language +
+                        // max_new_tokens) is safe; the long-audio empty-output
+                        // regression came from injecting all 78 custom_words
+                        // into the Qwen3-0.6B prompt — combined with a long
+                        // audio embedding it exhausts the LLM context budget
+                        // and the model emits an immediate-EOS token.
+                        // Cap: 32 entries × 500 total chars keeps the prompt
+                        // small enough to coexist with ~30s of audio.
+                        const FUNASR_HOTWORDS_MAX_ENTRIES: usize = 32;
+                        const FUNASR_HOTWORDS_MAX_CHARS: usize = 500;
+
                         let settings = get_settings(&self.app_handle);
                         let lang_hint: Option<String> = match settings.selected_language.as_str() {
                             "auto" => None,
@@ -570,6 +578,46 @@ impl TranscriptionManager {
                             "ko" => Some("ko".into()),
                             "yue" => Some("yue".into()),
                             other => Some(other.to_string()),
+                        };
+
+                        // Hotwords: pick the first N non-empty entries that
+                        // fit within the char budget. Order = user's list
+                        // order — they put the most important words first.
+                        let hotwords_str: Option<String> = if settings.custom_words.is_empty() {
+                            None
+                        } else {
+                            let mut acc = String::new();
+                            let mut count = 0usize;
+                            for w in &settings.custom_words {
+                                let w = w.trim();
+                                if w.is_empty() {
+                                    continue;
+                                }
+                                if count >= FUNASR_HOTWORDS_MAX_ENTRIES {
+                                    break;
+                                }
+                                let projected_len =
+                                    acc.chars().count() + w.chars().count() + 1; // +1 for \n
+                                if projected_len > FUNASR_HOTWORDS_MAX_CHARS {
+                                    break;
+                                }
+                                if !acc.is_empty() {
+                                    acc.push('\n');
+                                }
+                                acc.push_str(w);
+                                count += 1;
+                            }
+                            if acc.is_empty() {
+                                None
+                            } else {
+                                debug!(
+                                    "FunASR-Nano: hotwords {} entries / {} chars (capped from {} total)",
+                                    count,
+                                    acc.chars().count(),
+                                    settings.custom_words.len()
+                                );
+                                Some(acc)
+                            }
                         };
 
                         config.model_config.funasr_nano = OfflineFunASRNanoModelConfig {
@@ -599,6 +647,7 @@ impl TranscriptionManager {
                             // words — enough for ~30s of speech.
                             max_new_tokens: 512,
                             language: lang_hint,
+                            hotwords: hotwords_str,
                             ..Default::default()
                         };
                     }
