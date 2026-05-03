@@ -692,9 +692,12 @@ pub fn default_asr_presets() -> Vec<AsrPreset> {
         AsrPreset {
             id: "chinese_balanced".to_string(),
             name: "Chinese Balanced".to_string(),
-            description: "SenseVoice + 中文标点 (CT-Punc)".to_string(),
+            description: "SenseVoice (sherpa) + hotwords + 中文标点 (CT-Punc)".to_string(),
             icon: "🇨🇳".to_string(),
-            model_id: "sense-voice-int8".to_string(),
+            // sherpa-onnx path so settings.custom_words actually biases
+            // decoding via hotwords_file/hotwords_score (the transcribe-rs
+            // sense-voice-int8 path ignores custom words entirely).
+            model_id: "sense-voice-small".to_string(),
             language: "zh-Hans".to_string(),
             punc_zh_enabled: true,
             require_post_process_chain: None,

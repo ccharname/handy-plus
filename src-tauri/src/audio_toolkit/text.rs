@@ -240,7 +240,17 @@ fn get_filler_words_for_language(lang: &str) -> &'static [&'static str] {
         "ja" => &["hmm", "mmm"],
         "ko" => &["hmm", "mmm"],
         "vi" => &["hmm", "mmm", "hm"],
-        "zh" => &["hmm", "mmm"],
+        // Chinese fillers: include both 拼音/英文 (hmm, emm, en) and the most
+        // common CJK monosyllabic interjections used in spontaneous speech.
+        // Note: regex `\b` boundaries fire reliably only when a filler is
+        // adjacent to ASCII / punctuation, so middle-of-sentence single-char
+        // fillers may slip through. That is acceptable given the alternative
+        // (no filtering at all). Words like 那个/这个 are intentionally NOT
+        // included here because they often carry meaning ("that one").
+        "zh" => &[
+            "hmm", "mmm", "emm", "uhm", "umm", "en",
+            "嗯", "啊", "呃", "呢", "哦", "诶", "唉", "哎",
+        ],
         // Conservative universal fallback (no "um", "eh", "ha")
         _ => &[
             "uh", "uhm", "umm", "uhh", "uhhh", "ah", "hmm", "hm", "mmm", "mm", "mh", "ehh",
