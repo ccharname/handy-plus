@@ -699,12 +699,16 @@ pub fn default_asr_presets() -> Vec<AsrPreset> {
         AsrPreset {
             id: "chinese_balanced".to_string(),
             name: "Chinese Balanced".to_string(),
-            description: "SenseVoice (sherpa) + hotwords + 中文标点 (CT-Punc)".to_string(),
+            description: "SenseVoice + 中文标点 (CT-Punc)".to_string(),
             icon: "🇨🇳".to_string(),
-            // sherpa-onnx path so settings.custom_words actually biases
-            // decoding via hotwords_file/hotwords_score (the transcribe-rs
-            // sense-voice-int8 path ignores custom words entirely).
-            model_id: "sense-voice-small".to_string(),
+            // NOTE: kept on transcribe-rs sense-voice-int8 path. The sherpa
+            // sense-voice-small variant would honour hotwords_file but
+            // OfflineRecognizer::create() silently returns None when our
+            // 60+ entry hotwords file is loaded with modeling_unit=cjkchar+bpe
+            // (root cause TBD — sherpa-onnx C layer gives no error message).
+            // The L1 alias layer (custom_word_aliases) covers proper-noun
+            // recovery in the meantime.
+            model_id: "sense-voice-int8".to_string(),
             language: "zh-Hans".to_string(),
             punc_zh_enabled: true,
             require_post_process_chain: None,
