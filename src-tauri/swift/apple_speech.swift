@@ -67,31 +67,32 @@ private func transcribeImpl(
     timeoutMs: Int32,
     onPartial: ((String) -> Void)?
 ) -> UnsafeMutablePointer<AppleSpeechResponse> {
-    if #available(macOS 26.0, *) {
-        return transcribeImplSpeechAnalyzer(
-            samples: samples,
-            sampleCount: sampleCount,
-            sampleRate: sampleRate,
-            localeBcp47: localeBcp47,
-            contextualStrings: contextualStrings,
-            contextualCount: contextualCount,
-            requireOnDevice: requireOnDevice,
-            timeoutMs: timeoutMs,
-            onPartial: onPartial
-        )
-    } else {
-        return transcribeImplLegacy(
-            samples: samples,
-            sampleCount: sampleCount,
-            sampleRate: sampleRate,
-            localeBcp47: localeBcp47,
-            contextualStrings: contextualStrings,
-            contextualCount: contextualCount,
-            requireOnDevice: requireOnDevice,
-            timeoutMs: timeoutMs,
-            onPartial: onPartial
-        )
-    }
+    // TEMPORARILY DISABLED: SpeechAnalyzer path crashes with SIGTRAP at
+    // SpeechRecognizerWorker.preRunRecognition() — root cause is the per-locale
+    // model has not been pre-downloaded via SpeechTranscriber.downloadModel(for:),
+    // and Apple's worker fatal-errors when it tries to run an uninstalled model.
+    //
+    // Crash: handy-2026-05-03-231748.ips, EXC_BREAKPOINT in cooperative queue.
+    //
+    // To re-enable, the SpeechAnalyzer path must first await
+    // `SpeechTranscriber.supportedLocales(for: .transcription)` then
+    // `downloadModel(for: locale)` if not already installed. Until that flow
+    // is wired, force-fall through to the legacy SFSpeechRecognizer path.
+    //
+    // if #available(macOS 26.0, *) {
+    //     return transcribeImplSpeechAnalyzer(...)
+    // }
+    return transcribeImplLegacy(
+        samples: samples,
+        sampleCount: sampleCount,
+        sampleRate: sampleRate,
+        localeBcp47: localeBcp47,
+        contextualStrings: contextualStrings,
+        contextualCount: contextualCount,
+        requireOnDevice: requireOnDevice,
+        timeoutMs: timeoutMs,
+        onPartial: onPartial
+    )
 }
 
 // MARK: - New path: SpeechAnalyzer + SpeechTranscriber (macOS 26+)

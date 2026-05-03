@@ -1248,24 +1248,25 @@ impl TranscriptionManager {
                 // (including Qwen3Asr) flows through apply_custom_words + punc_zh
                 // in the post-processing pipeline above do_transcribe.
 
-                // For Qwen3-ASR: use VAD-aware chunking to produce pseudo-streaming
-                // partial results. Threshold is 4 s — typical hotkey-press dictations
-                // (3-10 s) benefit most from chunked decoding so the overlay sees
-                // text grow during transcription instead of waiting for the full
-                // final result.
+                // For Qwen3-ASR: chunk LONG audio only (>30 s) for EOS-truncation
+                // safety. Below this threshold, single-pass decode is faster and
+                // gives identical output (Qwen3 max_total_len=8192 budgets ~30 s
+                // of audio tokens + prompt comfortably).
                 //
-                // Chunk size: 4 s with 1 s overlap between adjacent chunks. Effective
-                // stride per chunk is 3 s, so a 7 s recording produces 2 chunks
-                // ([0,4] and [3,7]) and a 10 s recording produces 3.
-                // The overlap is used for dedup: if the tail of chunk N and the
-                // head of chunk N+1 share ≥4 chars, the duplicate prefix is
-                // stripped from chunk N+1 via dedup_overlap().
+                // NOTE: Aggressive sub-30 s chunking was tried (4 s threshold) for
+                // pseudo-streaming partial UX in the overlay, but partials only
+                // populate the overlay window — they do NOT reach the active app's
+                // cursor (where the user actually wants to see the dictation appear).
+                // Without target-app incremental paste wired, sub-threshold chunking
+                // is pure negative (3× decoder calls for the same final result).
+                // See backlog: target-app paste implementation.
                 //
-                // Other Sherpa models (SenseVoice, FunASR-Nano) use the direct path.
+                // Chunk size: 25 s with 1 s overlap. Effective stride = 24 s.
+                // A 60 s recording produces 3 chunks ([0,25], [24,49], [48,60]).
                 if matches!(session.kind, SherpaModelKind::Qwen3Asr)
-                    && audio.len() > 16_000 * 4
+                    && audio.len() > 16_000 * 30
                 {
-                    // Pseudo-streaming path: split at VAD boundaries, ≤4 s per chunk.
+                    // EOS-safety chunking: split at VAD boundaries, ≤25 s per chunk.
                     let t0 = std::time::Instant::now();
                     let vad_path_result = self
                         .app_handle
@@ -1279,8 +1280,8 @@ impl TranscriptionManager {
                     // Chunk size = 8 s; overlap = 1 s prepended to the next chunk
                     // to give the model enough context for dedup at boundaries.
                     const FRAME_SAMPLES: usize = 480; // 30 ms @ 16 kHz
-                    const MAX_CHUNK_SAMPLES: usize = 16_000 * 4; // 4 s — aggressive
-                    const OVERLAP_SAMPLES: usize = 16_000 * 1;   // 1 s overlap
+                    const MAX_CHUNK_SAMPLES: usize = 16_000 * 25; // 25 s — EOS safety
+                    const OVERLAP_SAMPLES: usize = 16_000 * 1;    // 1 s overlap
 
                     let chunks: Vec<Vec<f32>> = match vad_path_result {
                         Ok(vad_path) => {
