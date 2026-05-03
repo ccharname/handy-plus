@@ -665,6 +665,13 @@ pub struct AppSettings {
     /// migration ran. Missing key = not applied yet.
     #[serde(default)]
     pub migration_applied: HashMap<String, bool>,
+    /// Phonetic transliteration aliases — exact substring substitution to recover
+    /// proper nouns the ASR mangles into Chinese phonetic approximations.
+    /// Format: { "Anthropic": ["aobic", "an thro pic"], "Obsidian": ["op店"] }
+    /// Applied AFTER apply_custom_words (fuzzy) and BEFORE filter/punc,
+    /// so corrections feed the punctuation model.
+    #[serde(default)]
+    pub custom_word_aliases: HashMap<String, Vec<String>>,
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -1226,6 +1233,7 @@ pub fn get_default_settings() -> AppSettings {
         hotwords_boost: default_hotwords_boost(),
         active_preset_id: None,
         migration_applied: HashMap::new(),
+        custom_word_aliases: HashMap::new(),
     }
 }
 

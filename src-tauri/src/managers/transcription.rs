@@ -892,9 +892,17 @@ impl TranscriptionManager {
         };
         let custom_words_ms = t_custom_words.elapsed().as_millis();
 
+        let t_aliases = std::time::Instant::now();
+        let aliased_result = if !settings.custom_word_aliases.is_empty() {
+            crate::audio_toolkit::apply_word_aliases(&corrected_result, &settings.custom_word_aliases)
+        } else {
+            corrected_result
+        };
+        let aliases_ms = t_aliases.elapsed().as_millis();
+
         let t_filter = std::time::Instant::now();
         let filtered_result = filter_transcription_output(
-            &corrected_result,
+            &aliased_result,
             &settings.app_language,
             &settings.custom_filler_words,
         );
@@ -919,8 +927,8 @@ impl TranscriptionManager {
             total_ms
         );
         debug!(
-            "Pipeline timing (override): engine={}ms custom_words={}ms filter={}ms punc={}ms total={}ms",
-            engine_ms, custom_words_ms, filter_ms, punc_ms, total_ms
+            "Pipeline timing (override): engine={}ms custom_words={}ms aliases={}ms filter={}ms punc={}ms total={}ms",
+            engine_ms, custom_words_ms, aliases_ms, filter_ms, punc_ms, total_ms
         );
 
         if final_result.is_empty() {
@@ -1329,10 +1337,19 @@ impl TranscriptionManager {
         };
         let custom_words_ms = t_custom_words.elapsed().as_millis();
 
+        // Apply phonetic alias substitutions (exact substring, longer-first).
+        let t_aliases = std::time::Instant::now();
+        let aliased_result = if !settings.custom_word_aliases.is_empty() {
+            crate::audio_toolkit::apply_word_aliases(&corrected_result, &settings.custom_word_aliases)
+        } else {
+            corrected_result
+        };
+        let aliases_ms = t_aliases.elapsed().as_millis();
+
         // Filter out filler words and hallucinations
         let t_filter = std::time::Instant::now();
         let filtered_result = filter_transcription_output(
-            &corrected_result,
+            &aliased_result,
             &settings.app_language,
             &settings.custom_filler_words,
         );
@@ -1362,8 +1379,8 @@ impl TranscriptionManager {
             total_ms, translation_note
         );
         debug!(
-            "Pipeline timing: engine={}ms custom_words={}ms filter={}ms punc={}ms total={}ms",
-            engine_ms, custom_words_ms, filter_ms, punc_ms, total_ms
+            "Pipeline timing: engine={}ms custom_words={}ms aliases={}ms filter={}ms punc={}ms total={}ms",
+            engine_ms, custom_words_ms, aliases_ms, filter_ms, punc_ms, total_ms
         );
 
         if final_result.is_empty() {

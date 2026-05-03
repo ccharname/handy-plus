@@ -213,6 +213,32 @@ fn extract_punctuation(word: &str) -> (&str, &str) {
     (prefix, suffix)
 }
 
+/// Apply phonetic alias substitutions: for each canonical word in `aliases`,
+/// replace every occurrence of any alias in `text` with the canonical form.
+/// Case-sensitive substring match (not fuzzy, not word-boundary).
+/// Longer aliases are tried first to avoid prefix collisions.
+pub fn apply_word_aliases(
+    text: &str,
+    aliases: &std::collections::HashMap<String, Vec<String>>,
+) -> String {
+    if aliases.is_empty() {
+        return text.to_string();
+    }
+    // Flatten + sort by alias length DESC so "an thro pic" matches before "an"
+    let mut pairs: Vec<(&str, &str)> = aliases
+        .iter()
+        .flat_map(|(canonical, alts)| alts.iter().map(move |a| (a.as_str(), canonical.as_str())))
+        .filter(|(a, _)| !a.is_empty())
+        .collect();
+    pairs.sort_by_key(|(a, _)| std::cmp::Reverse(a.chars().count()));
+
+    let mut out = text.to_string();
+    for (alias, canonical) in pairs {
+        out = out.replace(alias, canonical);
+    }
+    out
+}
+
 /// Returns filler words appropriate for the given language code.
 ///
 /// Some words like "um" and "ha" are real words in certain languages
@@ -585,6 +611,52 @@ mod tests {
         let custom_words = vec!["MacBook Pro".to_string()];
         let result = apply_custom_words(text, &custom_words, 0.5);
         assert!(result.contains("MacBook"));
+    }
+
+    // ── apply_word_aliases tests ──────────────────────────────────────────────
+
+    #[test]
+    fn test_apply_word_aliases_empty_map() {
+        let aliases = std::collections::HashMap::new();
+        assert_eq!(
+            apply_word_aliases("aobic is cool", &aliases),
+            "aobic is cool"
+        );
+    }
+
+    #[test]
+    fn test_apply_word_aliases_basic_and_longer_first() {
+        let mut aliases = std::collections::HashMap::new();
+        aliases.insert(
+            "Anthropic".to_string(),
+            vec!["an thro pic".to_string(), "an".to_string()],
+        );
+        // "an thro pic" must win over the shorter "an" prefix match.
+        let result = apply_word_aliases("I work at an thro pic", &aliases);
+        assert_eq!(result, "I work at Anthropic");
+        // The shorter alias "an" should still fire when it's the only match.
+        let result2 = apply_word_aliases("an apple", &aliases);
+        assert_eq!(result2, "Anthropic apple");
+    }
+
+    #[test]
+    fn test_apply_word_aliases_chinese_alias() {
+        let mut aliases = std::collections::HashMap::new();
+        aliases.insert("Obsidian".to_string(), vec!["op店".to_string()]);
+        let result = apply_word_aliases("我用op店记笔记", &aliases);
+        assert_eq!(result, "我用Obsidian记笔记");
+    }
+
+    #[test]
+    fn test_apply_word_aliases_case_sensitive() {
+        let mut aliases = std::collections::HashMap::new();
+        aliases.insert("Anthropic".to_string(), vec!["aobic".to_string()]);
+        // Exact case match replaces; different case does NOT.
+        let result = apply_word_aliases("aobic is great", &aliases);
+        assert_eq!(result, "Anthropic is great");
+        let result2 = apply_word_aliases("Aobic is great", &aliases);
+        // "Aobic" ≠ "aobic" — should be unchanged
+        assert_eq!(result2, "Aobic is great");
     }
 
     #[test]
