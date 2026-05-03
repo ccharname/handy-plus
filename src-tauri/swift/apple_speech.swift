@@ -3,18 +3,18 @@ import Dispatch
 import Foundation
 import Speech
 
-// MARK: - Swift implementation for Apple Speech (SFSpeechRecognizer) integration
+// MARK: - Swift implementation for Apple Speech integration
 // This file is compiled via Cargo build script for macOS targets (aarch64 + x86_64).
 //
-// FUTURE(macOS-26): Apple deprecated SFSpeechRecognizer's on-device behaviour in
-// macOS 26 (Tahoe) in favour of the new SpeechAnalyzer + SpeechTranscriber APIs
-// introduced at WWDC 2025. Migration path:
-//   1. Replace SFSpeechRecognizer + SFSpeechAudioBufferRecognitionRequest with
-//      SpeechAnalyzer (offline) / SpeechTranscriber (streaming).
-//   2. The new API accepts AVAudioSequenceAnalysis for pre-recorded buffers, so the
-//      FFI surface (PCM f32 in → text out) can stay the same.
-//   3. addsPunctuation / taskHint equivalents are built into the new API by default.
-// Start from: https://developer.apple.com/documentation/speech/speechanalyzer
+// DONE(macOS-26): SFSpeechRecognizer is soft-deprecated on macOS 26 (Tahoe) in favour
+// of the new SpeechAnalyzer + SpeechTranscriber APIs introduced at WWDC 2025.
+// This file implements BOTH paths with an #available(macOS 26.0, *) gate:
+//   • macOS 26+ → transcribeImplSpeechAnalyzer (SpeechAnalyzer + SpeechTranscriber)
+//   • macOS 10.15–25 → transcribeImplLegacy (SFSpeechRecognizer, unchanged)
+//
+// The @_cdecl FFI surface is IDENTICAL between the two paths — Rust callers are
+// oblivious to which engine ran.
+// API reference: https://developer.apple.com/documentation/speech/speechanalyzer
 
 private typealias ResponsePointer = UnsafeMutablePointer<AppleSpeechResponse>
 
@@ -49,9 +49,11 @@ public func isAppleSpeechAvailable() -> Int32 {
     return 1
 }
 
-// MARK: - Transcription (internal implementation)
+// MARK: - Transcription (internal implementation — dispatches to new or legacy path)
 
 /// Shared implementation for both the plain and with-partials variants.
+/// On macOS 26+, dispatches to `transcribeImplSpeechAnalyzer`.
+/// On macOS 10.15-25, falls back to `transcribeImplLegacy` (SFSpeechRecognizer).
 /// `onPartial` is called for each non-final result; pass nil to disable.
 @available(macOS 10.15, *)
 private func transcribeImpl(
@@ -65,6 +67,266 @@ private func transcribeImpl(
     timeoutMs: Int32,
     onPartial: ((String) -> Void)?
 ) -> UnsafeMutablePointer<AppleSpeechResponse> {
+    if #available(macOS 26.0, *) {
+        return transcribeImplSpeechAnalyzer(
+            samples: samples,
+            sampleCount: sampleCount,
+            sampleRate: sampleRate,
+            localeBcp47: localeBcp47,
+            contextualStrings: contextualStrings,
+            contextualCount: contextualCount,
+            requireOnDevice: requireOnDevice,
+            timeoutMs: timeoutMs,
+            onPartial: onPartial
+        )
+    } else {
+        return transcribeImplLegacy(
+            samples: samples,
+            sampleCount: sampleCount,
+            sampleRate: sampleRate,
+            localeBcp47: localeBcp47,
+            contextualStrings: contextualStrings,
+            contextualCount: contextualCount,
+            requireOnDevice: requireOnDevice,
+            timeoutMs: timeoutMs,
+            onPartial: onPartial
+        )
+    }
+}
+
+// MARK: - New path: SpeechAnalyzer + SpeechTranscriber (macOS 26+)
+
+/// Implements transcription using the new SpeechAnalyzer / SpeechTranscriber API
+/// (macOS 26+, WWDC 2025).
+///
+/// Design notes:
+///   • The async-sequence-based API is bridged back to the synchronous @_cdecl ABI
+///     via a DispatchSemaphore + GCD timeout guard, matching the legacy path pattern.
+///   • `SpeechTranscriber.Preset.progressiveTranscription` enables volatile (partial)
+///     results in addition to final results. For the no-partial variant we use the
+///     simpler `.transcription` preset.
+///   • `result.isFinal` (from SpeechModuleResult) distinguishes volatile vs final.
+///   • Contextual strings are passed via `AnalysisContext.contextualStrings[.general]`.
+///   • `requireOnDevice` has no direct equivalent — SpeechAnalyzer on macOS 26 is
+///     always on-device; the flag is accepted but silently ignored.
+///   • `taskHint` / `addsPunctuation` have no direct equivalents in the new API;
+///     punctuation and capitalization are on by default in the new engine.
+@available(macOS 26.0, *)
+private func transcribeImplSpeechAnalyzer(
+    samples: UnsafePointer<Float>,
+    sampleCount: Int,
+    sampleRate: Double,
+    localeBcp47: UnsafePointer<CChar>,
+    contextualStrings: UnsafePointer<UnsafePointer<CChar>?>?,
+    contextualCount: Int,
+    requireOnDevice: Int32,  // NOTE: ignored — SpeechAnalyzer is always on-device
+    timeoutMs: Int32,
+    onPartial: ((String) -> Void)?
+) -> UnsafeMutablePointer<AppleSpeechResponse> {
+    print("[apple_speech] Engine: SpeechAnalyzer (macOS 26+)")
+
+    let responsePtr = ResponsePointer.allocate(capacity: 1)
+    responsePtr.initialize(to: AppleSpeechResponse(text: nil, success: 0, error_message: nil))
+
+    let localeStr = String(cString: localeBcp47)
+    let locale = Locale(identifier: localeStr)
+
+    // Build contextual strings array
+    var contextualArray: [String] = []
+    if let ptr = contextualStrings, contextualCount > 0 {
+        for i in 0..<contextualCount {
+            if let cstr = ptr[i] {
+                contextualArray.append(String(cString: cstr))
+            }
+        }
+    }
+
+    // Thread-safe container to pass results from async Task back to calling thread
+    final class ResultBox: @unchecked Sendable {
+        var text: String?
+        var error: String?
+    }
+    let box = ResultBox()
+    let semaphore = DispatchSemaphore(value: 0)
+
+    // Build AVAudioFormat for the input PCM buffer
+    guard let format = AVAudioFormat(
+        commonFormat: .pcmFormatFloat32,
+        sampleRate: sampleRate,
+        channels: 1,
+        interleaved: false
+    ) else {
+        responsePtr.pointee.error_message = duplicateCString(
+            "Failed to create AVAudioFormat for sample rate \(sampleRate)."
+        )
+        return responsePtr
+    }
+
+    guard let pcmBuffer = AVAudioPCMBuffer(
+        pcmFormat: format,
+        frameCapacity: AVAudioFrameCount(sampleCount)
+    ) else {
+        responsePtr.pointee.error_message = duplicateCString(
+            "Failed to allocate AVAudioPCMBuffer."
+        )
+        return responsePtr
+    }
+
+    pcmBuffer.frameLength = AVAudioFrameCount(sampleCount)
+    if let channelData = pcmBuffer.floatChannelData {
+        channelData[0].update(from: samples, count: sampleCount)
+    }
+
+    // Choose preset: progressiveTranscription enables volatile (partial) results;
+    // plain transcription only emits final results.
+    let preset: SpeechTranscriber.Preset = onPartial != nil
+        ? .progressiveTranscription
+        : .transcription
+
+    let transcriber = SpeechTranscriber(locale: locale, preset: preset)
+
+    // Wire contextual strings via AnalysisContext
+    let analysisContext = AnalysisContext()
+    if !contextualArray.isEmpty {
+        analysisContext.contextualStrings[.general] = contextualArray
+    }
+
+    // Create the analyzer (modules-only init; we feed via start(inputSequence:))
+    let analyzer = SpeechAnalyzer(
+        modules: [transcriber],
+        options: nil
+    )
+
+    // Launch the async task that drives the analyzer and collects results.
+    // The Task bridges the async API back to the semaphore-based synchronous ABI.
+    //
+    // Pattern: two concurrent child tasks via withTaskGroup —
+    //   1. "feeder" task: feeds the single PCM buffer and calls analyzeSequence,
+    //      which internally drives the analysis pipeline to completion.
+    //   2. "collector" task: iterates transcriber.results, delivering partials and
+    //      capturing the last final result.
+    // The group awaits both before returning; if either throws, the group cancels.
+    let task = Task {
+        do {
+            // Set context before starting so contextual strings are applied.
+            try await analyzer.setContext(analysisContext)
+
+            // Build an AsyncStream that yields our single PCM buffer and then ends.
+            let inputStream = AsyncStream<AnalyzerInput> { continuation in
+                continuation.yield(AnalyzerInput(buffer: pcmBuffer))
+                continuation.finish()
+            }
+
+            // Run feeding and result collection concurrently.
+            var lastFinalText: String? = nil
+            try await withThrowingTaskGroup(of: String?.self) { group in
+                // Child 1: feed audio and drive analysis
+                group.addTask {
+                    // analyzeSequence feeds input AND waits for all analysis to complete.
+                    // It signals the transcriber.results stream to finish when done.
+                    _ = try await analyzer.analyzeSequence(inputStream)
+                    return nil
+                }
+
+                // Child 2: collect transcription results
+                group.addTask { [onPartial] in
+                    var lastText: String? = nil
+                    for try await result in transcriber.results {
+                        // Extract plain text from AttributedString
+                        let plainText = String(result.text.characters)
+                        if result.isFinal {
+                            lastText = plainText
+                        } else {
+                            // Volatile (partial) result — deliver to callback if provided
+                            onPartial?(plainText)
+                        }
+                    }
+                    return lastText
+                }
+
+                // Collect results from both tasks
+                for try await result in group {
+                    if let text = result {
+                        lastFinalText = text
+                    }
+                }
+            }
+
+            if let text = lastFinalText {
+                box.text = text
+            } else {
+                // No final result emitted — treat as empty transcription (silence)
+                box.text = ""
+            }
+        } catch {
+            box.error = "ENGINE: \(error.localizedDescription)"
+        }
+        semaphore.signal()
+    }
+
+    // GCD timer guard: independently cancels the Task and signals the semaphore
+    // after timeoutMs, mirroring the legacy path's safety net.
+    var timerWorkItem: DispatchWorkItem?
+    if timeoutMs > 0 {
+        let workItem = DispatchWorkItem {
+            task.cancel()
+            if box.text == nil && box.error == nil {
+                box.error = "TIMEOUT: Apple Speech (SpeechAnalyzer) timed out after \(timeoutMs)ms. The recognizer may be unavailable or waiting for first-use initialization."
+            }
+            semaphore.signal()
+        }
+        timerWorkItem = workItem
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(
+            deadline: .now() + .milliseconds(Int(timeoutMs)),
+            execute: workItem
+        )
+    }
+
+    // Wait — either the Task or the GCD timer will signal us.
+    semaphore.wait()
+
+    // Cancel the timer if the Task finished first (cancelling an already-executed
+    // DispatchWorkItem is a no-op).
+    timerWorkItem?.cancel()
+
+    // Propagate timeout error
+    if let errMsg = box.error, errMsg.hasPrefix("TIMEOUT:") {
+        responsePtr.pointee.error_message = duplicateCString(errMsg)
+        return responsePtr
+    }
+
+    if let text = box.text {
+        responsePtr.pointee.text = duplicateCString(text)
+        responsePtr.pointee.success = 1
+    } else {
+        let rawErr = box.error ?? "Unknown SpeechAnalyzer error."
+        let prefixedErr = rawErr.hasPrefix("TIMEOUT:") || rawErr.hasPrefix("PERM_DENIED:") || rawErr.hasPrefix("AUTH_TIMEOUT:")
+            ? rawErr
+            : rawErr.hasPrefix("ENGINE:") ? rawErr : "ENGINE: \(rawErr)"
+        responsePtr.pointee.error_message = duplicateCString(prefixedErr)
+    }
+
+    return responsePtr
+}
+
+// MARK: - Legacy path: SFSpeechRecognizer (macOS 10.15-25)
+
+/// Legacy implementation kept verbatim from the original code.
+/// Used on macOS 10.15 through 25 where SpeechAnalyzer is not available.
+@available(macOS 10.15, *)
+private func transcribeImplLegacy(
+    samples: UnsafePointer<Float>,
+    sampleCount: Int,
+    sampleRate: Double,
+    localeBcp47: UnsafePointer<CChar>,
+    contextualStrings: UnsafePointer<UnsafePointer<CChar>?>?,
+    contextualCount: Int,
+    requireOnDevice: Int32,
+    timeoutMs: Int32,
+    onPartial: ((String) -> Void)?
+) -> UnsafeMutablePointer<AppleSpeechResponse> {
+    print("[apple_speech] Engine: SFSpeechRecognizer (legacy, macOS <26)")
+
     let responsePtr = ResponsePointer.allocate(capacity: 1)
     responsePtr.initialize(to: AppleSpeechResponse(text: nil, success: 0, error_message: nil))
 
