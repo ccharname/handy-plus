@@ -624,16 +624,19 @@ impl TranscriptionManager {
                             tokenizer: Some(
                                 model_path.join("Qwen3-0.6B").to_string_lossy().into_owned(),
                             ),
-                            // ASR is a deterministic mapping: greedy decoding (T=0)
-                            // eliminates the upstream Default::default() temperature=1.0
-                            // sampling which introduces hallucinations and inconsistent
-                            // results for the same input. seed pinned for reproducibility.
-                            temperature: 0.0,
-                            top_p: 1.0,
-                            seed: 42,
-                            // Cap LLM output to prevent runaway repetition loops on
-                            // noisy / silent input. 512 tokens covers ~120 Chinese
-                            // chars or ~50 English words — enough for ~30s of speech.
+                            // CAUTION: do NOT set temperature=0 / pure greedy here.
+                            // Empirical finding (2026-05-03 logs): on audio
+                            // ≥10s the Qwen3-0.6B LLM decoder collapsed to an
+                            // immediate-EOS degeneracy under T=0, returning
+                            // empty text in ~200ms regardless of content.
+                            // Short clips (<2s) survived because their token
+                            // distributions were narrow enough. Keep the
+                            // upstream defaults (T=1.0, top_p=1.0) — sampling
+                            // noise is harmless compared to silent failure.
+                            // Cap LLM output to prevent runaway repetition
+                            // loops on noisy / silent input. 512 tokens covers
+                            // ~120 Chinese chars or ~50 English words — enough
+                            // for ~30s of speech.
                             max_new_tokens: 512,
                             language: lang_hint,
                             hotwords: hotwords_str,
