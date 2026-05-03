@@ -138,13 +138,16 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
     let separator = || PredefinedMenuItem::separator(app).expect("failed to create separator");
 
     // Build preset submenu — mirrors Settings → ASR presets so the tray
-    // always offers the same three switchable bundles. Submenu label is the
-    // localized "Model" string, items list each preset with its emoji icon
-    // and check-marks the currently active one.
+    // offers the same switchable bundles. Submenu label is the localized
+    // "Model" string, items list each preset with its emoji icon and
+    // check-marks the currently active one.
+    //
+    // We show ALL presets including non-builtin (experimental) ones — the
+    // 🧪 emoji on experimental presets already visually distinguishes them,
+    // and tray fast-switch is the primary UX for trying experimental engines.
     let active_preset_id = settings.active_preset_id.as_deref();
     let presets: Vec<_> = crate::settings::default_asr_presets()
         .into_iter()
-        .filter(|p| p.builtin)
         .collect();
 
     let model_submenu = {
