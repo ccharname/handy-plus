@@ -560,22 +560,23 @@ impl TranscriptionManager {
                         // slot in OfflineQwen3ASRModelConfig — language field does
                         // not exist on this struct.
 
-                        // LLM-decoder context budget cap: 64 entries × 500 chars.
+                        // LLM-decoder context budget cap: 96 entries × 500 chars.
                         //
-                        // Empirically validated 2026-05-03 via qwen3_hotwords_bench
-                        // on a 25s zh-CN sample: N=16/32/48/64/96/128 all produced
-                        // identical 113-char output, no EOS truncation. Sherpa's own
-                        // budget log confirmed 96 hotwords = 309 prompt tokens
-                        // (well within max_total_len=8192).
+                        // Empirically validated 2026-05-03 across two bench samples:
+                        //   • 25s zh-CN: N=16/32/48/64/96/128 all → identical 113 chars
+                        //     (no truncation). Sherpa budget log: N=96 = 309 tokens.
+                        //   • 50s zh-CN: N=16/32/64/96/128/192 all decoded successfully;
+                        //     N=192 saw a tiny 2% char drop (222→218). N=128 = 462 tokens.
                         //
-                        // FunASR-Nano's 32-cap gotcha was model-specific; Qwen3-ASR
-                        // has substantially more headroom. We pick 64 as a balance:
-                        //   - 2× the bench-safe floor for 25s audio
-                        //   - ~1.4× safety margin for 45s VAD chunks
-                        //   - Plenty of room for phonetic alias L2 layer
-                        // If you exceed this in practice, re-run the bench at the
-                        // 45s chunk size to find the true ceiling.
-                        const QWEN3_HOTWORDS_MAX_ENTRIES: usize = 64;
+                        // With our actual VAD chunks now capped at 8s (post pseudo-streaming
+                        // refactor), the per-chunk audio token budget is much smaller than
+                        // even the 25s bench, so 96 hotwords is comfortably safe with margin.
+                        // 192 was the highest tested value still working on 50s; we pick 96
+                        // = 50% of that for a 2× safety floor against runtime variance.
+                        //
+                        // FunASR-Nano's 32-cap gotcha was a model-specific landmine that
+                        // does NOT apply to Qwen3-ASR.
+                        const QWEN3_HOTWORDS_MAX_ENTRIES: usize = 96;
                         const QWEN3_HOTWORDS_MAX_CHARS: usize = 500;
 
                         let settings = get_settings(&self.app_handle);
@@ -652,10 +653,11 @@ impl TranscriptionManager {
                             // silently truncate long audio (same gotcha as FunASR-Nano).
                             max_new_tokens: 4096,
                             max_total_len: 8192,
-                            // temperature: keep at 1e-6 (upstream default from
-                            // python-api-examples/offline-qwen3-asr-decode-files.py).
-                            // Setting 0.0 risks sampler degeneracy. 1e-6 is effectively
-                            // greedy while remaining numerically stable.
+                            // temperature: keep at 1e-6 (upstream default).
+                            // Validated 2026-05-03 via qwen3_decode_temp_bench:
+                            // 6 cells (temp ∈ {1e-6, 0.0, 0.1} × top_p ∈ {0.5, 0.8})
+                            // ALL produced identical output on the 25s zh-CN sample.
+                            // No measurable benefit to deviating from upstream.
                             hotwords: hotwords_str,
                             ..Default::default()
                         };
@@ -1246,12 +1248,20 @@ impl TranscriptionManager {
                 // (including Qwen3Asr) flows through apply_custom_words + punc_zh
                 // in the post-processing pipeline above do_transcribe.
 
-                // For Qwen3-ASR: use VAD-aware chunking on long audio.
+                // For Qwen3-ASR: use VAD-aware chunking to produce pseudo-streaming
+                // partial results. Threshold is 8 s — anything longer benefits from
+                // chunked decoding + incremental overlay updates.
+                //
+                // Chunk size: 8 s with 1 s overlap between adjacent chunks.
+                // The overlap is used for dedup: if the tail of chunk N and the
+                // head of chunk N+1 share ≥4 chars, the duplicate prefix is
+                // stripped from chunk N+1 via dedup_overlap().
+                //
                 // Other Sherpa models (SenseVoice, FunASR-Nano) use the direct path.
                 if matches!(session.kind, SherpaModelKind::Qwen3Asr)
-                    && audio.len() > 16_000 * 90
+                    && audio.len() > 16_000 * 8
                 {
-                    // Long audio path: split at VAD boundaries, ≤45 s per chunk.
+                    // Pseudo-streaming path: split at VAD boundaries, ≤8 s per chunk.
                     let t0 = std::time::Instant::now();
                     let vad_path_result = self
                         .app_handle
@@ -1261,9 +1271,12 @@ impl TranscriptionManager {
                             tauri::path::BaseDirectory::Resource,
                         );
 
-                    // Constants used across all chunking paths
+                    // Constants used across all chunking paths.
+                    // Chunk size = 8 s; overlap = 1 s prepended to the next chunk
+                    // to give the model enough context for dedup at boundaries.
                     const FRAME_SAMPLES: usize = 480; // 30 ms @ 16 kHz
-                    const MAX_CHUNK_SAMPLES: usize = 16_000 * 45; // 45 s
+                    const MAX_CHUNK_SAMPLES: usize = 16_000 * 8; // 8 s
+                    const OVERLAP_SAMPLES: usize = 16_000 * 1;   // 1 s overlap
 
                     let chunks: Vec<Vec<f32>> = match vad_path_result {
                         Ok(vad_path) => {
@@ -1271,6 +1284,10 @@ impl TranscriptionManager {
                                 Ok(mut vad) => {
                                     // Segment the full audio into speech chunks using
                                     // the same 30 ms frame size Silero was trained on.
+                                    // When a chunk reaches MAX_CHUNK_SAMPLES, flush it
+                                    // and start the next chunk with OVERLAP_SAMPLES of
+                                    // the previous chunk's tail so boundary words get
+                                    // decoded with full context.
                                     let mut all_chunks: Vec<Vec<f32>> = Vec::new();
                                     let mut current_chunk: Vec<f32> = Vec::new();
 
@@ -1287,13 +1304,22 @@ impl TranscriptionManager {
 
                                         if is_speech {
                                             current_chunk.extend_from_slice(frame);
-                                            // Flush when chunk hits max size
+                                            // Flush when chunk hits max size.
+                                            // Seed next chunk with the last OVERLAP_SAMPLES
+                                            // of the current chunk for context continuity.
                                             if current_chunk.len() >= MAX_CHUNK_SAMPLES {
+                                                let overlap_start = current_chunk
+                                                    .len()
+                                                    .saturating_sub(OVERLAP_SAMPLES);
+                                                let overlap = current_chunk[overlap_start..].to_vec();
                                                 all_chunks.push(std::mem::take(&mut current_chunk));
+                                                current_chunk = overlap;
                                             }
                                         } else {
                                             // Silence boundary: if current chunk is
                                             // substantial (>300 ms), flush it.
+                                            // No overlap needed at natural silence breaks
+                                            // because the model already sees the word end.
                                             if current_chunk.len() >= FRAME_SAMPLES * 10 {
                                                 all_chunks.push(std::mem::take(&mut current_chunk));
                                             }
@@ -1305,14 +1331,14 @@ impl TranscriptionManager {
                                     }
 
                                     if all_chunks.is_empty() {
-                                        debug!("Qwen3-ASR: VAD found no speech in long audio");
+                                        debug!("Qwen3-ASR: VAD found no speech in audio");
                                         return Ok(transcribe_rs::TranscriptionResult {
                                             text: String::new(),
                                             segments: None,
                                         });
                                     }
                                     debug!(
-                                        "Qwen3-ASR: split {}s audio into {} VAD chunks",
+                                        "Qwen3-ASR: split {}s audio into {} VAD chunks (8s/1s-overlap)",
                                         audio.len() / 16_000,
                                         all_chunks.len()
                                     );
@@ -1320,33 +1346,53 @@ impl TranscriptionManager {
                                 }
                                 Err(e) => {
                                     warn!(
-                                        "Qwen3-ASR: VAD init failed ({}); falling back to naive 45s split",
+                                        "Qwen3-ASR: VAD init failed ({}); falling back to naive 8s split",
                                         e
                                     );
-                                    audio
-                                        .chunks(MAX_CHUNK_SAMPLES)
-                                        .map(|c| c.to_vec())
-                                        .collect()
+                                    // Naive split with 1 s overlap
+                                    let mut naive_chunks: Vec<Vec<f32>> = Vec::new();
+                                    let mut pos = 0usize;
+                                    while pos < audio.len() {
+                                        let end = (pos + MAX_CHUNK_SAMPLES).min(audio.len());
+                                        naive_chunks.push(audio[pos..end].to_vec());
+                                        if end == audio.len() {
+                                            break;
+                                        }
+                                        // advance by (chunk - overlap) so next chunk
+                                        // begins 1 s before the previous chunk ended
+                                        pos += MAX_CHUNK_SAMPLES.saturating_sub(OVERLAP_SAMPLES);
+                                    }
+                                    naive_chunks
                                 }
                             }
                         }
                         Err(e) => {
                             warn!(
-                                "Qwen3-ASR: VAD model path resolution failed ({}); falling back to naive 45s split",
+                                "Qwen3-ASR: VAD model path resolution failed ({}); falling back to naive 8s split",
                                 e
                             );
-                            audio
-                                .chunks(MAX_CHUNK_SAMPLES)
-                                .map(|c| c.to_vec())
-                                .collect()
+                            // Naive split with 1 s overlap
+                            let mut naive_chunks: Vec<Vec<f32>> = Vec::new();
+                            let mut pos = 0usize;
+                            while pos < audio.len() {
+                                let end = (pos + MAX_CHUNK_SAMPLES).min(audio.len());
+                                naive_chunks.push(audio[pos..end].to_vec());
+                                if end == audio.len() {
+                                    break;
+                                }
+                                pos += MAX_CHUNK_SAMPLES.saturating_sub(OVERLAP_SAMPLES);
+                            }
+                            naive_chunks
                         }
                     };
 
                     let n_chunks = chunks.len();
                     let mut parts: Vec<String> = Vec::with_capacity(n_chunks);
+                    // Running deduped concatenation emitted as cumulative partial
+                    let mut cumulative_text = String::new();
 
                     for (i, chunk) in chunks.iter().enumerate() {
-                        // Emit progress event so the overlay can show progress
+                        // Emit progress event so the overlay can show chunk index
                         let elapsed_ms = t0.elapsed().as_millis() as u64;
                         let _ = partial_emit_handle.emit(
                             "transcription-progress",
@@ -1365,13 +1411,34 @@ impl TranscriptionManager {
                             stream.get_result().map(|r| r.text).unwrap_or_default();
 
                         if !chunk_text.is_empty() {
+                            // Dedup overlap between previous chunk tail and this
+                            // chunk head to remove duplicated boundary words.
+                            let deduped_text = if let Some(prev) = parts.last() {
+                                let skip = dedup_overlap(prev, &chunk_text);
+                                chunk_text[skip..].trim_start().to_string()
+                            } else {
+                                chunk_text.clone()
+                            };
+
+                            if !deduped_text.is_empty() {
+                                if !cumulative_text.is_empty() {
+                                    cumulative_text.push(' ');
+                                }
+                                cumulative_text.push_str(&deduped_text);
+                            }
                             parts.push(chunk_text);
+
+                            // Emit growing partial so overlay updates immediately
+                            let _ = partial_emit_handle.emit(
+                                "transcription-partial",
+                                serde_json::json!({ "text": cumulative_text }),
+                            );
                         }
                         debug!(
-                            "Qwen3-ASR chunk {}/{}: {} chars in {}ms",
+                            "Qwen3-ASR chunk {}/{}: {} chars cumulative in {}ms",
                             i + 1,
                             n_chunks,
-                            parts.last().map(|s| s.chars().count()).unwrap_or(0),
+                            cumulative_text.chars().count(),
                             t0.elapsed().as_millis()
                         );
                     }
@@ -1387,9 +1454,8 @@ impl TranscriptionManager {
                         }),
                     );
 
-                    let text = parts.join(" ");
                     Ok(transcribe_rs::TranscriptionResult {
-                        text,
+                        text: cumulative_text,
                         segments: None,
                     })
                 } else {
@@ -1974,23 +2040,192 @@ impl Drop for TranscriptionManager {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Qwen3-ASR hotwords cap bench harness
+// dedup_overlap — chunk-boundary deduplication helper
 //
-// Run: HANDY_QWEN3_HOTWORDS_BENCH=1 cargo test qwen3_hotwords_bench -- --nocapture
+// When two adjacent decode chunks share a 1 s overlap, the transcript of the
+// second chunk often starts with the same word(s) that ended the first chunk.
+// This function finds how many bytes to skip from the head of `next_head` to
+// remove that duplicated prefix.
 //
-// The test loads the Qwen3-ASR model from $HANDY_QWEN3_MODEL_DIR and a 30 s
-// reference .wav file from $HANDY_QWEN3_BENCH_WAV, then probes hotwords counts
-// N = 16, 32, 48, 64, 96, 128 to find the threshold where output truncates.
+// Algorithm:
+//   1. Normalise both sides: strip whitespace, fold fullwidth ASCII to halfwidth.
+//   2. Take the last 30 chars of `prev_tail` and first 30 chars of `next_head`.
+//   3. Find the longest suffix of the normalised prev_tail that is a prefix of
+//      the normalised next_head and has length ≥ MIN_OVERLAP_CHARS.
+//   4. Map the match length back to byte positions in the original `next_head`
+//      and return that offset.
 //
-// EOS truncation is suspected when:
-//   output_chars < expected_chars * 0.5
-// where expected_chars is from the N=16 baseline run.
+// Returns 0 when no meaningful overlap is found (concatenate with a space as
+// usual).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Minimum overlap length (in chars) required before we strip the duplicate.
+/// 4 chars avoids spurious single-char matches (e.g. lone punctuation).
+const MIN_OVERLAP_CHARS: usize = 4;
+
+/// Normalise a string for overlap comparison: strip leading/trailing whitespace,
+/// fold fullwidth ASCII punctuation/digits/letters to their halfwidth equivalents,
+/// and collapse internal runs of whitespace to a single space.
+fn normalise_for_overlap(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        // Fold fullwidth ASCII (U+FF01–U+FF5E) to halfwidth (U+0021–U+007E)
+        let c = if ('\u{FF01}'..='\u{FF5E}').contains(&c) {
+            char::from_u32(c as u32 - 0xFF01 + 0x21).unwrap_or(c)
+        } else {
+            c
+        };
+        out.push(c);
+    }
+    // Normalise whitespace: collapse runs → single space, then trim
+    let mut result = String::with_capacity(out.len());
+    let mut prev_space = true; // leading-space suppression
+    for c in out.chars() {
+        if c.is_whitespace() {
+            if !prev_space {
+                result.push(' ');
+                prev_space = true;
+            }
+        } else {
+            result.push(c);
+            prev_space = false;
+        }
+    }
+    if result.ends_with(' ') {
+        result.pop();
+    }
+    result
+}
+
+/// Return the number of **bytes** to skip from the start of `next_head` to
+/// remove the longest suffix/prefix overlap with `prev_tail`.
+///
+/// Both inputs are raw (un-normalised) transcript strings.
+/// Returns 0 if no overlap ≥ MIN_OVERLAP_CHARS is found.
+pub(crate) fn dedup_overlap(prev_tail: &str, next_head: &str) -> usize {
+    // Work on normalised chars for comparison but track byte positions in
+    // the *original* next_head so we can return a valid byte offset.
+
+    const WINDOW: usize = 30; // chars examined on each side
+
+    let prev_norm = normalise_for_overlap(prev_tail);
+    let next_norm = normalise_for_overlap(next_head);
+
+    // Take last WINDOW chars of prev_norm
+    let prev_chars: Vec<char> = prev_norm.chars().rev().take(WINDOW).collect::<Vec<_>>()
+        .into_iter().rev().collect();
+    // Take first WINDOW chars of next_norm
+    let next_chars: Vec<char> = next_norm.chars().take(WINDOW).collect();
+
+    // Find longest suffix of prev_chars that equals a prefix of next_chars
+    let max_check = prev_chars.len().min(next_chars.len());
+    let mut best: usize = 0;
+
+    for len in MIN_OVERLAP_CHARS..=max_check {
+        let suffix = &prev_chars[prev_chars.len() - len..];
+        let prefix = &next_chars[..len];
+        if suffix == prefix {
+            best = len;
+        }
+    }
+
+    if best == 0 {
+        return 0;
+    }
+
+    // Map `best` chars in next_norm → byte offset in original next_head.
+    // We need to skip the same *characters* in next_head (whitespace
+    // normalisation may differ slightly, so walk the original chars).
+    // To be safe, skip min(best, next_head.chars().count()) chars.
+    let skip_chars = best.min(next_head.chars().count());
+    let mut byte_offset = 0usize;
+    for c in next_head.chars().take(skip_chars) {
+        byte_offset += c.len_utf8();
+    }
+    byte_offset
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Qwen3-ASR bench harness
+//
+// Tests are #[ignore] and only run with --ignored to avoid blocking CI.
+//
+// Hotwords bench: HANDY_QWEN3_HOTWORDS_BENCH=1 cargo test qwen3_hotwords_bench -- --ignored --nocapture
+// Long audio bench: same env var, target qwen3_hotwords_bench_long
+// Temp A/B bench: HANDY_QWEN3_TEMP_BENCH=1 cargo test qwen3_decode_temp_bench -- --ignored --nocapture
 // ─────────────────────────────────────────────────────────────────────────────
 #[cfg(test)]
 mod qwen3_bench {
     use super::*;
 
-    /// Hotwords bench — skipped unless HANDY_QWEN3_HOTWORDS_BENCH=1
+    // ── dedup_overlap unit tests ─────────────────────────────────────────────
+
+    #[test]
+    fn test_dedup_overlap_no_overlap() {
+        // Completely different tails/heads: no overlap
+        assert_eq!(dedup_overlap("hello world", "foo bar"), 0);
+    }
+
+    #[test]
+    fn test_dedup_overlap_exact_suffix_prefix() {
+        // Overlap of 4+ chars: "然后是测" appears at end of prev and start of next
+        let prev = "前面说了一些话然后是测";
+        let next = "然后是测试继续后面的内容";
+        let skip = dedup_overlap(prev, next);
+        // "然后是测" = 4 chars = 12 bytes (CJK = 3 bytes each)
+        assert_eq!(skip, 12, "expected 12 bytes (然后是测) to be skipped");
+    }
+
+    #[test]
+    fn test_dedup_overlap_longer_match() {
+        // Long shared suffix/prefix
+        let prev = "阶段一完成了接下来是第二阶段";
+        let next = "接下来是第二阶段然后是第三";
+        let skip = dedup_overlap(prev, next);
+        // "接下来是第二阶段" = 8 CJK chars = 24 bytes
+        assert_eq!(skip, 24, "expected 24 bytes (接下来是第二阶段) skipped");
+    }
+
+    #[test]
+    fn test_dedup_overlap_mixed_cjk_ascii() {
+        let prev  = "the model said hello 世界";
+        let next  = "hello 世界 and more";
+        let skip = dedup_overlap(prev, next);
+        // "hello 世界" = 5 ASCII + 1 space + 6 CJK bytes = 12 bytes
+        // but we count chars: h-e-l-l-o- -世-界 = 8 chars
+        assert!(skip > 0, "should find overlap between mixed ASCII/CJK");
+    }
+
+    #[test]
+    fn test_dedup_overlap_below_min_threshold() {
+        // Overlap of only 3 chars: "abc" — below MIN_OVERLAP_CHARS=4, should return 0
+        let prev = "xxxabc";
+        let next = "abcyyy";
+        // "abc" = 3 chars < 4 threshold
+        assert_eq!(dedup_overlap(prev, next), 0);
+    }
+
+    #[test]
+    fn test_dedup_overlap_fullwidth_normalisation() {
+        // Fullwidth "ＡＢＣＤ" (U+FF21..FF24) should match halfwidth "ABCD"
+        let prev = "some text ＡＢＣＤ";
+        let next = "ABCD more text";
+        let skip = dedup_overlap(prev, next);
+        // "ABCD" = 4 bytes in next_head (halfwidth ASCII)
+        assert_eq!(skip, 4, "fullwidth→halfwidth normalisation should enable match");
+    }
+
+    // ── Hotwords bench (25 s sample, 8 s chunk regime) ──────────────────────
+
+    /// Hotwords bench at 8 s chunk scale — skipped unless HANDY_QWEN3_HOTWORDS_BENCH=1
+    ///
+    /// After Task A changed chunking to 8 s chunks, the per-chunk audio token
+    /// budget shrinks substantially, giving hotwords much more headroom than
+    /// the old 45 s regime. This test confirms cap=64 is safe at 8 s.
+    ///
+    /// With 8 s chunks, the per-chunk hotwords budget is well within limits:
+    /// if 25 s was safe at N=128, a single 8 s chunk is trivially safe. This
+    /// test is here to document that fact and catch regressions.
     #[test]
     #[ignore] // run with: cargo test qwen3_hotwords_bench -- --ignored --nocapture
     fn qwen3_hotwords_bench() {
@@ -2002,10 +2237,18 @@ mod qwen3_bench {
         let model_dir = std::env::var("HANDY_QWEN3_MODEL_DIR")
             .expect("HANDY_QWEN3_MODEL_DIR must point to the extracted model directory");
         let wav_path = std::env::var("HANDY_QWEN3_BENCH_WAV")
-            .expect("HANDY_QWEN3_BENCH_WAV must point to a 16 kHz mono WAV file (>=30 s)");
+            .expect("HANDY_QWEN3_BENCH_WAV must point to a 16 kHz mono WAV file (~25 s)");
 
         let audio = crate::audio_toolkit::read_wav_samples(&wav_path)
             .expect("Failed to read bench WAV");
+
+        eprintln!(
+            "Audio: {} samples = {:.1} s",
+            audio.len(),
+            audio.len() as f64 / 16000.0
+        );
+        eprintln!("Note: cap=64 is the production value. With 8 s chunks this is extremely safe.");
+        eprintln!("Probing N = 16, 32, 48, 64, 96, 128 on the full 25 s sample (single decode).");
 
         // Generate a synthetic vocabulary of N unique single-character Chinese words
         let full_vocab: Vec<String> = (0x4E00_u32..0x4E00 + 200)
@@ -2072,7 +2315,7 @@ mod qwen3_bench {
             let truncated = char_count < expected / 2;
 
             eprintln!(
-                "N={n:4}: {char_count:5} chars  truncated={}  text={:.80}",
+                "N={n:4}: {char_count:5} chars  truncated={}  text={}",
                 truncated,
                 text.chars().take(80).collect::<String>(),
             );
@@ -2082,5 +2325,224 @@ mod qwen3_bench {
                 break;
             }
         }
+    }
+
+    // ── Long-audio hotwords ceiling bench (50 s, offline path) ──────────────
+
+    /// Offline-path ceiling bench using a 50 s sample.
+    ///
+    /// With 8 s chunks as the default, this bench exercises the case where
+    /// chunking is bypassed (audio ≤ 8 s threshold) but the user somehow
+    /// feeds very long audio to the offline path, or the threshold changes.
+    /// We probe N = 16, 32, 64, 96, 128, 192 to find the true ceiling.
+    ///
+    /// To make the 50 s sample:
+    ///   ffmpeg -hide_banner -loglevel error -y -i /tmp/qwen3_bench_zh.wav \
+    ///     -filter_complex "[0:a][0:a]concat=n=2:v=0:a=1[out]" \
+    ///     -map "[out]" -ar 16000 -ac 1 /tmp/qwen3_bench_zh_50s.wav
+    #[test]
+    #[ignore] // run with: cargo test qwen3_hotwords_bench_long -- --ignored --nocapture
+    fn qwen3_hotwords_bench_long() {
+        if std::env::var("HANDY_QWEN3_HOTWORDS_BENCH").as_deref() != Ok("1") {
+            eprintln!("Skipped — set HANDY_QWEN3_HOTWORDS_BENCH=1 to run");
+            return;
+        }
+
+        let model_dir = std::env::var("HANDY_QWEN3_MODEL_DIR")
+            .expect("HANDY_QWEN3_MODEL_DIR must point to the extracted model directory");
+
+        // Prefer a 50 s file if available; fall back to the 25 s bench file
+        let wav_path = std::env::var("HANDY_QWEN3_BENCH_WAV_50S")
+            .or_else(|_| std::env::var("HANDY_QWEN3_BENCH_WAV"))
+            .expect("Set HANDY_QWEN3_BENCH_WAV_50S (or HANDY_QWEN3_BENCH_WAV as fallback)");
+
+        let audio = crate::audio_toolkit::read_wav_samples(&wav_path)
+            .expect("Failed to read bench WAV");
+
+        eprintln!(
+            "Long-audio bench: {} samples = {:.1} s",
+            audio.len(),
+            audio.len() as f64 / 16000.0
+        );
+        eprintln!("Probing N = 16, 32, 64, 96, 128, 192 (offline/single-decode path)");
+
+        let full_vocab: Vec<String> = (0x4E00_u32..0x4E00 + 250)
+            .map(|cp| char::from_u32(cp).unwrap().to_string())
+            .collect();
+
+        let probe_counts: [u32; 6] = [16, 32, 64, 96, 128, 192];
+        let mut baseline_chars: Option<usize> = None;
+
+        for &n in &probe_counts {
+            let hotwords_str = {
+                let words: Vec<&str> = full_vocab
+                    .iter()
+                    .take(n as usize)
+                    .map(|s| s.as_str())
+                    .collect();
+                Some(words.join("\n"))
+            };
+
+            let model_path = std::path::Path::new(&model_dir);
+            let config = sherpa_onnx::OfflineRecognizerConfig {
+                model_config: sherpa_onnx::OfflineModelConfig {
+                    qwen3_asr: sherpa_onnx::OfflineQwen3ASRModelConfig {
+                        conv_frontend: Some(
+                            model_path.join("conv_frontend.onnx").to_string_lossy().into_owned(),
+                        ),
+                        encoder: Some(
+                            model_path.join("encoder.int8.onnx").to_string_lossy().into_owned(),
+                        ),
+                        decoder: Some(
+                            model_path.join("decoder.int8.onnx").to_string_lossy().into_owned(),
+                        ),
+                        tokenizer: Some(
+                            model_path.join("tokenizer").to_string_lossy().into_owned(),
+                        ),
+                        max_new_tokens: 4096,
+                        max_total_len: 8192,
+                        hotwords: hotwords_str,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+
+            let recognizer = match sherpa_onnx::OfflineRecognizer::create(&config) {
+                Some(r) => r,
+                None => {
+                    eprintln!("N={n}: OfflineRecognizer::create returned None — CEILING FOUND");
+                    break;
+                }
+            };
+
+            let stream = recognizer.create_stream();
+            stream.accept_waveform(16000, &audio);
+            recognizer.decode(&stream);
+            let text = stream.get_result().map(|r| r.text).unwrap_or_default();
+            let char_count = text.chars().count();
+
+            if baseline_chars.is_none() {
+                baseline_chars = Some(char_count);
+            }
+            let expected = baseline_chars.unwrap_or(1);
+            let truncated = char_count < expected / 2;
+
+            eprintln!(
+                "N={n:4}: {char_count:5} chars  truncated={}  text={}",
+                truncated,
+                text.chars().take(80).collect::<String>(),
+            );
+
+            if truncated {
+                eprintln!(">>> EOS truncation at N={n} with {:.0}s audio. Recommended cap = {}", audio.len() as f64 / 16000.0, n / 2);
+                break;
+            }
+        }
+    }
+
+    // ── Temperature / top_p A/B mini-bench ──────────────────────────────────
+
+    /// Qualitative A/B sweep over (temperature, top_p) cells.
+    ///
+    /// This is NOT a quantitative CER bench — no reference text is required.
+    /// Run it once after a model update to eyeball whether the default params
+    /// (temperature=1e-6, top_p=0.9 upstream) are still optimal, or whether
+    /// a different cell produces fewer disfluency repetitions / hallucinations.
+    ///
+    /// Cells probed:
+    ///   temperature: 1e-6, 0.0, 0.1
+    ///   top_p:       0.5, 0.8
+    ///
+    /// If a different cell is clearly better (e.g. consistently fewer
+    /// repetitions across 3+ listens), update the production config in
+    /// transcription.rs (Qwen3Asr arm) and add a comment citing this bench.
+    #[test]
+    #[ignore] // run with: cargo test qwen3_decode_temp_bench -- --ignored --nocapture
+    fn qwen3_decode_temp_bench() {
+        if std::env::var("HANDY_QWEN3_TEMP_BENCH").as_deref() != Ok("1") {
+            eprintln!("Skipped — set HANDY_QWEN3_TEMP_BENCH=1 to run");
+            return;
+        }
+
+        let model_dir = std::env::var("HANDY_QWEN3_MODEL_DIR")
+            .expect("HANDY_QWEN3_MODEL_DIR must point to the extracted model directory");
+        let wav_path = std::env::var("HANDY_QWEN3_BENCH_WAV")
+            .expect("HANDY_QWEN3_BENCH_WAV must point to a 16 kHz mono WAV file (~25 s)");
+
+        let audio = crate::audio_toolkit::read_wav_samples(&wav_path)
+            .expect("Failed to read bench WAV");
+
+        eprintln!(
+            "Temp A/B bench: {:.1} s audio. Probing 6 (temperature, top_p) cells.",
+            audio.len() as f64 / 16000.0
+        );
+        eprintln!("QUALITATIVE only — no reference text. Eyeball for naturalness / repetitions.");
+        eprintln!("{:-<72}", "");
+
+        // (temperature, top_p) cells
+        let cells: &[(f32, f32)] = &[
+            (1e-6, 0.5),
+            (1e-6, 0.8),
+            (0.0,  0.5),
+            (0.0,  0.8),
+            (0.1,  0.5),
+            (0.1,  0.8),
+        ];
+
+        let model_path = std::path::Path::new(&model_dir);
+
+        for &(temp, top_p) in cells {
+            let config = sherpa_onnx::OfflineRecognizerConfig {
+                model_config: sherpa_onnx::OfflineModelConfig {
+                    qwen3_asr: sherpa_onnx::OfflineQwen3ASRModelConfig {
+                        conv_frontend: Some(
+                            model_path.join("conv_frontend.onnx").to_string_lossy().into_owned(),
+                        ),
+                        encoder: Some(
+                            model_path.join("encoder.int8.onnx").to_string_lossy().into_owned(),
+                        ),
+                        decoder: Some(
+                            model_path.join("decoder.int8.onnx").to_string_lossy().into_owned(),
+                        ),
+                        tokenizer: Some(
+                            model_path.join("tokenizer").to_string_lossy().into_owned(),
+                        ),
+                        max_new_tokens: 4096,
+                        max_total_len: 8192,
+                        // Set temperature and top_p for this cell
+                        temperature: temp,
+                        top_p,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+
+            let recognizer = match sherpa_onnx::OfflineRecognizer::create(&config) {
+                Some(r) => r,
+                None => {
+                    eprintln!("temp={temp:.0e} top_p={top_p:.2}: OfflineRecognizer::create returned None — skipping");
+                    continue;
+                }
+            };
+
+            let stream = recognizer.create_stream();
+            stream.accept_waveform(16000, &audio);
+            recognizer.decode(&stream);
+            let text = stream.get_result().map(|r| r.text).unwrap_or_default();
+            let char_count = text.chars().count();
+            let preview: String = text.chars().take(80).collect();
+
+            eprintln!(
+                "temp={temp:.0e} top_p={top_p:.2} chars={char_count:5} text={preview}"
+            );
+        }
+
+        eprintln!("{:-<72}", "");
+        eprintln!("Production default: temperature=1e-6 (effectively greedy, numerically stable).");
+        eprintln!("Update transcription.rs Qwen3Asr arm if a different cell is clearly superior.");
     }
 }
