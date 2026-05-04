@@ -33,17 +33,55 @@ private final class SyncBox<T>: @unchecked Sendable {
 }
 
 /// Runs an async closure synchronously by blocking a DispatchSemaphore.
-/// Required because @_cdecl cannot be async, but mlx-audio-swift uses async/await.
-/// The @Sendable annotation satisfies Swift 6 strict concurrency checks.
+///
+/// The async-to-sync dance is non-trivial when this bridge is loaded into a
+/// non-Swift host process (e.g. a Rust binary via static link): Swift's
+/// cooperative thread pool does NOT auto-initialise without a Swift `main` /
+/// SwiftUI App entry, so `Task { ... }` and `Task.detached { ... }` both sit
+/// on an empty queue and never run — the calling thread blocks on the
+/// semaphore forever.
+///
+/// Workaround: spin up a dedicated pthread with its own RunLoop, then submit
+/// the async work to a serial DispatchQueue inside that thread. The RunLoop
+/// gives Swift Concurrency the dispatch context it needs to actually schedule
+/// the Task. The outer semaphore bridges the result back to the caller.
 private func runSync<T: Sendable>(_ body: @Sendable @escaping () async throws -> T) throws -> T {
     let box = SyncBox<T>()
-    let sem = DispatchSemaphore(value: 0)
-    Task { @Sendable in
-        do { box.value = try await body() }
-        catch { box.error = error }
-        sem.signal()
+    let outerSem = DispatchSemaphore(value: 0)
+
+    let workerThread = Thread {
+        autoreleasepool {
+            let innerSem = DispatchSemaphore(value: 0)
+            Task.detached(priority: .userInitiated) { @Sendable in
+                do { box.value = try await body() }
+                catch { box.error = error }
+                innerSem.signal()
+            }
+            // Drive the RunLoop in 50 ms slices until the Task completes.
+            // RunLoop activity gives Swift Concurrency a host context so the
+            // Task is actually scheduled.
+            //
+            // 30-minute hard ceiling: covers the worst-case "first use"
+            // path where mlx-audio-swift downloads ~3.5 GB of Voxtral
+            // weights to its cache subdir before transcribing. After
+            // weights are cached, real-world inference is sub-30 s on
+            // M-series.
+            let deadline = Date(timeIntervalSinceNow: 1800)
+            while innerSem.wait(timeout: .now() + .milliseconds(10)) == .timedOut {
+                RunLoop.current.run(mode: .default, before: Date(timeIntervalSinceNow: 0.05))
+                if Date() > deadline {
+                    box.error = BridgeError.timeout
+                    break
+                }
+            }
+            outerSem.signal()
+        }
     }
-    sem.wait()
+    workerThread.qualityOfService = .userInitiated
+    workerThread.name = "mlx-audio-bridge-runner"
+    workerThread.start()
+
+    outerSem.wait()
     if let error = box.error { throw error }
     return box.value!
 }
@@ -195,4 +233,5 @@ private func loadSTTModel(repo: String) async throws -> any STTGenerationModel {
 private enum BridgeError: Error {
     case fileNotFound(String)
     case unsupportedModel(String)
+    case timeout
 }

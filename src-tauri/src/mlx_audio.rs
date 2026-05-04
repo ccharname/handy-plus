@@ -73,6 +73,15 @@ pub fn bridge_version() -> Result<String, String> {
 /// Returns the transcribed text on success, or a descriptive error string.
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 pub fn transcribe_file(wav_path: &Path, model_id: &str) -> Result<String, String> {
+    // Ensure default.metallib is colocated next to the running executable so
+    // mlx-c's `load_colocated_library` finds it. Tauri bundles the metallib
+    // into Contents/Resources/mlx/default.metallib (declared in tauri.conf.json
+    // resources). On first call, install it as Contents/MacOS/mlx.metallib
+    // (relative to current_exe).
+    if let Err(e) = ensure_metallib_installed() {
+        log::warn!("[mlx_audio] metallib install warning (best-effort): {}", e);
+    }
+
     let c_path = CString::new(
         wav_path
             .to_str()
@@ -125,4 +134,78 @@ pub fn transcribe_file(wav_path: &Path, model_id: &str) -> Result<String, String
 #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
 pub fn transcribe_file(_wav_path: &Path, _model_id: &str) -> Result<String, String> {
     Err("MLX audio bridge is only available on macOS Apple Silicon".to_string())
+}
+
+/// Install `mlx.metallib` next to the running executable if missing, copying
+/// from the Tauri resource bundle path or the `MLX_METALLIB_PATH` env var.
+///
+/// mlx-c's `load_colocated_library` looks for `<binary_dir>/mlx.metallib`
+/// before the SwiftPM bundle / Resources fallback. Tauri puts our resource
+/// metallib at `<binary_dir>/../Resources/mlx/default.metallib`, which is
+/// NOT the colocated path mlx-c searches first. Cheapest fix: copy on first
+/// use to the path mlx-c actually looks for.
+///
+/// Idempotent — does nothing if the destination already exists with non-zero
+/// size. Best-effort — failures are non-fatal so `cargo run --example` (no
+/// .app bundle) still works if MLX_METALLIB_PATH is set, and so a missing
+/// resource doesn't crash the load path before mlx-c runs its full fallback
+/// chain (which would surface a more informative error).
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+fn ensure_metallib_installed() -> Result<(), String> {
+    use std::fs;
+
+    let exe = std::env::current_exe().map_err(|e| format!("current_exe: {e}"))?;
+    let exe_dir = exe
+        .parent()
+        .ok_or_else(|| "current_exe has no parent dir".to_string())?;
+
+    // Target name matches mlx-c's `load_colocated_library(device, "mlx")`
+    // which appends ".metallib" if the path has no extension.
+    let dest = exe_dir.join("mlx.metallib");
+
+    // Already installed and non-empty → done.
+    if let Ok(meta) = fs::metadata(&dest) {
+        if meta.len() > 0 {
+            return Ok(());
+        }
+    }
+
+    // Find a source. Priority:
+    //   1. MLX_METALLIB_PATH env var (override for `cargo run --example` etc.)
+    //   2. Tauri resource bundle: <exe_dir>/../Resources/mlx/default.metallib
+    //   3. <exe_dir>/mlx/default.metallib (some bundle layouts)
+    let candidates: Vec<std::path::PathBuf> = {
+        let mut v = Vec::new();
+        if let Ok(p) = std::env::var("MLX_METALLIB_PATH") {
+            v.push(std::path::PathBuf::from(p));
+        }
+        v.push(exe_dir.join("../Resources/mlx/default.metallib"));
+        v.push(exe_dir.join("mlx/default.metallib"));
+        v
+    };
+
+    let src = candidates
+        .into_iter()
+        .find(|p| p.exists() && fs::metadata(p).map(|m| m.len() > 0).unwrap_or(false))
+        .ok_or_else(|| {
+            format!(
+                "no metallib source found (set MLX_METALLIB_PATH or bundle \
+                 to {}/../Resources/mlx/default.metallib)",
+                exe_dir.display()
+            )
+        })?;
+
+    fs::copy(&src, &dest)
+        .map_err(|e| format!("copy {:?} → {:?}: {}", src, dest, e))?;
+    log::info!(
+        "[mlx_audio] installed metallib: {:?} → {:?}",
+        src,
+        dest
+    );
+    Ok(())
+}
+
+#[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+fn ensure_metallib_installed() -> Result<(), String> {
+    Ok(())
 }

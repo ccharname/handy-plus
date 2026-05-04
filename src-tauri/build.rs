@@ -694,6 +694,21 @@ fn build_mlx_audio_bridge() {
         println!("cargo:rustc-link-lib=framework={framework}");
     }
 
+    // Swift runtime libs that bridge.swift uses transitively. Without explicit
+    // link directives, libswift_Concurrency / libswiftFoundation are dropped
+    // by the linker (Cargo doesn't autolink Swift libs the way swiftc does)
+    // and `Task { ... }` calls become silent no-ops at runtime — Tasks never
+    // execute and any `await` blocks the calling thread forever. The pthread
+    // bridge in bridge.swift::runSync depends on Concurrency to schedule the
+    // detached task that drives mlx-audio-swift's async API.
+    for swift_lib in &[
+        "swift_Concurrency",
+        "swiftFoundation",
+        "swiftCore",
+    ] {
+        println!("cargo:rustc-link-lib={swift_lib}");
+    }
+
     println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
 }
 
