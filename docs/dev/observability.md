@@ -164,6 +164,46 @@ Run `handy-logs breakdown --since 1h` after 50 consecutive recordings and look f
    ./scripts/handy-logs.sh assert --stage t0_hotkey --p50-max 30 --p99-max 80
    ```
 
+## Qwen3-MLX sub-span interpretation (M3)
+
+The `t5_inference` stage for `preset=qwen3_mlx` emits additional sub-metrics in the `extra` field:
+
+| Field | Meaning | How to read |
+|---|---|---|
+| `first_token_ms` | Time from bridge entry to first token / batch result (ms) | **Phase C2**: equals total bridge round-trip (batch WAV → Swift → result). **Phase C3 streaming**: will be real first-token latency. |
+| `inference_ms` | Total inference wall time (ms) | `first_token_ms` ≤ `inference_ms` always. |
+| `rtf` | Real-time factor: `inference_ms / audio_duration_ms` | Target p50 ≤ 0.40, p99 ≤ 0.70 |
+| `audio_duration_ms` | Duration of the input audio (ms) | Use to compute how long the recording was. |
+| `c2_batch` | `true` when using Phase C2 batch path | Distinguishes from future C3 streaming events. |
+| `cancelled_post_bridge` | `true` if cancel was requested during bridge call | Outcome will be `cancelled`, result discarded. |
+
+**Example log event** (Phase C2):
+```json
+{
+  "fields": {
+    "request_id": "01HX...",
+    "stage": "t5_inference",
+    "outcome": "ok",
+    "duration_ms": 380.0,
+    "extra": "preset=qwen3_mlx inference_ms=380 audio_duration_ms=8500 rtf=0.045 first_token_ms=380 transcript_char_count=52 c2_batch=true"
+  }
+}
+```
+
+### Qwen3-MLX latency triage recipe
+
+If `first_token_ms` p99 > 800ms, check in order:
+
+1. **Is `cold=true` on first run?** → Model loading (`mlx-audio-swift` loads from HF cache on first call). Cold start is expected once per session; subsequent calls will be fast.
+2. **Is the HF cache intact?** → Run `handy-logs.sh assert --stage t5_inference --preset qwen3_mlx --metric first_token_ms --p50-max 400 --p99-max 800`. If only cold-start runs push p99 up, the model is fine.
+3. **Is `audio_duration_ms` unusually large?** → Long recordings drive both `first_token_ms` and `rtf` up. Check if the recording was longer than intended (VAD silence gate may not have fired).
+4. **Is `inference_ms` consistently high on warm runs?** → Metal GPU contention (other GPU workloads running). Check via `sudo powermetrics --samplers gpu_power -i 500`.
+
+### Phase C2 vs C3 notes
+
+- **Phase C2 (current)**: batch WAV → Swift bridge → full result. `first_token_ms` = total bridge time. No streaming to UI during inference.
+- **Phase C3 (future)**: streaming token callbacks. `first_token_ms` will be the real time from recording end to first emitted token. The `streaming_chunk_ms[]` field (array of per-chunk intervals) will appear in the extra payload.
+
 ## Notes on t3/t4 inline measurement
 
 VAD (t3) and resample (t4) run frame-by-frame inside the audio consumer thread and are not separated from the recording wall-clock time (t2). The current implementation emits placeholder events with `duration_ms=0` and `note=inline_with_recording` for t3/t4. Real per-frame timing is tracked as a M4 improvement item.

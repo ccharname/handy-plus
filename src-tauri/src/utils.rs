@@ -25,12 +25,17 @@ pub fn cancel_current_operation(app: &AppHandle) {
     let recording_was_active = audio_manager.is_recording();
     audio_manager.cancel_recording();
 
+    // Signal MlxAudio inference to discard any in-flight result.
+    // This is a best-effort post-bridge discard: the Swift bridge cannot be
+    // interrupted mid-call, but the result will be dropped and logged as cancelled.
+    let tm = app.state::<Arc<TranscriptionManager>>();
+    tm.mark_cancelled();
+
     // Update tray icon and hide overlay
     change_tray_icon(app, crate::tray::TrayIconState::Idle);
     hide_recording_overlay(app);
 
-    // Unload model if immediate unload is enabled
-    let tm = app.state::<Arc<TranscriptionManager>>();
+    // Unload model if immediate unload is enabled (reuse `tm` already bound above).
     tm.maybe_unload_immediately("cancellation");
 
     // Notify coordinator so it can keep lifecycle state coherent.
