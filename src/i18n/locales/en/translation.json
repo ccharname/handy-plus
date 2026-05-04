@@ -683,6 +683,14 @@
       "appleNative": {
         "name": "Apple Native",
         "description": "Apple Speech with CT-Punc punctuation patch. Lowest latency for short commands."
+      },
+      "experimentalQwen3": {
+        "name": "Qwen3-ASR (Experimental)",
+        "description": "Tongyi 2026-01 SOTA. 2.5 GB int8 model. Excellent Chinese accuracy, 52-language auto-detect. Long-audio auto-chunking."
+      },
+      "experimentalVoxtral": {
+        "name": "Voxtral (Experimental)",
+        "description": "Voxtral Realtime 4-bit via mlx-audio-swift. ⚠️ Measured p50 ~10s + Cantonese outputs Devanagari + Hokkien returns empty — Chinese dialects not usable, prefer Qwen3-ASR. Apple Silicon only. First use downloads ~3.5 GB weights."
       }
     }
   },
