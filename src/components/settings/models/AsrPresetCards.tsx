@@ -110,7 +110,7 @@ export const AsrPresetCards: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="flex flex-col gap-2">
         {presets.map((preset) => {
           const isActive = activePresetId === preset.id;
           const isThisSwitching = switchingPresetId === preset.id;
@@ -119,38 +119,40 @@ export const AsrPresetCards: React.FC = () => {
           return (
             <div
               key={preset.id}
-              className={`relative flex flex-col p-4 rounded-xl border transition-all ${
+              className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
                 isActive
                   ? "border-logo-primary bg-logo-primary/5"
                   : "border-mid-gray/40 bg-mid-gray/5 hover:border-mid-gray/60"
               }`}
             >
-              {/* Active badge */}
-              {isActive && (
-                <span className="absolute top-2 right-2 text-xs font-semibold text-logo-primary bg-logo-primary/15 px-2 py-0.5 rounded-full">
-                  {t("settings.asrPresets.active")}
-                </span>
-              )}
+              {/* Icon */}
+              <span className="text-2xl leading-none flex-shrink-0">
+                {preset.icon}
+              </span>
 
-              {/* Icon + name */}
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl leading-none">{preset.icon}</span>
-                <span className="text-sm font-semibold truncate">
-                  {getPresetName(preset)}
-                </span>
+              {/* Name + description (middle, flex-1 takes remaining space) */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-sm font-semibold">
+                    {getPresetName(preset)}
+                  </span>
+                  {isActive && (
+                    <span className="text-xs font-semibold text-logo-primary bg-logo-primary/15 px-2 py-0.5 rounded-full flex-shrink-0">
+                      {t("settings.asrPresets.active")}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-text/50 leading-relaxed">
+                  {getPresetDescription(preset)}
+                </p>
               </div>
 
-              {/* Description */}
-              <p className="text-xs text-text/50 mb-3 flex-1 leading-relaxed">
-                {getPresetDescription(preset)}
-              </p>
-
-              {/* Apply button */}
+              {/* Apply button (right, fixed width) */}
               <button
                 type="button"
                 disabled={isSwitching || isActive}
                 onClick={() => handleApply(preset)}
-                className={`w-full py-1.5 px-3 rounded-lg text-xs font-medium transition-colors ${
+                className={`flex-shrink-0 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
                   isActive
                     ? "bg-logo-primary/20 text-logo-primary cursor-default"
                     : isSwitching
