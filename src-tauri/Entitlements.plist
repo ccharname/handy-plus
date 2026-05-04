@@ -6,10 +6,21 @@
     <true/>
     <key>com.apple.security.device.audio-input</key>
     <true/>
-    <!-- Required for MLX Metal JIT shader compilation (mlx-audio-swift bridge).
-         Without this entitlement the hardened runtime blocks mmap(MAP_JIT) and
-         the Metal shader compiler fails at runtime with a SIGKILL. -->
+    <!-- MLX Metal JIT shader compilation (mlx-audio-swift bridge).
+         Apple recommends `cs.allow-jit` for modern JIT under hardened runtime
+         (macOS 11+); `cs.allow-unsigned-executable-memory` is the legacy
+         broader form kept as belt-and-suspenders. Without these the kernel
+         SIGKILLs the process when MLX maps RWX pages for shader code and
+         no crash log is produced. -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
     <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <!-- mlx-audio-swift loads SPM-bundled dylibs (mlx-swift, swift-transformers,
+         tokenizers, etc.). Library validation under hardened runtime blocks
+         dlopen of dylibs whose codesigning team ID doesn't match ours
+         (our self-signed identity vs upstream package adhoc signatures). -->
+    <key>com.apple.security.cs.disable-library-validation</key>
     <true/>
   </dict>
 </plist>
