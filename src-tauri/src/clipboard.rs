@@ -44,9 +44,10 @@ pub fn compute_delta(prev_cumulative: &str, new_cumulative: &str) -> Option<Stri
 ///
 /// This is intentionally a thin wrapper — it reuses all existing paste helpers
 /// and respects the user's configured `paste_method`.  It deliberately does NOT:
-/// - append a trailing space (that is a final-paste responsibility)
-/// - fire auto-submit (same reason)
-/// - write to the clipboard save after pasting (final paste handles that once)
+///   - append a trailing space (that is a final-paste responsibility)
+///   - fire auto-submit (same reason)
+///   - write to the clipboard save after pasting (final paste handles that once)
+///
 /// Reserved for future streaming ASR support.
 #[allow(dead_code)]
 pub fn paste_incremental(delta: String, app_handle: AppHandle) -> Result<(), String> {

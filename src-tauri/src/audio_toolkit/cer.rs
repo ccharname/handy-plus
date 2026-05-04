@@ -5,7 +5,6 @@
 /// Both reference and hypothesis are tokenised by Unicode scalar value (char),
 /// so the metric works correctly for CJK text where characters are the natural
 /// unit of measure and for ASCII / mixed language strings alike.
-
 /// Compute the Levenshtein edit distance between two char sequences.
 ///
 /// Uses the classic O(m*n) DP matrix.  Suitable for per-utterance corpus

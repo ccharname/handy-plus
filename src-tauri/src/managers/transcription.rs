@@ -130,6 +130,17 @@ pub struct TranscriptionManager {
     ///
     /// Cost: one `Ordering::Relaxed` load per inference call (≤ 1 ns).
     mlx_cancel_flag: Arc<AtomicBool>,
+    /// Cached SileroVad session for post-recording VAD operations (Qwen3 chunking
+    /// and FunASR-Nano pre-filter).  Lazy-initialised on first use and then
+    /// reused across all calls by resetting the LSTM state before each audio.
+    ///
+    /// Caching avoids the onnxruntime session creation cost (~5–30 ms) on every
+    /// transcription call.  Protected by a Mutex because `SileroVad::compute`
+    /// takes `&mut self` (stateful LSTM).  Only one transcription can run at a
+    /// time (the engine is also exclusively locked during inference), so there
+    /// is no contention in practice — the Mutex is purely for safe shared
+    /// ownership via `Arc`.
+    inference_vad: Arc<Mutex<Option<crate::audio_toolkit::SileroVad>>>,
 }
 
 impl TranscriptionManager {
@@ -147,6 +158,7 @@ impl TranscriptionManager {
             incremental_paste_cursor: Arc::new(Mutex::new(String::new())),
             last_incremental_paste_at: Arc::new(Mutex::new(None)),
             mlx_cancel_flag: Arc::new(AtomicBool::new(false)),
+            inference_vad: Arc::new(Mutex::new(None)),
         };
 
         // Start the idle watcher
@@ -178,7 +190,7 @@ impl TranscriptionManager {
                     // model is never unloaded mid-session.
                     let is_recording = app_handle_cloned
                         .try_state::<Arc<AudioRecordingManager>>()
-                        .map_or(false, |a| a.is_recording());
+                        .is_some_and(|a| a.is_recording());
                     if is_recording {
                         manager_cloned.touch_activity();
                         continue;
@@ -872,6 +884,42 @@ impl TranscriptionManager {
         self.mlx_cancel_flag.load(Ordering::Acquire)
     }
 
+    /// Acquire the cached inference VAD (for Qwen3 chunking and FunASR pre-filter).
+    ///
+    /// On first call: loads the Silero ONNX model and caches the session.
+    /// On subsequent calls: resets the LSTM state (`h_tensor`, `c_tensor`) so
+    /// the cached session behaves as if freshly created.
+    ///
+    /// Returns `None` if the VAD model file cannot be resolved or loaded.
+    fn acquire_inference_vad(&self) -> Option<std::sync::MutexGuard<'_, Option<crate::audio_toolkit::SileroVad>>> {
+        let vad_path = self.app_handle.path().resolve(
+            "resources/models/silero_vad_v4.onnx",
+            tauri::path::BaseDirectory::Resource,
+        ).ok()?;
+
+        let mut guard = self.inference_vad.lock().unwrap_or_else(|p| p.into_inner());
+        if guard.is_none() {
+            match crate::audio_toolkit::SileroVad::new(&vad_path, 0.3) {
+                Ok(vad) => {
+                    debug!("inference_vad: initialised SileroVad session (cache_hit=false)");
+                    *guard = Some(vad);
+                }
+                Err(e) => {
+                    warn!("inference_vad: failed to create SileroVad: {}; returning None", e);
+                    return None;
+                }
+            }
+        } else {
+            // Reset LSTM state so this audio file is classified independently.
+            if let Some(ref mut v) = *guard {
+                use crate::audio_toolkit::VoiceActivityDetector;
+                v.reset();
+            }
+            debug!("inference_vad: reusing cached SileroVad session (cache_hit=true)");
+        }
+        Some(guard)
+    }
+
     /// Transcribe audio, optionally overriding the language from settings.
     /// Pass `override_language = None` to use the language stored in settings.
     pub fn transcribe_with_language_override(
@@ -1307,22 +1355,20 @@ impl TranscriptionManager {
                 if matches!(session.kind, SherpaModelKind::Qwen3Asr) && audio.len() > 16_000 * 30 {
                     // EOS-safety chunking: split at VAD boundaries, ≤25 s per chunk.
                     let t0 = std::time::Instant::now();
-                    let vad_path_result = self.app_handle.path().resolve(
-                        "resources/models/silero_vad_v4.onnx",
-                        tauri::path::BaseDirectory::Resource,
-                    );
 
                     // Constants used across all chunking paths.
                     // Chunk size = 8 s; overlap = 1 s prepended to the next chunk
                     // to give the model enough context for dedup at boundaries.
                     const FRAME_SAMPLES: usize = 480; // 30 ms @ 16 kHz
                     const MAX_CHUNK_SAMPLES: usize = 16_000 * 25; // 25 s — EOS safety
-                    const OVERLAP_SAMPLES: usize = 16_000 * 1; // 1 s overlap
+                    const OVERLAP_SAMPLES: usize = 16_000; // 1 s overlap
 
-                    let chunks: Vec<Vec<f32>> = match vad_path_result {
-                        Ok(vad_path) => {
-                            match crate::audio_toolkit::SileroVad::new(&vad_path, 0.3) {
-                                Ok(mut vad) => {
+                    // Use the cached VAD session (acquire_inference_vad resets LSTM state
+                    // so each audio file is classified independently).
+                    let mut vad_guard = self.acquire_inference_vad();
+
+                    let chunks: Vec<Vec<f32>> = match vad_guard.as_deref_mut() {
+                        Some(Some(ref mut vad)) => {
                                     // Segment the full audio into speech chunks using
                                     // the same 30 ms frame size Silero was trained on.
                                     // When a chunk reaches MAX_CHUNK_SAMPLES, flush it
@@ -1384,32 +1430,9 @@ impl TranscriptionManager {
                                     );
                                     all_chunks
                                 }
-                                Err(e) => {
-                                    warn!(
-                                        "Qwen3-ASR: VAD init failed ({}); falling back to naive 8s split",
-                                        e
-                                    );
-                                    // Naive split with 1 s overlap
-                                    let mut naive_chunks: Vec<Vec<f32>> = Vec::new();
-                                    let mut pos = 0usize;
-                                    while pos < audio.len() {
-                                        let end = (pos + MAX_CHUNK_SAMPLES).min(audio.len());
-                                        naive_chunks.push(audio[pos..end].to_vec());
-                                        if end == audio.len() {
-                                            break;
-                                        }
-                                        // advance by (chunk - overlap) so next chunk
-                                        // begins 1 s before the previous chunk ended
-                                        pos += MAX_CHUNK_SAMPLES.saturating_sub(OVERLAP_SAMPLES);
-                                    }
-                                    naive_chunks
-                                }
-                            }
-                        }
-                        Err(e) => {
+                        _ => {
                             warn!(
-                                "Qwen3-ASR: VAD model path resolution failed ({}); falling back to naive 8s split",
-                                e
+                                "Qwen3-ASR: VAD session unavailable; falling back to naive 8s split"
                             );
                             // Naive split with 1 s overlap
                             let mut naive_chunks: Vec<Vec<f32>> = Vec::new();
@@ -1420,11 +1443,16 @@ impl TranscriptionManager {
                                 if end == audio.len() {
                                     break;
                                 }
+                                // advance by (chunk - overlap) so next chunk
+                                // begins 1 s before the previous chunk ended
                                 pos += MAX_CHUNK_SAMPLES.saturating_sub(OVERLAP_SAMPLES);
                             }
                             naive_chunks
                         }
                     };
+                    // Release the VAD lock before starting sherpa inference so the
+                    // lock is not held during the potentially long decode loop.
+                    drop(vad_guard);
 
                     let n_chunks = chunks.len();
                     let mut parts: Vec<String> = Vec::with_capacity(n_chunks);
@@ -1509,25 +1537,19 @@ impl TranscriptionManager {
                         const FRAME_SAMPLES: usize = 480; // 30 ms @ 16 kHz
                         const MIN_VOICE_FRAMES: usize = 8; // 240 ms threshold
 
-                        let vad_ok = self
-                            .app_handle
-                            .path()
-                            .resolve(
-                                "resources/models/silero_vad_v4.onnx",
-                                tauri::path::BaseDirectory::Resource,
-                            )
-                            .ok()
-                            .and_then(|vad_path| {
-                                crate::audio_toolkit::SileroVad::new(&vad_path, 0.3).ok()
-                            });
-
-                        if let Some(mut vad) = vad_ok {
+                        // Use the cached VAD session (acquire_inference_vad resets
+                        // LSTM state so each audio file is classified independently).
+                        let mut vad_guard = self.acquire_inference_vad();
+                        if let Some(Some(ref mut vad)) = vad_guard.as_deref_mut() {
                             let total_frames = audio.len() / FRAME_SAMPLES;
                             let voice_frames = audio
                                 .chunks(FRAME_SAMPLES)
                                 .filter(|f| f.len() == FRAME_SAMPLES)
                                 .filter(|f| vad.is_voice(f).unwrap_or(true))
                                 .count();
+                            // Release the lock before (potentially) returning early so we
+                            // don't hold it across the Sherpa inference.
+                            drop(vad_guard);
 
                             if voice_frames < MIN_VOICE_FRAMES {
                                 debug!(
@@ -1544,7 +1566,7 @@ impl TranscriptionManager {
                                 voice_frames
                             );
                         } else {
-                            warn!("FunASR-Nano: VAD init failed; skipping pre-filter (fail-open)");
+                            warn!("FunASR-Nano: VAD session unavailable; skipping pre-filter (fail-open)");
                         }
                     }
 

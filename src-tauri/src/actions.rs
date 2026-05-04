@@ -368,7 +368,7 @@ pub(crate) async fn post_process_transcription(
         // Resolve which prompt to use: profile override > global setting
         let effective_prompt_id = effective
             .and_then(|e| e.post_process_selected_prompt_id.as_deref())
-            .or_else(|| settings.post_process_selected_prompt_id.as_deref());
+            .or(settings.post_process_selected_prompt_id.as_deref());
 
         let selected_prompt_id = match effective_prompt_id {
             Some(id) => id.to_string(),
@@ -582,7 +582,7 @@ pub(crate) async fn process_transcription_output(
             let prompt_id = effective
                 .post_process_selected_prompt_id
                 .as_deref()
-                .or_else(|| settings.post_process_selected_prompt_id.as_deref());
+                .or(settings.post_process_selected_prompt_id.as_deref());
 
             if let Some(pid) = prompt_id {
                 if let Some(prompt) = settings.post_process_prompts.iter().find(|p| p.id == pid) {

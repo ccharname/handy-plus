@@ -232,6 +232,8 @@ where
     // Box the closure so we can pass it through `*mut c_void`.
     // We use a double-box so the fat pointer is stored on the heap and we can
     // cast it to a thin `*mut c_void`.
+    // The double-boxed type is complex but intentional; factoring it out would reduce clarity.
+    #[allow(clippy::type_complexity)]
     let boxed: Box<Box<dyn FnMut(&str) + Send>> = Box::new(Box::new(on_partial));
     let user_data: *mut c_void = Box::into_raw(boxed) as *mut c_void;
 

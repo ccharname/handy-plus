@@ -425,7 +425,7 @@ fn convert_ratio_value(original: &str) -> String {
 fn convert_time_value(original: &str) -> String {
     // Split on 点 分 秒
     let parts: Vec<&str> = original
-        .split(|c| c == '点' || c == '分' || c == '秒')
+        .split(['点', '分', '秒'])
         .filter(|s| !s.is_empty())
         .collect();
 
