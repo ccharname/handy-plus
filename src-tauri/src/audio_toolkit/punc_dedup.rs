@@ -150,4 +150,83 @@ mod tests {
             "是吗？真的吗？"
         );
     }
+
+    // ── M2 additional coverage ────────────────────────────────────────────────
+
+    /// Chinese-English mixed input: punctuation should still collapse.
+    #[test]
+    fn chinese_english_mixed_punc_collapses() {
+        assert_eq!(
+            collapse_repeated_punctuation("hello 你好，，world"),
+            "hello 你好，world"
+        );
+        assert_eq!(
+            collapse_repeated_punctuation("test 测试。。done"),
+            "test 测试。done"
+        );
+    }
+
+    /// Numbers with repeated punctuation: still collapses.
+    #[test]
+    fn digit_string_punc_collapses() {
+        assert_eq!(collapse_repeated_punctuation("123，，456"), "123，456");
+        assert_eq!(
+            collapse_repeated_punctuation("100。。200。。300"),
+            "100。200。300"
+        );
+    }
+
+    /// Repeated short phrase dedup is NOT the job of collapse_repeated_punctuation
+    /// (that's a sentence-level concern).  Verify the function does NOT remove
+    /// non-adjacent duplicate content — only adjacent duplicate *punctuation*.
+    #[test]
+    fn repeated_short_phrase_not_deduplicated() {
+        // "你好 你好 你好" has no repeated adjacent punctuation → unchanged
+        assert_eq!(
+            collapse_repeated_punctuation("你好 你好 你好"),
+            "你好 你好 你好"
+        );
+    }
+
+    /// Long sentence should not be incorrectly truncated.
+    #[test]
+    fn long_sentence_not_modified_without_adjacent_dup_punc() {
+        let long = "长句子结尾。另一个完整句子结尾。";
+        // Only one period per sentence boundary → nothing to collapse.
+        assert_eq!(collapse_repeated_punctuation(long), long);
+    }
+
+    /// Empty string → empty string (no panic).
+    #[test]
+    fn empty_string_returns_empty() {
+        assert_eq!(collapse_repeated_punctuation(""), "");
+    }
+
+    /// Single character (punctuation or not) → passes through unchanged.
+    #[test]
+    fn single_char_passthrough() {
+        assert_eq!(collapse_repeated_punctuation("a"), "a");
+        assert_eq!(collapse_repeated_punctuation("。"), "。");
+        assert_eq!(collapse_repeated_punctuation("好"), "好");
+    }
+
+    /// Standard punctuation normalisation: two adjacent same-class marks → one.
+    #[test]
+    fn punctuation_normalization_double_to_single() {
+        // CJK double period
+        assert_eq!(collapse_repeated_punctuation("结束了。。"), "结束了。");
+        // ASCII double comma
+        assert_eq!(collapse_repeated_punctuation("a,,b"), "a,b");
+        // CJK double question mark
+        assert_eq!(collapse_repeated_punctuation("真的吗？？"), "真的吗？");
+        // Mixed CJK/ASCII same class
+        assert_eq!(collapse_repeated_punctuation("好。.续"), "好。续");
+    }
+
+    /// Three adjacent same-class marks → single mark.
+    #[test]
+    fn triple_punctuation_collapses_to_single() {
+        assert_eq!(collapse_repeated_punctuation("好。。。"), "好。");
+        assert_eq!(collapse_repeated_punctuation("真的？？？"), "真的？");
+    }
 }
