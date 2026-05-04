@@ -67,21 +67,22 @@ private func transcribeImpl(
     timeoutMs: Int32,
     onPartial: ((String) -> Void)?
 ) -> UnsafeMutablePointer<AppleSpeechResponse> {
-    // TEMPORARILY DISABLED: SpeechAnalyzer path crashes with SIGTRAP at
-    // SpeechRecognizerWorker.preRunRecognition() — root cause is the per-locale
-    // model has not been pre-downloaded via SpeechTranscriber.downloadModel(for:),
-    // and Apple's worker fatal-errors when it tries to run an uninstalled model.
-    //
-    // Crash: handy-2026-05-03-231748.ips, EXC_BREAKPOINT in cooperative queue.
-    //
-    // To re-enable, the SpeechAnalyzer path must first await
-    // `SpeechTranscriber.supportedLocales(for: .transcription)` then
-    // `downloadModel(for: locale)` if not already installed. Until that flow
-    // is wired, force-fall through to the legacy SFSpeechRecognizer path.
-    //
-    // if #available(macOS 26.0, *) {
-    //     return transcribeImplSpeechAnalyzer(...)
-    // }
+    // macOS 26+: SpeechAnalyzer (new engine, always on-device).
+    // ensureModel() runs inside transcribeImplSpeechAnalyzer before analysis starts,
+    // so the per-locale model is guaranteed installed before SpeechAnalyzer runs.
+    if #available(macOS 26.0, *) {
+        return transcribeImplSpeechAnalyzer(
+            samples: samples,
+            sampleCount: sampleCount,
+            sampleRate: sampleRate,
+            localeBcp47: localeBcp47,
+            contextualStrings: contextualStrings,
+            contextualCount: contextualCount,
+            requireOnDevice: requireOnDevice,
+            timeoutMs: timeoutMs,
+            onPartial: onPartial
+        )
+    }
     return transcribeImplLegacy(
         samples: samples,
         sampleCount: sampleCount,
@@ -209,6 +210,19 @@ private func transcribeImplSpeechAnalyzer(
     // The group awaits both before returning; if either throws, the group cancels.
     let task = Task {
         do {
+            // Ensure the per-locale model is downloaded and reserved before we
+            // start analysis.  Without this, SpeechRecognizerWorker.preRunRecognition()
+            // fatal-errors (SIGTRAP) when the on-device model is not installed.
+            // On first use this may trigger a background download; subsequent calls
+            // are fast (model already reserved).
+            do {
+                try await ensureModelForSpeechAnalyzer(transcriber: transcriber, locale: locale)
+            } catch {
+                box.error = "ENGINE: ensureModel failed for locale '\(locale.identifier)': \(error.localizedDescription)"
+                semaphore.signal()
+                return
+            }
+
             // Set context before starting so contextual strings are applied.
             try await analyzer.setContext(analysisContext)
 
@@ -662,4 +676,92 @@ public func freeAppleSpeechResponse(_ response: UnsafeMutablePointer<AppleSpeech
     }
 
     response.deallocate()
+}
+
+// MARK: - SpeechAnalyzer model-availability helpers (macOS 26+)
+//
+// These helpers ensure the per-locale SpeechTranscriber model is downloaded and
+// reserved (AssetInventory.reserve) before analysis starts.  Without this,
+// SpeechRecognizerWorker.preRunRecognition() fatal-errors (SIGTRAP/EXC_BREAKPOINT)
+// when the model is absent.
+//
+// Ported and simplified from swift-scribe/Scribe/Transcription/Transcription.swift
+// (Transcription extension, lines 165-311). Differences from the original:
+//   • No SwiftUI / @Observable dependencies.
+//   • No fallback-to-en-US silent language switch — if the requested locale is
+//     not supported, we throw immediately so the Rust caller can decide.
+//     (handy users often send zh-CN; silently switching to en-US is wrong.)
+//   • Debug log lines use "[apple_speech]" prefix, matching handy conventions.
+
+/// Top-level entry: ensure the model for `locale` is downloaded and reserved.
+/// Throws on any unrecoverable failure so the caller can surface a clear ENGINE: error.
+@available(macOS 26.0, *)
+private func ensureModelForSpeechAnalyzer(transcriber: SpeechTranscriber, locale: Locale) async throws {
+    print("[apple_speech] ensureModel: locale=\(locale.identifier)")
+
+    // Step 1: download any assets the transcriber needs (no-op if already cached).
+    try await speechAnalyzerDownloadIfNeeded(for: transcriber)
+
+    // Step 2: verify this locale is advertised as supported by SpeechTranscriber.
+    let supportedLocales = await SpeechTranscriber.supportedLocales
+    print("[apple_speech] ensureModel: \(supportedLocales.count) supported locales")
+
+    guard !supportedLocales.isEmpty else {
+        throw NSError(
+            domain: "AppleSpeech", code: -1,
+            userInfo: [NSLocalizedDescriptionKey:
+                "No supported locales available for SpeechTranscriber — system Speech assets may be missing."])
+    }
+
+    guard await speechAnalyzerSupported(locale: locale) else {
+        // Log all supported locales to help diagnose Chinese locale availability.
+        let ids = supportedLocales.map { $0.identifier(.bcp47) }.sorted().joined(separator: ", ")
+        print("[apple_speech] ensureModel: locale '\(locale.identifier)' NOT supported. Supported: \(ids)")
+        throw NSError(
+            domain: "AppleSpeech", code: -2,
+            userInfo: [NSLocalizedDescriptionKey:
+                "Locale \(locale.identifier) is not supported by SpeechTranscriber on this system."])
+    }
+
+    // Step 3: reserve (allocate) the locale so the model is ready in memory.
+    try await speechAnalyzerReserveLocale(locale: locale)
+    print("[apple_speech] ensureModel: locale '\(locale.identifier)' reserved OK")
+}
+
+/// Download any SpeechTranscriber assets that have not been installed yet.
+/// Uses AssetInventory.assetInstallationRequest which returns nil when nothing needs downloading.
+@available(macOS 26.0, *)
+private func speechAnalyzerDownloadIfNeeded(for module: SpeechTranscriber) async throws {
+    if let downloader = try await AssetInventory.assetInstallationRequest(supporting: [module]) {
+        print("[apple_speech] downloadIfNeeded: starting asset download...")
+        try await downloader.downloadAndInstall()
+        print("[apple_speech] downloadIfNeeded: asset download complete")
+    } else {
+        print("[apple_speech] downloadIfNeeded: assets already present, no download needed")
+    }
+}
+
+/// Returns true if `locale` appears in SpeechTranscriber.supportedLocales.
+/// Compares both plain identifier and BCP-47 form to handle "zh_CN" vs "zh-CN" differences.
+@available(macOS 26.0, *)
+private func speechAnalyzerSupported(locale: Locale) async -> Bool {
+    let supported = await SpeechTranscriber.supportedLocales
+    let localeId   = locale.identifier
+    let localeBcp  = locale.identifier(.bcp47)
+    return supported.contains { s in
+        s.identifier == localeId || s.identifier(.bcp47) == localeBcp
+    }
+}
+
+/// Reserve (allocate) the locale in AssetInventory so its model is held in memory.
+/// Idempotent: skips reservation if the locale is already in reservedLocales.
+@available(macOS 26.0, *)
+private func speechAnalyzerReserveLocale(locale: Locale) async throws {
+    let reserved = await AssetInventory.reservedLocales
+    if reserved.contains(where: { $0.identifier(.bcp47) == locale.identifier(.bcp47) }) {
+        print("[apple_speech] reserveLocale: '\(locale.identifier)' already reserved")
+        return
+    }
+    print("[apple_speech] reserveLocale: reserving '\(locale.identifier)'...")
+    try await AssetInventory.reserve(locale: locale)
 }
