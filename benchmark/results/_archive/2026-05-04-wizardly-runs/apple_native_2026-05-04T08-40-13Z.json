@@ -1,0 +1,284 @@
+{
+  "preset_id": "apple_native",
+  "preset_name": "Apple Native",
+  "model_id": "apple-speech",
+  "language": "auto",
+  "punc_zh_enabled": true,
+  "timestamp": "2026-05-04T08:40:13Z",
+  "items": [
+    {
+      "wav": "edge_1500ms_silence.wav",
+      "hypothesis": "[ERROR: No speech detected]",
+      "latency_ms": 647,
+      "punc_count": 1,
+      "char_count": 27
+    },
+    {
+      "wav": "edge_2s_440hz_tone.wav",
+      "hypothesis": "[ERROR: No speech detected]",
+      "latency_ms": 499,
+      "punc_count": 1,
+      "char_count": 27
+    },
+    {
+      "wav": "edge_3s_noise.wav",
+      "hypothesis": "[ERROR: No speech detected]",
+      "latency_ms": 519,
+      "punc_count": 1,
+      "char_count": 27
+    },
+    {
+      "wav": "edge_500ms_silence.wav",
+      "hypothesis": "[ERROR: No speech detected]",
+      "latency_ms": 473,
+      "punc_count": 1,
+      "char_count": 27
+    },
+    {
+      "wav": "fn_dia_hunan.wav",
+      "hypothesis": "打仗的那种顺丰的话，格力嘎一样，比庞涓略生遗嘱。",
+      "latency_ms": 3767,
+      "punc_count": 3,
+      "char_count": 24
+    },
+    {
+      "wav": "fn_dia_minnan.wav",
+      "hypothesis": "Eman结婚吧，因为这个好亏得很，只能做得厉害都行。",
+      "latency_ms": 2504,
+      "punc_count": 3,
+      "char_count": 26
+    },
+    {
+      "wav": "fn_dia_sh.wav",
+      "hypothesis": "您跟哥，包括您更懂了，接受啥了，这也勾引了。",
+      "latency_ms": 2648,
+      "punc_count": 4,
+      "char_count": 22
+    },
+    {
+      "wav": "fn_dia_yue.wav",
+      "hypothesis": "跟。",
+      "latency_ms": 1655,
+      "punc_count": 1,
+      "char_count": 2
+    },
+    {
+      "wav": "fn_far_2.wav",
+      "hypothesis": "8号线。",
+      "latency_ms": 754,
+      "punc_count": 1,
+      "char_count": 4
+    },
+    {
+      "wav": "fn_far_3.wav",
+      "hypothesis": "周末要不要去露营？最近天气超舒服，而且晚上会不会很冷啊？装备宝宝带点火锅食材，边吃边看星星超惬意。",
+      "latency_ms": 3312,
+      "punc_count": 5,
+      "char_count": 49
+    },
+    {
+      "wav": "fn_far_4.wav",
+      "hypothesis": "唯一的遗憾就是他了八宝呀，还有烤鸭都没吃上，估计得提前预定吧，等我自己做好工作。",
+      "latency_ms": 2883,
+      "punc_count": 4,
+      "char_count": 40
+    },
+    {
+      "wav": "fn_far_5.wav",
+      "hypothesis": "别紧张，我就是我是在逛街，看到你们在这边拍照，想跟你交个朋友认识一下。",
+      "latency_ms": 3245,
+      "punc_count": 4,
+      "char_count": 35
+    },
+    {
+      "wav": "fn_ja.wav",
+      "hypothesis": "机密的酒肯定会想你哦，你给我弄吗？",
+      "latency_ms": 6291,
+      "punc_count": 2,
+      "char_count": 17
+    },
+    {
+      "wav": "fn_ja_en_codeswitch.wav",
+      "hypothesis": "可乐咖啡的，我发一个U step set，go go met the Disconnect colony vault。",
+      "latency_ms": 7167,
+      "punc_count": 3,
+      "char_count": 59
+    },
+    {
+      "wav": "fn_lyrics.wav",
+      "hypothesis": "我的生活对我的真心喜欢很不一样的身体。我知道，这可能就是所谓的沉迷。我知道必须不能听。",
+      "latency_ms": 6250,
+      "punc_count": 4,
+      "char_count": 43
+    },
+    {
+      "wav": "fn_lyrics_2.wav",
+      "hypothesis": "[ERROR: No speech detected]",
+      "latency_ms": 1134,
+      "punc_count": 1,
+      "char_count": 27
+    },
+    {
+      "wav": "fn_lyrics_3.wav",
+      "hypothesis": "你去啊求不着作业，你听他叹气，这里别致声波肚子的可爱和你。",
+      "latency_ms": 8841,
+      "punc_count": 3,
+      "char_count": 29
+    },
+    {
+      "wav": "fn_lyrics_en_1.wav",
+      "hypothesis": "为了我想爱丽丝to the ready，you win，so my favor song one Nap play什么。",
+      "latency_ms": 6990,
+      "punc_count": 3,
+      "char_count": 60
+    },
+    {
+      "wav": "fn_lyrics_en_2.wav",
+      "hypothesis": "嗨熊猫light to on make way you。so。",
+      "latency_ms": 9259,
+      "punc_count": 2,
+      "char_count": 31
+    },
+    {
+      "wav": "fn_lyrics_en_3.wav",
+      "hypothesis": "The same my heart thing so o o o o o o o t o",
+      "latency_ms": 6037,
+      "punc_count": 0,
+      "char_count": 44
+    },
+    {
+      "wav": "fn_noise_en.wav",
+      "hypothesis": "[ERROR: No speech detected]",
+      "latency_ms": 1074,
+      "punc_count": 1,
+      "char_count": 27
+    },
+    {
+      "wav": "fn_rag_biochemistry.wav",
+      "hypothesis": "利用三磷酸腺苷的水解所产生的能量来驱动其它化学反应。",
+      "latency_ms": 1423,
+      "punc_count": 1,
+      "char_count": 26
+    },
+    {
+      "wav": "fn_rag_chemistry.wav",
+      "hypothesis": "比如说只在当时被认为是一种涵养酸盐。",
+      "latency_ms": 1580,
+      "punc_count": 1,
+      "char_count": 18
+    },
+    {
+      "wav": "fn_rag_history.wav",
+      "hypothesis": "有罗马皇帝轻典的尤蒂亚王大溪女王统治期间。",
+      "latency_ms": 6130,
+      "punc_count": 1,
+      "char_count": 21
+    },
+    {
+      "wav": "fn_rag_math.wav",
+      "hypothesis": "对微风形势的积分是微分几何中的基本概念。",
+      "latency_ms": 1468,
+      "punc_count": 1,
+      "char_count": 20
+    },
+    {
+      "wav": "fn_rag_medical.wav",
+      "hypothesis": "肾脏中肾小球囊生的细胞膜孔隙很小。",
+      "latency_ms": 2116,
+      "punc_count": 1,
+      "char_count": 17
+    },
+    {
+      "wav": "fn_rag_physics.wav",
+      "hypothesis": "根据碰撞理论，月面样本，缺少挥发性物质。",
+      "latency_ms": 1692,
+      "punc_count": 3,
+      "char_count": 20
+    },
+    {
+      "wav": "fn_vietnamese.wav",
+      "hypothesis": "你工会的汉堡。",
+      "latency_ms": 3374,
+      "punc_count": 1,
+      "char_count": 7
+    },
+    {
+      "wav": "handy-1777683331.wav",
+      "hypothesis": "他的这个实施写入并不是在数段，是在录音端上。",
+      "latency_ms": 2874,
+      "punc_count": 2,
+      "char_count": 22
+    },
+    {
+      "wav": "handy-1777683335.wav",
+      "hypothesis": "但感觉确实快。",
+      "latency_ms": 1336,
+      "punc_count": 1,
+      "char_count": 7
+    },
+    {
+      "wav": "handy-1777683339.wav",
+      "hypothesis": "很好的一个输入法。",
+      "latency_ms": 872,
+      "punc_count": 1,
+      "char_count": 9
+    },
+    {
+      "wav": "handy-1777683342.wav",
+      "hypothesis": "特别棒。",
+      "latency_ms": 1229,
+      "punc_count": 1,
+      "char_count": 4
+    },
+    {
+      "wav": "handy-1777683357.wav",
+      "hypothesis": "ABC三个sound的同时跑A跑半驰。mark初三present对比下边用力，B是punch tok it加状态提示下载按钮加进度条C是启动目录。",
+      "latency_ms": 4700,
+      "punc_count": 3,
+      "char_count": 73
+    },
+    {
+      "wav": "sv_en.wav",
+      "hypothesis": "The debate of team go for the boy and been the ham to the of school",
+      "latency_ms": 4728,
+      "punc_count": 0,
+      "char_count": 67
+    },
+    {
+      "wav": "sv_ja.wav",
+      "hypothesis": "有钱了，这个可别多舍得，我担心了。八¥80国行版，我考虑。",
+      "latency_ms": 7726,
+      "punc_count": 5,
+      "char_count": 29
+    },
+    {
+      "wav": "sv_ko.wav",
+      "hypothesis": "就跟半身qq还没彩排过啊。",
+      "latency_ms": 6699,
+      "punc_count": 1,
+      "char_count": 13
+    },
+    {
+      "wav": "sv_yue.wav",
+      "hypothesis": "你给我纸都表达得，我想讲个意思。",
+      "latency_ms": 3344,
+      "punc_count": 2,
+      "char_count": 16
+    },
+    {
+      "wav": "sv_zh.wav",
+      "hypothesis": "菜放时间，早上9 : 00至下午5 : 00。",
+      "latency_ms": 921,
+      "punc_count": 4,
+      "char_count": 23
+    }
+  ],
+  "summary": {
+    "total_items": 38,
+    "total_audio_seconds": 331.115,
+    "p50_latency_ms": 2874,
+    "p95_latency_ms": 7726,
+    "punctuation_density": 0.07411,
+    "errors": 0
+  }
+}
