@@ -22,13 +22,12 @@ pub fn filtered_asr_presets(app: &AppHandle) -> Vec<AsrPreset> {
     if crate::utils::is_macos_26_or_later() {
         presets.retain(|p| p.id != "apple_native");
     }
-    // Voxtral model registration is gated to macOS aarch64 in model.rs (mlx
-    // bridge requires Apple Silicon). The preset itself is unconditional in
-    // default_asr_presets, so on Intel mac / Linux / Windows the card would
-    // show but the model lookup would fail. Hide it on those platforms.
-    if !cfg!(all(target_os = "macos", target_arch = "aarch64")) {
-        presets.retain(|p| p.id != "experimental_voxtral");
-    }
+    // Voxtral is deprecated end-to-end: Qwen3-ASR-MLX is 6.6× smaller, 8× faster,
+    // and actually identifies Cantonese/Shanghainese/Hokkien (Voxtral hallucinates
+    // Devanagari or returns empty). The preset definition stays in default_asr_presets
+    // so bench / CLI A-B lookups by id still work, but the UI card is gone.
+    // Original Intel/Linux/Win gate is now redundant — hidden everywhere.
+    presets.retain(|p| p.id != "experimental_voxtral");
     let settings = get_settings(app);
     if !settings.experimental_enabled {
         presets.retain(|p| p.builtin);
