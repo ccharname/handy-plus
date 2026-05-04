@@ -42,7 +42,10 @@ extern "C" {
 
 /// Return the bridge version string (e.g. "handy-mlx-bridge/0.1.0 mlx-audio-swift/0.1.2").
 /// Used as a startup smoke-test to confirm the library linked and Metal initialises.
+/// Lib build doesn't reference this (only `examples/test_mlx.rs` does), so allow
+/// dead_code at the lib level.
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+#[allow(dead_code)]
 pub fn bridge_version() -> Result<String, String> {
     let ptr = unsafe { ffi_mlx_audio_bridge_version() };
     if ptr.is_null() {

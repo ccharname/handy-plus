@@ -6,9 +6,9 @@ use log::info;
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
-// Re-export all utility modules for easy access
-// pub use crate::audio_feedback::*;
-pub use crate::clipboard::*;
+// Re-export overlay + tray helpers for the Power Mode + transcription flow.
+// clipboard items have direct callers via `crate::clipboard::xxx` so no
+// re-export needed there (removing it kills the unused-import warning).
 pub use crate::overlay::*;
 pub use crate::tray::*;
 

@@ -76,18 +76,6 @@ extern "C" {
     #[link_name = "apple_speech_get_auth_status"]
     fn ffi_apple_speech_get_auth_status() -> c_int;
 
-    #[link_name = "transcribe_pcm_f32_apple_speech"]
-    fn ffi_transcribe_pcm_f32_apple_speech(
-        samples: *const c_float,
-        sample_count: usize,
-        sample_rate: c_double,
-        locale_bcp47: *const c_char,
-        contextual_strings: *const *const c_char,
-        contextual_count: usize,
-        require_on_device: c_int,
-        timeout_ms: c_int,
-    ) -> *mut AppleSpeechResponse;
-
     #[link_name = "transcribe_pcm_f32_apple_speech_with_partials"]
     fn ffi_transcribe_pcm_f32_apple_speech_with_partials(
         samples: *const c_float,
@@ -198,91 +186,8 @@ pub fn sanitise_contextual_strings(raw: &[String]) -> Vec<String> {
     result
 }
 
-/// Transcribe a slice of 16-bit mono f32 PCM samples using Apple SFSpeechRecognizer.
-///
-/// # Arguments
-/// * `samples`         – mono float32 PCM audio (typically 16 kHz)
-/// * `sample_rate`     – sample rate in Hz
-/// * `locale`          – BCP-47 locale string (e.g. "en-US", "zh-CN")
-/// * `contextual`      – optional list of hint words for better recognition accuracy
-/// * `require_on_device` – if true, forces on-device (private) recognition
-/// * `timeout_ms`      – max wait in ms; 0 or negative means no timeout
-pub fn transcribe(
-    samples: &[f32],
-    sample_rate: f64,
-    locale: &str,
-    contextual: &[String],
-    require_on_device: bool,
-    timeout_ms: i32,
-) -> Result<String, String> {
-    let locale_cstr = CString::new(locale).map_err(|e| e.to_string())?;
-
-    // Sanitise contextual strings before passing through FFI
-    let contextual_clean = sanitise_contextual_strings(contextual);
-
-    // Build a Vec<CString> to own the data, then a Vec<*const c_char> to pass as array
-    let contextual_cstrings: Vec<CString> = contextual_clean
-        .iter()
-        .filter_map(|s| CString::new(s.as_str()).ok())
-        .collect();
-    let contextual_ptrs: Vec<*const c_char> =
-        contextual_cstrings.iter().map(|s| s.as_ptr()).collect();
-
-    let (ctx_ptr, ctx_count) = if contextual_ptrs.is_empty() {
-        (std::ptr::null(), 0usize)
-    } else {
-        (contextual_ptrs.as_ptr(), contextual_ptrs.len())
-    };
-
-    let response_ptr = unsafe {
-        ffi_transcribe_pcm_f32_apple_speech(
-            samples.as_ptr(),
-            samples.len(),
-            sample_rate,
-            locale_cstr.as_ptr(),
-            ctx_ptr,
-            ctx_count,
-            if require_on_device { 1 } else { 0 },
-            timeout_ms,
-        )
-    };
-
-    if response_ptr.is_null() {
-        return Err("Null response from Apple Speech".to_string());
-    }
-
-    let response = unsafe { &*response_ptr };
-
-    let result = if response.success == 1 {
-        if response.text.is_null() {
-            Ok(String::new())
-        } else {
-            let c_str = unsafe { CStr::from_ptr(response.text) };
-            Ok(c_str.to_string_lossy().into_owned())
-        }
-    } else {
-        let raw_err = if !response.error_message.is_null() {
-            unsafe { CStr::from_ptr(response.error_message) }
-                .to_string_lossy()
-                .into_owned()
-        } else {
-            "Unknown Apple Speech error".to_string()
-        };
-        Err(parse_apple_speech_error(&raw_err).to_string())
-    };
-
-    // Free the Swift-allocated response
-    unsafe { ffi_free_apple_speech_response(response_ptr) };
-
-    result
-}
-
 /// Transcribe PCM audio using Apple SFSpeechRecognizer, delivering partial results
 /// to `on_partial` as they arrive.
-///
-/// Identical to [`transcribe`] except that `on_partial` is called for each intermediate
-/// recognition result before the final one. The closure is invoked on a Speech framework
-/// dispatch queue; it must not block for long.
 ///
 /// # Arguments
 /// * `on_partial` – called with each non-final transcription text. May be called 0 or more times.
