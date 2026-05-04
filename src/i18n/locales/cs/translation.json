@@ -610,10 +610,6 @@
     "asrPresets": {
       "active": "Aktivní",
       "advancedHint": "Nebo níže ručně vyberte model.",
-      "appleNative": {
-        "description": "Apple Speech s opravou interpunkce CT-Punc. Nejnižší latence pro krátké příkazy.",
-        "name": "Apple Native"
-      },
       "apply": "Použít",
       "applyAndDownload": "Stáhnout a použít",
       "chineseBalanced": {
@@ -622,22 +618,10 @@
       },
       "customized": "Přizpůsobeno (preset odpojen)",
       "description": "Rychlé přepínání mezi vybranými nastaveními rozpoznávání řeči.",
-      "multilingualOffline": {
-        "description": "FunASR-Nano podporující 8+ jazyků, plně offline.",
-        "name": "Vícejazyčný offline"
-      },
-      "experimentalQwen3": {
-        "name": "Qwen3-ASR (Experimentální)",
-        "description": "Tongyi 2026-01 SOTA. Model int8 o velikosti 2,5 GB. Výborná přesnost pro čínštinu, automatická detekce 52 jazyků. Automatické dělení dlouhého zvuku."
-      },
-      "experimentalVoxtral": {
-        "name": "Voxtral (Experimentální)",
-        "description": "⚠️ Nahrazen Qwen3-ASR-Realtime (menší, rychlejší, lepší pokrytí dialektů), zachován pouze pro historické srovnání. Voxtral Realtime 4-bit via mlx-audio-swift. Kantonština produkuje poškozený text, hokkien vrací prázdný řetězec. Pouze Apple Silicon. Při prvním použití se stahuje ~3,5 GB."
-      },
       "switching": "Přepínání...",
       "title": "Předvolby ASR",
-      "experimentalQwen3Mlx": {
-        "name": "Qwen3-ASR Realtime (Experimentální)",
+      "qwen3Mlx": {
+        "name": "Qwen3-ASR Realtime",
         "description": "~600 MB MLX kvantizace / p50 1.2 s / Rozpoznávání kantonského + šanghajského + hokkienského dialektu / Pouze Apple Silicon."
       }
     },

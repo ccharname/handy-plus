@@ -204,6 +204,45 @@ If `first_token_ms` p99 > 800ms, check in order:
 - **Phase C2 (current)**: batch WAV → Swift bridge → full result. `first_token_ms` = total bridge time. No streaming to UI during inference.
 - **Phase C3 (future)**: streaming token callbacks. `first_token_ms` will be the real time from recording end to first emitted token. The `streaming_chunk_ms[]` field (array of per-chunk intervals) will appear in the extra payload.
 
+## Release path
+
+### One-command release gate
+
+```bash
+# Quick sanity (lint + clippy + tests, no build):
+bash scripts/release-check.sh --dry-run
+
+# Full release gate (lint + clippy + tests + SLA + build + codesign):
+bash scripts/release-check.sh
+```
+
+`release-check.sh` is the single entry point for 1.0 readiness. It runs steps sequentially and exits on first failure.
+
+### SLA assert behaviour on missing data
+
+`handy-logs assert` exits 0 (SKIP) when there are fewer than 1 sample for the requested stage+metric+preset. This means `release-check.sh --dry-run` always passes on a fresh machine with no log data.
+
+**Production-ready** requires ≥ 7 days of real usage data before the SLA gates are meaningful:
+
+```bash
+# Export baseline snapshot (requires >= 7 days data):
+./scripts/handy-logs.sh export-baseline --preset chinese_balanced --version 1.0.0 --since 7d \
+  > benchmark/results/_baseline/v1.0-chinese_balanced.json
+
+./scripts/handy-logs.sh export-baseline --preset qwen3_mlx --version 1.0.0 --since 7d \
+  > benchmark/results/_baseline/v1.0-qwen3_mlx.json
+```
+
+### v1.0 release standard
+
+A build is release-ready when all of the following are true:
+
+1. `bash scripts/release-check.sh` exits 0 (FAIL=0, all SLA gates PASS not just SKIP)
+2. Baseline JSON files committed to `benchmark/results/_baseline/`
+3. Human e2e checklist fully checked: [`docs/release/v1.0-checklist.md`](../release/v1.0-checklist.md)
+
+Only then: `git tag v1.0.0 && git push fork v1.0.0` (zheng HITL decision).
+
 ## Notes on t3/t4 inline measurement
 
 VAD (t3) and resample (t4) run frame-by-frame inside the audio consumer thread and are not separated from the recording wall-clock time (t2). The current implementation emits placeholder events with `duration_ms=0` and `note=inline_with_recording` for t3/t4. Real per-frame timing is tracked as a M4 improvement item.

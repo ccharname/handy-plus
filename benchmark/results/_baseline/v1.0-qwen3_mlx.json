@@ -1,0 +1,7 @@
+{
+  "preset": "qwen3_mlx",
+  "version": "1.0.0-rc",
+  "snapshot_date": null,
+  "stages": {},
+  "note": "Placeholder. Run `./scripts/handy-logs.sh export-baseline --preset qwen3_mlx --version 1.0.0 --since 7d > benchmark/results/_baseline/v1.0-qwen3_mlx.json` after >= 7 days of zheng using M0..M4 build."
+}

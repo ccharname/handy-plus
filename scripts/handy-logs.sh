@@ -348,6 +348,74 @@ def cmd_compare(args):
     print()
 
 
+def cmd_export_baseline(args):
+    """Export a percentile snapshot for all stages as a baseline JSON file.
+
+    Usage:
+        handy-logs export-baseline --preset P --version V --since 7d
+    Output JSON format:
+        {
+          "preset": "...",
+          "version": "...",
+          "snapshot_date": "2026-...",
+          "stages": {
+            "t5_inference": {"p50_ms": 120.0, "p95_ms": 210.0, "p99_ms": 280.0, "n": 42}
+          }
+        }
+    If no data is found, reports an error and exits 1 without writing.
+    """
+    preset = getattr(args, "preset", None)
+    version = getattr(args, "version", "unknown")
+    since = parse_since(getattr(args, "since", "7d"))
+    metric = getattr(args, "metric", None)
+
+    files = find_log_files()
+    stage_data: dict[str, list[float]] = {}
+
+    for e in extract_stage_events(iter_events(files, since=since)):
+        if preset:
+            extra = e.get("extra", "")
+            if f"preset={preset}" not in extra and e.get("stage") not in (
+                "t0_hotkey", "t1_audio_capture", "t2_recording", "t4_resample",
+                "t6_postprocess", "t7_output", "total",
+            ):
+                # For non-preset-specific stages, keep all events
+                pass
+            elif preset and f"preset={preset}" not in extra and e.get("stage") == "t5_inference":
+                continue  # skip inference events for other presets
+        stage = e.get("stage", "")
+        if not stage:
+            continue
+        v = get_metric(e, metric)
+        if v is not None and not math.isnan(v):
+            stage_data.setdefault(stage, []).append(v)
+
+    if not stage_data:
+        print(
+            f"No data for preset={preset} since={getattr(args, 'since', '7d')}. "
+            "Would write empty stages. Run after >= 7 days of real usage.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    stages_out: dict[str, dict] = {}
+    for stage, vals in sorted(stage_data.items()):
+        stages_out[stage] = {
+            "p50_ms": round(percentile(vals, 50), 2),
+            "p95_ms": round(percentile(vals, 95), 2),
+            "p99_ms": round(percentile(vals, 99), 2),
+            "n": len(vals),
+        }
+
+    result = {
+        "preset": preset,
+        "version": version,
+        "snapshot_date": datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "stages": stages_out,
+    }
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+
+
 def cmd_assert(args):
     stage = args.stage
     metric = getattr(args, "metric", None)
@@ -450,6 +518,18 @@ def build_parser():
     p_assert.add_argument("--p99-max", type=float, default=None, dest="p99_max")
     p_assert.add_argument("--since", type=str, default="7d", metavar="Xd")
 
+    # export-baseline
+    p_eb = sub.add_parser(
+        "export-baseline",
+        help="Export percentile snapshot for all stages as baseline JSON (stdout)",
+    )
+    p_eb.add_argument("--preset", type=str, default=None, help="Filter to a specific preset")
+    p_eb.add_argument("--version", type=str, default="unknown", help="Version label (e.g. 1.0.0)")
+    p_eb.add_argument("--since", type=str, default="7d", metavar="Xd",
+                      help="Time window (e.g. 7d, 24h). Default: 7d")
+    p_eb.add_argument("--metric", type=str, default=None,
+                      help="Metric field to aggregate (default: duration_ms)")
+
     return parser
 
 
@@ -465,6 +545,7 @@ def main():
         "breakdown": cmd_breakdown,
         "compare": cmd_compare,
         "assert": cmd_assert,
+        "export-baseline": cmd_export_baseline,
     }
     fn = dispatch.get(args.command)
     if fn is None:

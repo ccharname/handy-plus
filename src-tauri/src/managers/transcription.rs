@@ -891,11 +891,17 @@ impl TranscriptionManager {
     /// the cached session behaves as if freshly created.
     ///
     /// Returns `None` if the VAD model file cannot be resolved or loaded.
-    fn acquire_inference_vad(&self) -> Option<std::sync::MutexGuard<'_, Option<crate::audio_toolkit::SileroVad>>> {
-        let vad_path = self.app_handle.path().resolve(
-            "resources/models/silero_vad_v4.onnx",
-            tauri::path::BaseDirectory::Resource,
-        ).ok()?;
+    fn acquire_inference_vad(
+        &self,
+    ) -> Option<std::sync::MutexGuard<'_, Option<crate::audio_toolkit::SileroVad>>> {
+        let vad_path = self
+            .app_handle
+            .path()
+            .resolve(
+                "resources/models/silero_vad_v4.onnx",
+                tauri::path::BaseDirectory::Resource,
+            )
+            .ok()?;
 
         let mut guard = self.inference_vad.lock().unwrap_or_else(|p| p.into_inner());
         if guard.is_none() {
@@ -905,7 +911,10 @@ impl TranscriptionManager {
                     *guard = Some(vad);
                 }
                 Err(e) => {
-                    warn!("inference_vad: failed to create SileroVad: {}; returning None", e);
+                    warn!(
+                        "inference_vad: failed to create SileroVad: {}; returning None",
+                        e
+                    );
                     return None;
                 }
             }
@@ -1369,67 +1378,65 @@ impl TranscriptionManager {
 
                     let chunks: Vec<Vec<f32>> = match vad_guard.as_deref_mut() {
                         Some(Some(ref mut vad)) => {
-                                    // Segment the full audio into speech chunks using
-                                    // the same 30 ms frame size Silero was trained on.
-                                    // When a chunk reaches MAX_CHUNK_SAMPLES, flush it
-                                    // and start the next chunk with OVERLAP_SAMPLES of
-                                    // the previous chunk's tail so boundary words get
-                                    // decoded with full context.
-                                    let mut all_chunks: Vec<Vec<f32>> = Vec::new();
-                                    let mut current_chunk: Vec<f32> = Vec::new();
+                            // Segment the full audio into speech chunks using
+                            // the same 30 ms frame size Silero was trained on.
+                            // When a chunk reaches MAX_CHUNK_SAMPLES, flush it
+                            // and start the next chunk with OVERLAP_SAMPLES of
+                            // the previous chunk's tail so boundary words get
+                            // decoded with full context.
+                            let mut all_chunks: Vec<Vec<f32>> = Vec::new();
+                            let mut current_chunk: Vec<f32> = Vec::new();
 
-                                    let frames = audio.chunks(FRAME_SAMPLES);
-                                    for frame in frames {
-                                        if frame.len() < FRAME_SAMPLES {
-                                            // Trailing partial frame — append to current
-                                            current_chunk.extend_from_slice(frame);
-                                            continue;
-                                        }
-                                        let is_speech = vad.is_voice(frame).unwrap_or(true); // on error, treat as speech
-
-                                        if is_speech {
-                                            current_chunk.extend_from_slice(frame);
-                                            // Flush when chunk hits max size.
-                                            // Seed next chunk with the last OVERLAP_SAMPLES
-                                            // of the current chunk for context continuity.
-                                            if current_chunk.len() >= MAX_CHUNK_SAMPLES {
-                                                let overlap_start = current_chunk
-                                                    .len()
-                                                    .saturating_sub(OVERLAP_SAMPLES);
-                                                let overlap =
-                                                    current_chunk[overlap_start..].to_vec();
-                                                all_chunks.push(std::mem::take(&mut current_chunk));
-                                                current_chunk = overlap;
-                                            }
-                                        } else {
-                                            // Silence boundary: if current chunk is
-                                            // substantial (>300 ms), flush it.
-                                            // No overlap needed at natural silence breaks
-                                            // because the model already sees the word end.
-                                            if current_chunk.len() >= FRAME_SAMPLES * 10 {
-                                                all_chunks.push(std::mem::take(&mut current_chunk));
-                                            }
-                                            // otherwise accumulate small leftovers
-                                        }
-                                    }
-                                    if !current_chunk.is_empty() {
-                                        all_chunks.push(current_chunk);
-                                    }
-
-                                    if all_chunks.is_empty() {
-                                        debug!("Qwen3-ASR: VAD found no speech in audio");
-                                        return Ok(transcribe_rs::TranscriptionResult {
-                                            text: String::new(),
-                                            segments: None,
-                                        });
-                                    }
-                                    debug!(
-                                        "Qwen3-ASR: split {}s audio into {} VAD chunks (8s/1s-overlap)",
-                                        audio.len() / 16_000,
-                                        all_chunks.len()
-                                    );
-                                    all_chunks
+                            let frames = audio.chunks(FRAME_SAMPLES);
+                            for frame in frames {
+                                if frame.len() < FRAME_SAMPLES {
+                                    // Trailing partial frame — append to current
+                                    current_chunk.extend_from_slice(frame);
+                                    continue;
                                 }
+                                let is_speech = vad.is_voice(frame).unwrap_or(true); // on error, treat as speech
+
+                                if is_speech {
+                                    current_chunk.extend_from_slice(frame);
+                                    // Flush when chunk hits max size.
+                                    // Seed next chunk with the last OVERLAP_SAMPLES
+                                    // of the current chunk for context continuity.
+                                    if current_chunk.len() >= MAX_CHUNK_SAMPLES {
+                                        let overlap_start =
+                                            current_chunk.len().saturating_sub(OVERLAP_SAMPLES);
+                                        let overlap = current_chunk[overlap_start..].to_vec();
+                                        all_chunks.push(std::mem::take(&mut current_chunk));
+                                        current_chunk = overlap;
+                                    }
+                                } else {
+                                    // Silence boundary: if current chunk is
+                                    // substantial (>300 ms), flush it.
+                                    // No overlap needed at natural silence breaks
+                                    // because the model already sees the word end.
+                                    if current_chunk.len() >= FRAME_SAMPLES * 10 {
+                                        all_chunks.push(std::mem::take(&mut current_chunk));
+                                    }
+                                    // otherwise accumulate small leftovers
+                                }
+                            }
+                            if !current_chunk.is_empty() {
+                                all_chunks.push(current_chunk);
+                            }
+
+                            if all_chunks.is_empty() {
+                                debug!("Qwen3-ASR: VAD found no speech in audio");
+                                return Ok(transcribe_rs::TranscriptionResult {
+                                    text: String::new(),
+                                    segments: None,
+                                });
+                            }
+                            debug!(
+                                "Qwen3-ASR: split {}s audio into {} VAD chunks (8s/1s-overlap)",
+                                audio.len() / 16_000,
+                                all_chunks.len()
+                            );
+                            all_chunks
+                        }
                         _ => {
                             warn!(
                                 "Qwen3-ASR: VAD session unavailable; falling back to naive 8s split"

@@ -610,10 +610,6 @@
     "asrPresets": {
       "active": "활성",
       "advancedHint": "또는 아래에서 모델을 수동으로 선택하세요.",
-      "appleNative": {
-        "description": "CT-Punc 구두점 패치가 적용된 Apple Speech. 짧은 명령에 대한 최저 지연..",
-        "name": "Apple Native"
-      },
       "apply": "적용",
       "applyAndDownload": "다운로드 및 적용",
       "chineseBalanced": {
@@ -622,22 +618,10 @@
       },
       "customized": "사용자 지정 (프리셋 분리됨)",
       "description": "엄선된 음성 인식 설정 간에 빠르게 전환합니다.",
-      "multilingualOffline": {
-        "description": "FunASR-Nano는 8개 이상의 언어를 지원하며 완전 오프라인입니다.",
-        "name": "다국어 오프라인"
-      },
-      "experimentalQwen3": {
-        "name": "Qwen3-ASR (실험적)",
-        "description": "Tongyi 2026-01 SOTA. 2.5 GB int8 모델. 중국어 정확도 우수, 52개 언어 자동 감지. 긴 오디오 자동 분할."
-      },
-      "experimentalVoxtral": {
-        "name": "Voxtral (실험적)",
-        "description": "⚠️ Qwen3-ASR-Realtime으로 대체됨 (더 작고, 더 빠르고, 방언 커버리지 향상), 역사적 비교를 위해 보존. Voxtral Realtime 4-bit via mlx-audio-swift. 광둥어는 깨진 텍스트 출력, 민남어는 빈 문자열 반환. Apple Silicon 전용. 첫 사용 시 ~3.5 GB 다운로드."
-      },
       "switching": "전환 중...",
       "title": "ASR 프리셋",
-      "experimentalQwen3Mlx": {
-        "name": "Qwen3-ASR Realtime (실험적)",
+      "qwen3Mlx": {
+        "name": "Qwen3-ASR Realtime",
         "description": "~600 MB MLX 양자화 / p50 1.2초 / 광둥어 + 상하이어 + 민남어 방언 인식 / Apple Silicon 전용."
       }
     },

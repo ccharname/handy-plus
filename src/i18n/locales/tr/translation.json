@@ -610,10 +610,6 @@
     "asrPresets": {
       "active": "Aktif",
       "advancedHint": "Veya aşağıdan manuel olarak bir model seçin.",
-      "appleNative": {
-        "description": "CT-Punc noktalama yamasıyla Apple Speech. Kısa komutlar için en düşük gecikme.",
-        "name": "Apple Native"
-      },
       "apply": "Uygula",
       "applyAndDownload": "İndir ve Uygula",
       "chineseBalanced": {
@@ -622,22 +618,10 @@
       },
       "customized": "Özelleştirilmiş (önayar ayrıldı)",
       "description": "Seçilmiş konuşma tanıma kurulumları arasında hızlıca geçiş yapın.",
-      "multilingualOffline": {
-        "description": "FunASR-Nano 8'den fazla dili destekler, tamamen çevrimdışı.",
-        "name": "Çok Dilli Çevrimdışı"
-      },
-      "experimentalQwen3": {
-        "name": "Qwen3-ASR (Deneysel)",
-        "description": "Tongyi 2026-01 SOTA. 2,5 GB int8 modeli. Çince'de mükemmel doğruluk, 52 dil otomatik algılama. Uzun ses otomatik bölümleme."
-      },
-      "experimentalVoxtral": {
-        "name": "Voxtral (Deneysel)",
-        "description": "⚠️ Qwen3-ASR-Realtime tarafından değiştirildi (daha küçük, daha hızlı, daha iyi lehçe kapsamı), yalnızca tarihsel karşılaştırma için saklandı. Voxtral Realtime 4-bit via mlx-audio-swift. Kantonca bozuk metin üretiyor, Hokkien boş dize döndürüyor. Yalnızca Apple Silicon. İlk kullanımda ~3,5 GB indirilir."
-      },
       "switching": "Geçiliyor...",
       "title": "ASR Önayarları",
-      "experimentalQwen3Mlx": {
-        "name": "Qwen3-ASR Realtime (Deneysel)",
+      "qwen3Mlx": {
+        "name": "Qwen3-ASR Realtime",
         "description": "~600 MB MLX niceleme / p50 1,2 s / Kantonca + Şanghayca + Hokkien lehçe tanıma / Yalnızca Apple Silicon."
       }
     },

@@ -610,10 +610,6 @@
     "asrPresets": {
       "active": "Активний",
       "advancedHint": "Або оберіть модель вручну нижче.",
-      "appleNative": {
-        "description": "Apple Speech з патчем пунктуації CT-Punc. Мінімальна затримка для коротких команд.",
-        "name": "Apple Native"
-      },
       "apply": "Застосувати",
       "applyAndDownload": "Завантажити та застосувати",
       "chineseBalanced": {
@@ -622,22 +618,10 @@
       },
       "customized": "Налаштовано (пресет відв'язано)",
       "description": "Швидке перемикання між відібраними конфігураціями розпізнавання мови.",
-      "multilingualOffline": {
-        "description": "FunASR-Nano підтримує 8+ мов, повністю офлайн.",
-        "name": "Багатомовний офлайн"
-      },
-      "experimentalQwen3": {
-        "name": "Qwen3-ASR (Експерим.)",
-        "description": "Tongyi 2026-01 SOTA. Модель int8 обсягом 2,5 ГБ. Відмінна точність для китайської, автовизначення 52 мов. Автоматичне розбиття довгого аудіо."
-      },
-      "experimentalVoxtral": {
-        "name": "Voxtral (Експерим.)",
-        "description": "⚠️ Замінений моделлю Qwen3-ASR-Realtime (менша, швидша, краще покриття діалектів), збережено лише для історичного порівняння. Voxtral Realtime 4-bit via mlx-audio-swift. Кантонська дає нечитабельний текст, хоккієн повертає порожній рядок. Тільки Apple Silicon. При першому використанні завантажується ~3,5 ГБ."
-      },
       "switching": "Перемикання...",
       "title": "Пресети ASR",
-      "experimentalQwen3Mlx": {
-        "name": "Qwen3-ASR Realtime (Експерим.)",
+      "qwen3Mlx": {
+        "name": "Qwen3-ASR Realtime",
         "description": "~600 МБ квантизація MLX / p50 1,2 с / Розпізнавання кантонського, шанхайського та хоккієнського діалектів / Тільки Apple Silicon."
       }
     },

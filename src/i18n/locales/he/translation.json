@@ -610,10 +610,6 @@
     "asrPresets": {
       "active": "פעיל",
       "advancedHint": "או בחר מודל ידנית למטה.",
-      "appleNative": {
-        "description": "Apple Speech עם תיקון פיסוק CT-Punc. השהייה הנמוכה ביותר לפקודות קצרות.",
-        "name": "Apple Native"
-      },
       "apply": "החל",
       "applyAndDownload": "הורד והחל",
       "chineseBalanced": {
@@ -622,22 +618,10 @@
       },
       "customized": "מותאם אישית (preset מנותק)",
       "description": "מעבר מהיר בין הגדרות זיהוי דיבור נבחרות.",
-      "multilingualOffline": {
-        "description": "FunASR-Nano תומך ב-8+ שפות, לחלוטין אופליין.",
-        "name": "רב-לשוני אופליין"
-      },
-      "experimentalQwen3": {
-        "name": "Qwen3-ASR (ניסיוני)",
-        "description": "Tongyi 2026-01 SOTA. מודל int8 בנפח 2.5 GB. דיוק מצוין לסינית, זיהוי אוטומטי של 52 שפות. חלוקה אוטומטית של שמע ארוך."
-      },
-      "experimentalVoxtral": {
-        "name": "Voxtral (ניסיוני)",
-        "description": "⚠️ הוחלף על ידי Qwen3-ASR-Realtime (קטן יותר, מהיר יותר, כיסוי ניבים טוב יותר), נשמר לצורך השוואה היסטורית בלבד. Voxtral Realtime 4-bit via mlx-audio-swift. קנטונזית מייצרת טקסט מפורר, הוקיין מחזיר מחרוזת ריקה. Apple Silicon בלבד. שימוש ראשון מוריד ~3.5 GB."
-      },
       "switching": "מחליף...",
       "title": "הגדרות מוקדמות ASR",
-      "experimentalQwen3Mlx": {
-        "name": "Qwen3-ASR Realtime (ניסיוני)",
+      "qwen3Mlx": {
+        "name": "Qwen3-ASR Realtime",
         "description": "~600 MB כימות MLX / p50 1.2 ש' / זיהוי ניבים קנטונזי + שנחאי + הוקיין / Apple Silicon בלבד."
       }
     },

@@ -610,10 +610,6 @@
     "asrPresets": {
       "active": "使用中",
       "advancedHint": "或在下方手動選擇模型。",
-      "appleNative": {
-        "description": "搭載 CT-Punc 標點修補的 Apple Speech，短指令延遲最低。",
-        "name": "Apple 原生"
-      },
       "apply": "套用",
       "applyAndDownload": "下載並套用",
       "chineseBalanced": {
@@ -622,22 +618,10 @@
       },
       "customized": "已自訂（預設已解除綁定）",
       "description": "快速切換精選語音辨識設定。",
-      "multilingualOffline": {
-        "description": "FunASR-Nano 支援 8 種以上語言，完全離線。",
-        "name": "多語言離線"
-      },
-      "experimentalQwen3": {
-        "name": "Qwen3-ASR（實驗）",
-        "description": "Tongyi 2026-01 SOTA。~2.5 GB int8 模型。中文準確度優秀，自動辨識 52 種語言。長音訊自動分段。"
-      },
-      "experimentalVoxtral": {
-        "name": "Voxtral（實驗）",
-        "description": "⚠️ 已被 Qwen3-ASR-Realtime 取代（更小更快+方言更強），保留僅作歷史對照。Voxtral Realtime 4-bit via mlx-audio-swift。粵語輸出亂碼、閩南語返回空字串。僅 Apple Silicon。首次下載 ~3.5 GB。"
-      },
       "switching": "切換中...",
       "title": "ASR 預設",
-      "experimentalQwen3Mlx": {
-        "name": "Qwen3-ASR Realtime（實驗）",
+      "qwen3Mlx": {
+        "name": "Qwen3-ASR Realtime",
         "description": "~600 MB MLX 量化 / p50 1.2s / 粵語+滬語+閩南方言識別 / 僅 Apple Silicon。"
       }
     },

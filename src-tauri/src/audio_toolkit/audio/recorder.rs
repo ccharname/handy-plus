@@ -441,7 +441,6 @@ fn run_consumer(
     }
 
     while let Ok(chunk) = sample_rx.recv() {
-
         let raw = match chunk {
             AudioChunk::Samples(s) => s,
             AudioChunk::EndOfStream => continue,

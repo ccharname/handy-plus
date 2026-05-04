@@ -610,10 +610,6 @@
     "asrPresets": {
       "active": "Ativo",
       "advancedHint": "Ou selecione manualmente um modelo abaixo.",
-      "appleNative": {
-        "description": "Apple Speech com patch de pontuação CT-Punc. Menor latência para comandos curtos.",
-        "name": "Apple Native"
-      },
       "apply": "Aplicar",
       "applyAndDownload": "Baixar e Aplicar",
       "chineseBalanced": {
@@ -622,22 +618,10 @@
       },
       "customized": "Personalizado (preset desacoplado)",
       "description": "Alterne rapidamente entre configurações de reconhecimento de fala selecionadas.",
-      "multilingualOffline": {
-        "description": "FunASR-Nano com suporte a 8+ idiomas, totalmente offline.",
-        "name": "Multilíngue Offline"
-      },
-      "experimentalQwen3": {
-        "name": "Qwen3-ASR (Experimental)",
-        "description": "Tongyi 2026-01 SOTA. Modelo int8 de 2,5 GB. Excelente precisão em chinês, detecção automática de 52 idiomas. Segmentação automática de áudio longo."
-      },
-      "experimentalVoxtral": {
-        "name": "Voxtral (Experimental)",
-        "description": "⚠️ Substituído pelo Qwen3-ASR-Realtime (menor, mais rápido, melhor cobertura de dialetos), mantido apenas para comparação histórica. Voxtral Realtime 4-bit via mlx-audio-swift. O cantonês produz texto ilegível, o hokkien retorna string vazia. Apenas Apple Silicon. Primeiro uso baixa ~3,5 GB."
-      },
       "switching": "Alternando...",
       "title": "Presets ASR",
-      "experimentalQwen3Mlx": {
-        "name": "Qwen3-ASR Realtime (Experimental)",
+      "qwen3Mlx": {
+        "name": "Qwen3-ASR Realtime",
         "description": "~600 MB quantização MLX / p50 1,2 s / Reconhecimento de dialetos cantonês + xangainense + hokkien / Apenas Apple Silicon."
       }
     },

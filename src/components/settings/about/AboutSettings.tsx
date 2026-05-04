@@ -55,7 +55,6 @@ export const AboutSettings: React.FC = () => {
           layout="stacked"
         >
           <div className="flex flex-col gap-2">
-            {/* eslint-disable-next-line i18next/no-literal-string */}
             <span className="text-sm font-mono text-mid-gray">
               {t("settings.about.fork.forkLabel")}
             </span>

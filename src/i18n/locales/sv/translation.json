@@ -610,10 +610,6 @@
     "asrPresets": {
       "active": "Aktiv",
       "advancedHint": "Eller välj en modell manuellt nedan.",
-      "appleNative": {
-        "description": "Apple Speech med CT-Punc interpunktionskorrigering. Lägst latens för korta kommandon.",
-        "name": "Apple Native"
-      },
       "apply": "Tillämpa",
       "applyAndDownload": "Ladda ner och tillämpa",
       "chineseBalanced": {
@@ -622,22 +618,10 @@
       },
       "customized": "Anpassad (preset frikopplad)",
       "description": "Byt snabbt mellan utvalda taligenkänningsinställningar.",
-      "multilingualOffline": {
-        "description": "FunASR-Nano stödjer 8+ språk, helt offline.",
-        "name": "Flerspråkig offline"
-      },
-      "experimentalQwen3": {
-        "name": "Qwen3-ASR (Experimentell)",
-        "description": "Tongyi 2026-01 SOTA. 2,5 GB int8-modell. Utmärkt kinesisk noggrannhet, automatisk igenkänning av 52 språk. Automatisk segmentering av lång audio."
-      },
-      "experimentalVoxtral": {
-        "name": "Voxtral (Experimentell)",
-        "description": "⚠️ Ersatt av Qwen3-ASR-Realtime (mindre, snabbare, bättre dialekttäckning), behållen enbart för historisk jämförelse. Voxtral Realtime 4-bit via mlx-audio-swift. Kantonesiska ger oläsbar text, hokkien returnerar tom sträng. Endast Apple Silicon. Första användning laddar ner ~3,5 GB."
-      },
       "switching": "Byter...",
       "title": "ASR-presets",
-      "experimentalQwen3Mlx": {
-        "name": "Qwen3-ASR Realtime (Experimentell)",
+      "qwen3Mlx": {
+        "name": "Qwen3-ASR Realtime",
         "description": "~600 MB MLX-kvantisering / p50 1,2 s / Igenkänning av kantonesiska + shanghaiiska + hokkiendialekter / Endast Apple Silicon."
       }
     },

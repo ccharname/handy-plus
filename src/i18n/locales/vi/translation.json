@@ -610,10 +610,6 @@
     "asrPresets": {
       "active": "Đang dùng",
       "advancedHint": "Hoặc chọn mô hình thủ công bên dưới.",
-      "appleNative": {
-        "description": "Apple Speech với bản vá dấu câu CT-Punc. Độ trễ thấp nhất cho các lệnh ngắn.",
-        "name": "Apple Native"
-      },
       "apply": "Áp dụng",
       "applyAndDownload": "Tải xuống & Áp dụng",
       "chineseBalanced": {
@@ -622,22 +618,10 @@
       },
       "customized": "Tùy chỉnh (preset đã tách)",
       "description": "Chuyển đổi nhanh giữa các cấu hình nhận dạng giọng nói được chọn lọc.",
-      "multilingualOffline": {
-        "description": "FunASR-Nano hỗ trợ 8+ ngôn ngữ, hoàn toàn ngoại tuyến.",
-        "name": "Đa Ngôn Ngữ Ngoại Tuyến"
-      },
-      "experimentalQwen3": {
-        "name": "Qwen3-ASR (Thử Nghiệm)",
-        "description": "Tongyi 2026-01 SOTA. Mô hình int8 2.5 GB. Độ chính xác tiếng Trung xuất sắc, tự động nhận diện 52 ngôn ngữ. Tự động phân đoạn âm thanh dài."
-      },
-      "experimentalVoxtral": {
-        "name": "Voxtral (Thử Nghiệm)",
-        "description": "⚠️ Đã được thay thế bởi Qwen3-ASR-Realtime (nhỏ hơn, nhanh hơn, nhận diện phương ngữ tốt hơn), giữ lại chỉ để so sánh lịch sử. Voxtral Realtime 4-bit via mlx-audio-swift. Tiếng Quảng Đông xuất ra văn bản lỗi, tiếng Mân Nam trả về chuỗi rỗng. Chỉ Apple Silicon. Lần đầu tải ~3.5 GB."
-      },
       "switching": "Đang chuyển...",
       "title": "Cài Sẵn ASR",
-      "experimentalQwen3Mlx": {
-        "name": "Qwen3-ASR Realtime (Thử Nghiệm)",
+      "qwen3Mlx": {
+        "name": "Qwen3-ASR Realtime",
         "description": "~600 MB lượng tử hóa MLX / p50 1,2 s / Nhận diện phương ngữ Quảng Đông + Thượng Hải + Mân Nam / Chỉ Apple Silicon."
       }
     },
