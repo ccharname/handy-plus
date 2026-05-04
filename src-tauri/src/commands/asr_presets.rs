@@ -3,28 +3,36 @@ use crate::settings::{default_asr_presets, get_settings, write_settings, AsrPres
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
-#[tauri::command]
-#[specta::specta]
-pub async fn list_asr_presets(app: AppHandle) -> Result<Vec<AsrPreset>, String> {
+/// Single source of truth for which ASR presets a user actually sees.
+/// Filters `default_asr_presets()` by:
+///   1. macOS 26+ → drop `apple_native` (SFSpeechRecognizer routes through
+///      SpeechAnalyzer there and hangs the process — see
+///      `is_apple_speech_available` in swift/apple_speech.swift and the
+///      matching gotcha memory).
+///   2. `experimental_enabled == false` → drop non-builtin presets. Triage
+///      2026-05-04 confirmed both experimental presets ship with user-visible
+///      regressions today (voxtral: zh-yue → Devanagari, p50 ~10s; qwen3:
+///      2.5 GB on disk). Power users opt in via Advanced Settings.
+///
+/// Both the settings UI (`list_asr_presets`) and the tray submenu must use
+/// this helper so a hidden preset can never be invoked from any entry point.
+pub fn filtered_asr_presets(app: &AppHandle) -> Vec<AsrPreset> {
     let mut presets = default_asr_presets();
-    // Hide apple_native on macOS 26+: SFSpeechRecognizer routes through
-    // SpeechAnalyzer there and hangs the process — see is_apple_speech_available
-    // in swift/apple_speech.swift for the gate, and the matching gotcha memory.
     #[cfg(target_os = "macos")]
     if crate::utils::is_macos_26_or_later() {
         presets.retain(|p| p.id != "apple_native");
     }
-    // Gate non-builtin (experimental) presets behind the `experimental_enabled`
-    // setting. Triage 2026-05-04 confirmed both experimental presets ship with
-    // user-visible regressions today: voxtral hallucinates Devanagari on
-    // Cantonese & emits empty on Hokkien with p50 ~10s; qwen3 is solid but
-    // costs 2.5 GB disk. Hide them from the default UI; power users flip the
-    // experimental toggle in Advanced Settings to opt in.
-    let settings = get_settings(&app);
+    let settings = get_settings(app);
     if !settings.experimental_enabled {
         presets.retain(|p| p.builtin);
     }
-    Ok(presets)
+    presets
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn list_asr_presets(app: AppHandle) -> Result<Vec<AsrPreset>, String> {
+    Ok(filtered_asr_presets(&app))
 }
 
 #[tauri::command]

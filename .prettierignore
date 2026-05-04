@@ -18,3 +18,10 @@ src/bindings.ts
 # Misc
 .DS_Store
 *.log
+
+# Markdown — leave untouched so prettier doesn't reformat tables that upstream
+# maintains by hand (gotchas memory entry #7: AGENTS.md prettier noise).
+AGENTS.md
+CLAUDE.md
+README.md
+docs/

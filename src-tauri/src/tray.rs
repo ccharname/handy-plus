@@ -142,13 +142,11 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
     // "Model" string, items list each preset with its emoji icon and
     // check-marks the currently active one.
     //
-    // We show ALL presets including non-builtin (experimental) ones — the
-    // 🧪 emoji on experimental presets already visually distinguishes them,
-    // and tray fast-switch is the primary UX for trying experimental engines.
+    // Use `filtered_asr_presets` (single source of truth) so hidden presets
+    // — apple_native on macOS 26+, experimental presets when
+    // experimental_enabled=false — never surface in the tray either.
     let active_preset_id = settings.active_preset_id.as_deref();
-    let presets: Vec<_> = crate::settings::default_asr_presets()
-        .into_iter()
-        .collect();
+    let presets: Vec<_> = crate::commands::asr_presets::filtered_asr_presets(app);
 
     let model_submenu = {
         let submenu = Submenu::with_id(app, "model_submenu", &strings.model, true)
