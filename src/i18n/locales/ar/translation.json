@@ -632,10 +632,14 @@
       },
       "experimentalVoxtral": {
         "name": "Voxtral (تجريبي)",
-        "description": "Voxtral Realtime 4-bit via mlx-audio-swift. ⚠️ p50 مقاس ~10 ث + الكانتونية تُخرج Devanagari + الهوكيان يُعيد فارغاً — اللهجات الصينية غير قابلة للاستخدام، يُفضَّل Qwen3-ASR. Apple Silicon فقط. الاستخدام الأول يُنزّل ~3.5 GB من الأوزان."
+        "description": "⚠️ تمّ استبداله بـ Qwen3-ASR-Realtime (أصغر وأسرع وأفضل تغطية للهجات)، محفوظ للمقارنة التاريخية فقط. Voxtral Realtime 4-bit via mlx-audio-swift. الكانتونية تُخرج نصًا مشوهًا، والهوكيان يُعيد سلسلة فارغة. Apple Silicon فقط. الاستخدام الأول يُنزّل ~3.5 GB."
       },
       "switching": "جارٍ التبديل...",
-      "title": "إعدادات ASR المسبقة"
+      "title": "إعدادات ASR المسبقة",
+      "experimentalQwen3Mlx": {
+        "name": "Qwen3-ASR Realtime (تجريبي)",
+        "description": "~600 MB MLX مُكمَّم / p50 1.2 ث / التعرف على لهجات الكانتونية + الشنغهاية + الهوكيان / Apple Silicon فقط."
+      }
     },
     "profiles": {
       "add": "إضافة ملف تعريف",

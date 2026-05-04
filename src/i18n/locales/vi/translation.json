@@ -632,10 +632,14 @@
       },
       "experimentalVoxtral": {
         "name": "Voxtral (Thử Nghiệm)",
-        "description": "Voxtral Realtime 4-bit via mlx-audio-swift. ⚠️ p50 đo được ~10 s + tiếng Quảng Đông xuất ra Devanagari + tiếng Mân Nam trả về rỗng — phương ngữ Trung Quốc không dùng được, ưu tiên Qwen3-ASR. Chỉ Apple Silicon. Lần đầu tải ~3.5 GB trọng số."
+        "description": "⚠️ Đã được thay thế bởi Qwen3-ASR-Realtime (nhỏ hơn, nhanh hơn, nhận diện phương ngữ tốt hơn), giữ lại chỉ để so sánh lịch sử. Voxtral Realtime 4-bit via mlx-audio-swift. Tiếng Quảng Đông xuất ra văn bản lỗi, tiếng Mân Nam trả về chuỗi rỗng. Chỉ Apple Silicon. Lần đầu tải ~3.5 GB."
       },
       "switching": "Đang chuyển...",
-      "title": "Cài Sẵn ASR"
+      "title": "Cài Sẵn ASR",
+      "experimentalQwen3Mlx": {
+        "name": "Qwen3-ASR Realtime (Thử Nghiệm)",
+        "description": "~600 MB lượng tử hóa MLX / p50 1,2 s / Nhận diện phương ngữ Quảng Đông + Thượng Hải + Mân Nam / Chỉ Apple Silicon."
+      }
     },
     "profiles": {
       "add": "Thêm hồ sơ",

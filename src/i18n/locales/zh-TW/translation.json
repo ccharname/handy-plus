@@ -632,10 +632,14 @@
       },
       "experimentalVoxtral": {
         "name": "Voxtral（實驗）",
-        "description": "Voxtral Realtime 4-bit via mlx-audio-swift。⚠️ 實測 p50 ~10 秒 + 粵語輸出天城文、閩南語返回空白 — 中文方言不可用，請改用 Qwen3-ASR。僅支援 Apple Silicon。首次使用將下載 ~3.5 GB 權重。"
+        "description": "⚠️ 已被 Qwen3-ASR-Realtime 取代（更小更快+方言更強），保留僅作歷史對照。Voxtral Realtime 4-bit via mlx-audio-swift。粵語輸出亂碼、閩南語返回空字串。僅 Apple Silicon。首次下載 ~3.5 GB。"
       },
       "switching": "切換中...",
-      "title": "ASR 預設"
+      "title": "ASR 預設",
+      "experimentalQwen3Mlx": {
+        "name": "Qwen3-ASR Realtime（實驗）",
+        "description": "~600 MB MLX 量化 / p50 1.2s / 粵語+滬語+閩南方言識別 / 僅 Apple Silicon。"
+      }
     },
     "profiles": {
       "add": "新增設定檔",

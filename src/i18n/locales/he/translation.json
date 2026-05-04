@@ -632,10 +632,14 @@
       },
       "experimentalVoxtral": {
         "name": "Voxtral (ניסיוני)",
-        "description": "Voxtral Realtime 4-bit via mlx-audio-swift. ⚠️ p50 נמדד ~10 ש' + קנטונזית מפיקה Devanagari + הוקיין מחזיר ריק — ניבים סיניים אינם שמישים, מומלץ Qwen3-ASR. Apple Silicon בלבד. שימוש ראשון מוריד ~3.5 GB של משקלים."
+        "description": "⚠️ הוחלף על ידי Qwen3-ASR-Realtime (קטן יותר, מהיר יותר, כיסוי ניבים טוב יותר), נשמר לצורך השוואה היסטורית בלבד. Voxtral Realtime 4-bit via mlx-audio-swift. קנטונזית מייצרת טקסט מפורר, הוקיין מחזיר מחרוזת ריקה. Apple Silicon בלבד. שימוש ראשון מוריד ~3.5 GB."
       },
       "switching": "מחליף...",
-      "title": "הגדרות מוקדמות ASR"
+      "title": "הגדרות מוקדמות ASR",
+      "experimentalQwen3Mlx": {
+        "name": "Qwen3-ASR Realtime (ניסיוני)",
+        "description": "~600 MB כימות MLX / p50 1.2 ש' / זיהוי ניבים קנטונזי + שנחאי + הוקיין / Apple Silicon בלבד."
+      }
     },
     "profiles": {
       "add": "הוסף פרופיל",

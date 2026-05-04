@@ -632,10 +632,14 @@
       },
       "experimentalVoxtral": {
         "name": "Voxtral (실험적)",
-        "description": "Voxtral Realtime 4-bit via mlx-audio-swift. ⚠️ 실측 p50 ~10초 + 광둥어 Devanagari 출력 + 민남어 빈값 반환 — 중국어 방언 사용 불가, Qwen3-ASR 권장. Apple Silicon 전용. 첫 사용 시 ~3.5 GB 가중치 다운로드."
+        "description": "⚠️ Qwen3-ASR-Realtime으로 대체됨 (더 작고, 더 빠르고, 방언 커버리지 향상), 역사적 비교를 위해 보존. Voxtral Realtime 4-bit via mlx-audio-swift. 광둥어는 깨진 텍스트 출력, 민남어는 빈 문자열 반환. Apple Silicon 전용. 첫 사용 시 ~3.5 GB 다운로드."
       },
       "switching": "전환 중...",
-      "title": "ASR 프리셋"
+      "title": "ASR 프리셋",
+      "experimentalQwen3Mlx": {
+        "name": "Qwen3-ASR Realtime (실험적)",
+        "description": "~600 MB MLX 양자화 / p50 1.2초 / 광둥어 + 상하이어 + 민남어 방언 인식 / Apple Silicon 전용."
+      }
     },
     "profiles": {
       "add": "프로필 추가",

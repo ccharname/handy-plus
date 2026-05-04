@@ -632,10 +632,14 @@
       },
       "experimentalVoxtral": {
         "name": "Voxtral（実験的）",
-        "description": "Voxtral Realtime 4-bit via mlx-audio-swift。⚠️ 実測p50 ~10秒 + 広東語がDevanagariを出力 + 閩南語が空返却 — 中国語方言は使用不可、Qwen3-ASRを推奨。Apple Siliconのみ。初回使用時に~3.5 GBの重みをダウンロード。"
+        "description": "⚠️ Qwen3-ASR-Realtimeに置き換えられました（より小型・高速・方言対応向上）。歴史的比較のためのみ保持。Voxtral Realtime 4-bit via mlx-audio-swift。広東語は文字化けを出力し、閩南語は空文字列を返します。Apple Siliconのみ。初回使用時に~3.5 GBをダウンロード。"
       },
       "switching": "切り替え中...",
-      "title": "ASRプリセット"
+      "title": "ASRプリセット",
+      "experimentalQwen3Mlx": {
+        "name": "Qwen3-ASR Realtime（実験的）",
+        "description": "~600 MB MLX量子化 / p50 1.2秒 / 広東語・上海語・閩南語方言認識 / Apple Siliconのみ。"
+      }
     },
     "profiles": {
       "add": "プロファイルを追加",

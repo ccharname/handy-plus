@@ -632,10 +632,14 @@
       },
       "experimentalVoxtral": {
         "name": "Voxtral (Experimentell)",
-        "description": "Voxtral Realtime 4-bit via mlx-audio-swift. ⚠️ Uppmätt p50 ~10 s + kantonesiska ger Devanagari + hokkien returnerar tomt — kinesiska dialekter oanvändbara, föredra Qwen3-ASR. Endast Apple Silicon. Första användning laddar ner ~3,5 GB vikter."
+        "description": "⚠️ Ersatt av Qwen3-ASR-Realtime (mindre, snabbare, bättre dialekttäckning), behållen enbart för historisk jämförelse. Voxtral Realtime 4-bit via mlx-audio-swift. Kantonesiska ger oläsbar text, hokkien returnerar tom sträng. Endast Apple Silicon. Första användning laddar ner ~3,5 GB."
       },
       "switching": "Byter...",
-      "title": "ASR-presets"
+      "title": "ASR-presets",
+      "experimentalQwen3Mlx": {
+        "name": "Qwen3-ASR Realtime (Experimentell)",
+        "description": "~600 MB MLX-kvantisering / p50 1,2 s / Igenkänning av kantonesiska + shanghaiiska + hokkiendialekter / Endast Apple Silicon."
+      }
     },
     "profiles": {
       "add": "Lägg till profil",

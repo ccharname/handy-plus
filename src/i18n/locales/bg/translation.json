@@ -632,10 +632,14 @@
       },
       "experimentalVoxtral": {
         "name": "Voxtral (Експерим.)",
-        "description": "Voxtral Realtime 4-bit via mlx-audio-swift. ⚠️ Измерен p50 ~10 с + кантонски дава Devanagari + хокиен връща празно — китайските диалекти са неизползваеми, предпочитайте Qwen3-ASR. Само Apple Silicon. При първа употреба се изтеглят ~3,5 GB тегла."
+        "description": "⚠️ Заменен от Qwen3-ASR-Realtime (по-малък, по-бърз, по-добро покритие на диалекти), запазен само за историческо сравнение. Voxtral Realtime 4-bit via mlx-audio-swift. Кантонски дава разбъркан текст, хокиен връща празен низ. Само Apple Silicon. Първа употреба изтегля ~3,5 GB."
       },
       "switching": "Превключване...",
-      "title": "ASR предварителни настройки"
+      "title": "ASR предварителни настройки",
+      "experimentalQwen3Mlx": {
+        "name": "Qwen3-ASR Realtime (Експерим.)",
+        "description": "~600 MB MLX квантизация / p50 1.2 с / Разпознаване на кантонски + шанхайски + хокиенски диалекти / Само Apple Silicon."
+      }
     },
     "profiles": {
       "add": "Добави профил",

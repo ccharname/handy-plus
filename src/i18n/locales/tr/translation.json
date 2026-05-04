@@ -632,10 +632,14 @@
       },
       "experimentalVoxtral": {
         "name": "Voxtral (Deneysel)",
-        "description": "Voxtral Realtime 4-bit via mlx-audio-swift. ⚠️ Ölçülen p50 ~10 s + Kantonca Devanagari çıkışı veriyor + Hokkien boş döndürüyor — Çince lehçeler kullanılamaz, Qwen3-ASR tercih edin. Yalnızca Apple Silicon. İlk kullanımda ~3,5 GB ağırlık indirilir."
+        "description": "⚠️ Qwen3-ASR-Realtime tarafından değiştirildi (daha küçük, daha hızlı, daha iyi lehçe kapsamı), yalnızca tarihsel karşılaştırma için saklandı. Voxtral Realtime 4-bit via mlx-audio-swift. Kantonca bozuk metin üretiyor, Hokkien boş dize döndürüyor. Yalnızca Apple Silicon. İlk kullanımda ~3,5 GB indirilir."
       },
       "switching": "Geçiliyor...",
-      "title": "ASR Önayarları"
+      "title": "ASR Önayarları",
+      "experimentalQwen3Mlx": {
+        "name": "Qwen3-ASR Realtime (Deneysel)",
+        "description": "~600 MB MLX niceleme / p50 1,2 s / Kantonca + Şanghayca + Hokkien lehçe tanıma / Yalnızca Apple Silicon."
+      }
     },
     "profiles": {
       "add": "Profil ekle",

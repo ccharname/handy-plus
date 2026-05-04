@@ -632,10 +632,14 @@
       },
       "experimentalVoxtral": {
         "name": "Voxtral (Sperimentale)",
-        "description": "Voxtral Realtime 4-bit via mlx-audio-swift. ⚠️ p50 misurato ~10 s + il cantonese produce Devanagari + il hokkien restituisce vuoto — dialetti cinesi non utilizzabili, preferire Qwen3-ASR. Solo Apple Silicon. Il primo utilizzo scarica ~3,5 GB di pesi."
+        "description": "⚠️ Sostituito da Qwen3-ASR-Realtime (più piccolo, più veloce, migliore copertura dialettale), conservato solo per confronto storico. Voxtral Realtime 4-bit via mlx-audio-swift. Il cantonese produce testo corrotto, l'hokkien restituisce stringa vuota. Solo Apple Silicon. Il primo utilizzo scarica ~3,5 GB."
       },
       "switching": "Cambio in corso...",
-      "title": "Preset ASR"
+      "title": "Preset ASR",
+      "experimentalQwen3Mlx": {
+        "name": "Qwen3-ASR Realtime (Sperimentale)",
+        "description": "~600 MB quantizzazione MLX / p50 1,2 s / Riconoscimento dialetti cantonese + shanghaiese + hokkien / Solo Apple Silicon."
+      }
     },
     "profiles": {
       "add": "Aggiungi profilo",
