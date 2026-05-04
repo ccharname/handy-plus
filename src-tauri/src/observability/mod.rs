@@ -140,11 +140,14 @@ pub fn init(log_dir: std::path::PathBuf, log_transcripts: bool) -> Observability
     let file_appender = tracing_appender::rolling::daily(log_dir, "handy.jsonl");
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 
-    use tracing_subscriber::prelude::*;
+    use tracing_subscriber::layer::SubscriberExt;
     use tracing_subscriber::{fmt, EnvFilter};
 
-    // Only install the subscriber if one is not already set (e.g. in tests).
-    let _ = tracing_subscriber::registry()
+    // Use set_global_default rather than try_init: try_init also installs a
+    // LogTracer (log → tracing bridge) which fights tauri_plugin_log over the
+    // `log` crate's process-wide logger and panics on startup. Our stage!()
+    // macros emit tracing events directly, so the bridge is unnecessary.
+    let subscriber = tracing_subscriber::registry()
         .with(EnvFilter::from_default_env().add_directive(tracing::Level::INFO.into()))
         .with(
             fmt::layer()
@@ -152,8 +155,8 @@ pub fn init(log_dir: std::path::PathBuf, log_transcripts: bool) -> Observability
                 .with_writer(non_blocking)
                 // Each event → one line of JSON; no pretty-printing.
                 .with_ansi(false),
-        )
-        .try_init();
+        );
+    let _ = tracing::subscriber::set_global_default(subscriber);
 
     ObservabilityGuard { _guard: guard }
 }
