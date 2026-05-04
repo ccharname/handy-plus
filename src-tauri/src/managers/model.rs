@@ -138,11 +138,14 @@ fn is_hf_model_cached(hf_repo: &str) -> bool {
     let cache_dir_name = format!("models--{}", hf_repo.replace('/', "--"));
 
     // Respect HF_HOME / HUGGINGFACE_HUB_CACHE env overrides (same as HF Python SDK).
+    // Default: $HOME/.cache/huggingface/hub (POSIX default that HF Python SDK and
+    // mlx-audio-swift both use). Note: do NOT use dirs_next::cache_dir() — on
+    // macOS that returns ~/Library/Caches, which HF tooling does NOT use.
     let hf_cache_root = std::env::var("HUGGINGFACE_HUB_CACHE")
         .or_else(|_| std::env::var("HF_HOME").map(|h| format!("{}/hub", h)))
         .unwrap_or_else(|_| {
-            dirs_next::cache_dir()
-                .map(|d| d.join("huggingface").join("hub"))
+            dirs_next::home_dir()
+                .map(|h| h.join(".cache").join("huggingface").join("hub"))
                 .unwrap_or_else(|| PathBuf::from("~/.cache/huggingface/hub"))
                 .to_string_lossy()
                 .into_owned()

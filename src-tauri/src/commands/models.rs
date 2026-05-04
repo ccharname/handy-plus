@@ -29,6 +29,22 @@ pub async fn download_model(
     model_manager: State<'_, Arc<ModelManager>>,
     model_id: String,
 ) -> Result<(), String> {
+    // Short-circuit for MLX models — they're managed by HuggingFace Hub via
+    // mlx-audio-swift's internal download flow on first inference call. Handy
+    // does not own the download; pretending to download here would fail
+    // (url=None) and surface as "下载失败" in the UI.
+    if let Some(info) = model_manager.get_model_info(&model_id) {
+        if matches!(
+            info.engine_type,
+            crate::managers::model::EngineType::MlxAudio(_)
+        ) {
+            // The bridge will fetch on first transcribe call if cache is empty.
+            // Do NOT route through handy's URL-based download path here.
+            // Cache status is refreshed at startup + via existing recheck paths.
+            return Ok(());
+        }
+    }
+
     let result = model_manager
         .download_model(&model_id)
         .await
