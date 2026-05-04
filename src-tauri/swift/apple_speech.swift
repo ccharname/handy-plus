@@ -76,14 +76,22 @@ private func runBlockingAsync<T>(
 }
 
 /// Shared implementation for both the plain and with-partials variants.
-/// On macOS 26+, dispatches to `transcribeImplSpeechAnalyzer` ONLY when the
-/// per-locale SpeechTranscriber model is fully installed (strict gate).
-/// Falls back to `transcribeImplLegacy` (SFSpeechRecognizer) when:
-///   • The locale is not in SpeechTranscriber.supportedLocales, or
-///   • The locale is not in SpeechTranscriber.installedLocales (model not downloaded), or
-///   • The inventory probe times out (>2 s, indicates system not ready).
-/// In the not-installed case a background download is triggered so subsequent calls succeed.
-/// `onPartial` is called for each non-final result; pass nil to disable.
+///
+/// ROLLED BACK (2026-05-04): SpeechAnalyzer dispatch disabled again — strict gate
+/// based on `SpeechTranscriber.installedLocales` still SIGTRAP'd at
+/// `SpeechRecognizerWorker.preRunRecognition()` for zh-CN (crash report
+/// handy-2026-05-04-124129.ips). The inventory APIs are not reliable signals
+/// of "ready to transcribe" on macOS 26.4 — `installedLocales.contains(zh-CN)`
+/// returns true while the worker still aborts. Re-enabling requires:
+///   1. End-to-end observability (Swift print is NOT captured by Tauri logger;
+///      use NSLog or write to /tmp marker file to see decision path).
+///   2. Pre-installed locale fixture (manually trigger downloadAndInstall AND
+///      verify SpeechAnalyzer succeeds in a side-channel before flipping dispatch).
+///   3. A stable signal beyond inventory queries (try-catch SpeechAnalyzer.start
+///      on a probe buffer? unclear if that even catches the fatalError).
+///
+/// SpeechAnalyzer helpers (`speechAnalyzerIsReady`, `transcribeImplSpeechAnalyzer`)
+/// are kept as dead code for the next attempt.
 @available(macOS 10.15, *)
 private func transcribeImpl(
     samples: UnsafePointer<Float>,
@@ -96,27 +104,6 @@ private func transcribeImpl(
     timeoutMs: Int32,
     onPartial: ((String) -> Void)?
 ) -> UnsafeMutablePointer<AppleSpeechResponse> {
-    // macOS 26+: attempt SpeechAnalyzer path only when the locale model is fully ready.
-    if #available(macOS 26.0, *) {
-        let localeStr = String(cString: localeBcp47)
-        let locale = Locale(identifier: localeStr)
-        // Probe inventory synchronously (2 s timeout). nil = timed out → fall back.
-        let ready = runBlockingAsync { await speechAnalyzerIsReady(locale: locale) } ?? false
-        if ready {
-            return transcribeImplSpeechAnalyzer(
-                samples: samples,
-                sampleCount: sampleCount,
-                sampleRate: sampleRate,
-                localeBcp47: localeBcp47,
-                contextualStrings: contextualStrings,
-                contextualCount: contextualCount,
-                requireOnDevice: requireOnDevice,
-                timeoutMs: timeoutMs,
-                onPartial: onPartial
-            )
-        }
-        print("[apple_speech] SpeechAnalyzer model not ready for \(localeStr); falling back to SFSpeechRecognizer (download triggered in background if needed)")
-    }
     return transcribeImplLegacy(
         samples: samples,
         sampleCount: sampleCount,
