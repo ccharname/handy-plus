@@ -1190,6 +1190,33 @@ impl TranscriptionManager {
                 .transcribe(audio, &TranscribeOptions::default())
                 .map_err(|e| anyhow::anyhow!("Moonshine streaming transcription failed: {}", e)),
             LoadedEngine::SenseVoice(sense_voice_engine) => {
+                // Silence/noise pre-filter: SenseVoice hallucinates "我。"/"嗯。"
+                // on pure-silence/tone clips. Skip the engine when VAD reports
+                // < 240 ms of voice frames (mirrors FunASR-Nano gate below).
+                if let Ok(vad_path) = self.app_handle.path().resolve(
+                    "resources/models/silero_vad_v4.onnx",
+                    tauri::path::BaseDirectory::Resource,
+                ) {
+                    use crate::audio_toolkit::silence_gate;
+                    match silence_gate::check(audio, &vad_path) {
+                        silence_gate::SilenceGate::Silence { voice_frames, total_frames } => {
+                            debug!(
+                                "SenseVoice: VAD detected {} speech frames / {} total — skipping transcription",
+                                voice_frames, total_frames
+                            );
+                            return Ok(transcribe_rs::TranscriptionResult {
+                                text: String::new(),
+                                segments: None,
+                            });
+                        }
+                        silence_gate::SilenceGate::Speech { voice_frames, .. } => {
+                            debug!("SenseVoice: VAD pre-check passed ({} speech frames)", voice_frames);
+                        }
+                        silence_gate::SilenceGate::Unavailable => {
+                            warn!("SenseVoice: VAD init failed; skipping pre-filter (fail-open)");
+                        }
+                    }
+                }
                 let language = match validated_language {
                     "zh" | "zh-Hans" | "zh-Hant" => Some("zh".to_string()),
                     "en" => Some("en".to_string()),
@@ -1709,7 +1736,15 @@ impl TranscriptionManager {
                     let stream = session.recognizer.create_stream();
                     stream.accept_waveform(16000, audio);
                     session.recognizer.decode(&stream);
-                    let text = stream.get_result().map(|r| r.text).unwrap_or_default();
+                    let raw_text = stream.get_result().map(|r| r.text).unwrap_or_default();
+                    // FunASR-Nano LLM decoder occasionally emits `。。`/`？？`/`,,`
+                    // sequences. Cheap (<1 ms) post-process collapses adjacent
+                    // duplicates from the same punctuation class.
+                    let text = if matches!(session.kind, SherpaModelKind::FunAsrNano) {
+                        crate::audio_toolkit::punc_dedup::collapse_repeated_punctuation(&raw_text)
+                    } else {
+                        raw_text
+                    };
                     Ok(transcribe_rs::TranscriptionResult {
                         text,
                         segments: None,
