@@ -362,18 +362,6 @@
         "fromFile": "أو تحميل من ملف",
         "import": "استيراد",
         "preview": "{{add}} جديدة · {{skip}} مكررة · {{invalid}} غير صالحة"
-      },
-      "puncZh": {
-        "cancel": "إلغاء",
-        "description": "إضافة علامات الترقيم تلقائيًا إلى النسخ الصينية باستخدام نموذج CT-Transformer. يُطبَّق على جميع محركات ASR (Apple Speech, SenseVoice, FunASR-Nano). يتطلب تنزيل نموذج الترقيم (~50 ميغابايت).",
-        "download": "تنزيل النموذج",
-        "label": "ترقيم صيني (CT-Transformer)",
-        "modelDownloading": "جارٍ تنزيل نموذج الترقيم...",
-        "modelFailed": "فشل التنزيل: {{error}}",
-        "modelMissing": "النموذج غير محمَّل — سيتم تخطي ترقيم الصينية.",
-        "modelReady": "النموذج جاهز (76 ميغابايت)",
-        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
-        "retry": "إعادة المحاولة"
       }
     },
     "vocabulary": {
@@ -668,7 +656,6 @@
       "postProcessProvider": "تجاوز مزوِّد ما بعد المعالجة",
       "profileEnabled": "مفعَّل",
       "profileName": "اسم الملف الشخصي",
-      "puncZhEnabled": "تجاوز الترقيم الصيني (CT-Punc)",
       "removeMatcher": "حذف",
       "selectedModel": "تجاوز نموذج ASR",
       "selectedModelHint": "يُحترَم فقط عند تفعيل 'تبديل المحرك فوريًا'. يضيف 1-3 ثوانٍ من تأخير تحميل النموذج عند النسخ الأول لكل ملف شخصي.",
@@ -752,8 +739,5 @@
     "transcribing": "جاري التفريغ",
     "processing": "...جاري المعالجة"
   },
-  "toast": {
-    "puncMissingDescription": "لن يُنتج Apple Speech وSenseVoice ترقيمًا صينيًا حتى يتم تنزيل نموذج CT-Punc. افتح الإعدادات ← متقدم للتنزيل.",
-    "puncMissingTitle": "نموذج الترقيم الصيني غير محمَّل"
-  }
+  "toast": {}
 }

@@ -40,7 +40,6 @@ pub async fn apply_asr_preset(
     // Step 1: write all non-model fields + mark active preset
     let mut settings = get_settings(&app);
     settings.selected_language = preset.language.clone();
-    settings.punc_zh_enabled = preset.punc_zh_enabled;
     if let Some(chain) = preset.require_post_process_chain.clone() {
         settings.post_process_chain = Some(chain);
     }

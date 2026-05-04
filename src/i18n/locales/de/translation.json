@@ -384,18 +384,6 @@
         "fromFile": "Oder aus Datei laden",
         "import": "Importieren",
         "preview": "{{add}} neu · {{skip}} doppelt · {{invalid}} ungültig"
-      },
-      "puncZh": {
-        "cancel": "Abbrechen",
-        "description": "Fügt automatisch Satzzeichen zu chinesischen Transkriptionen hinzu, mithilfe des CT-Transformer-Modells. Gilt für alle ASR-Engines (Apple Speech, SenseVoice, FunASR-Nano). Erfordert das Interpunktionsmodell (~50 MB).",
-        "download": "Modell herunterladen",
-        "label": "Chinesische Interpunktion (CT-Transformer)",
-        "modelDownloading": "Interpunktionsmodell wird heruntergeladen...",
-        "modelFailed": "Download fehlgeschlagen: {{error}}",
-        "modelMissing": "Modell nicht heruntergeladen — chinesische Interpunktion wird übersprungen.",
-        "modelReady": "Modell bereit (76 MB)",
-        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
-        "retry": "Erneut versuchen"
       }
     },
     "vocabulary": {
@@ -668,7 +656,6 @@
       "postProcessProvider": "Nachbearbeitungs-Anbieter-Überschreibung",
       "profileEnabled": "Aktiviert",
       "profileName": "Profilname",
-      "puncZhEnabled": "Chinesische Interpunktion (CT-Punc) Überschreibung",
       "removeMatcher": "Entfernen",
       "selectedModel": "ASR-Modell-Überschreibung",
       "selectedModelHint": "Wird nur beachtet, wenn 'Engine hot-swappen' aktiviert ist. Fügt beim ersten Transkriptionsjob pro Profil 1–3 s Modell-Ladelatenz hinzu.",
@@ -752,8 +739,5 @@
     "transcribing": "Transkribiere",
     "processing": "Verarbeite..."
   },
-  "toast": {
-    "puncMissingDescription": "Apple Speech und SenseVoice erzeugen keine chinesische Interpunktion, bis das CT-Punc-Modell heruntergeladen wurde. Einstellungen → Erweitert öffnen zum Herunterladen.",
-    "puncMissingTitle": "Chinesisches Interpunktionsmodell nicht heruntergeladen"
-  }
+  "toast": {}
 }

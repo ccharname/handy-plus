@@ -384,18 +384,6 @@
         "fromFile": "O carica da file",
         "import": "Importa",
         "preview": "{{add}} nuova · {{skip}} duplicata · {{invalid}} non valida"
-      },
-      "puncZh": {
-        "cancel": "Annulla",
-        "description": "Aggiunge automaticamente la punteggiatura alle trascrizioni in cinese usando il modello CT-Transformer. Si applica a tutti i motori ASR (Apple Speech, SenseVoice, FunASR-Nano). Richiede il download del modello di punteggiatura (~50 MB).",
-        "download": "Scarica modello",
-        "label": "Punteggiatura cinese (CT-Transformer)",
-        "modelDownloading": "Download del modello di punteggiatura...",
-        "modelFailed": "Download fallito: {{error}}",
-        "modelMissing": "Modello non scaricato — la punteggiatura cinese verrà saltata.",
-        "modelReady": "Modello pronto (76 MB)",
-        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
-        "retry": "Riprova"
       }
     },
     "vocabulary": {
@@ -668,7 +656,6 @@
       "postProcessProvider": "Override provider di post-elaborazione",
       "profileEnabled": "Abilitato",
       "profileName": "Nome profilo",
-      "puncZhEnabled": "Override punteggiatura cinese (CT-Punc)",
       "removeMatcher": "Rimuovi",
       "selectedModel": "Override modello ASR",
       "selectedModelHint": "Rispettato solo quando 'Hot-swap motore' è abilitato. Aggiunge 1–3 s di latenza di caricamento modello alla prima trascrizione per profilo.",
@@ -752,8 +739,5 @@
     "transcribing": "Trascrizione",
     "processing": "Elaborazione..."
   },
-  "toast": {
-    "puncMissingDescription": "Apple Speech e SenseVoice non produrranno punteggiatura cinese finché il modello CT-Punc non viene scaricato. Aprire Impostazioni → Avanzate per scaricare.",
-    "puncMissingTitle": "Modello di punteggiatura cinese non scaricato"
-  }
+  "toast": {}
 }

@@ -585,13 +585,13 @@ mod tests {
             v
         };
         fs::write(tmp.path().join("config.json"), &cfg_content).unwrap();
-        // tokenizer.json
+        // tokenizer_config.json (Qwen3-ASR uses BPE; no unified tokenizer.json)
         let tok_content: Vec<u8> = {
-            let mut v = b"{ \"version\": \"1.0\" }".to_vec();
+            let mut v = b"{ \"tokenizer_class\": \"Qwen2Tokenizer\" }".to_vec();
             v.extend(std::iter::repeat(b' ').take(200));
             v
         };
-        fs::write(tmp.path().join("tokenizer.json"), &tok_content).unwrap();
+        fs::write(tmp.path().join("tokenizer_config.json"), &tok_content).unwrap();
         let result = check_snapshot_integrity(tmp.path(), QWEN3_ASR_KEY_FILES);
         assert!(
             result.is_ok(),

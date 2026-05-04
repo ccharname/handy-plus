@@ -344,9 +344,6 @@ pub struct AppProfile {
     /// from other fields; this just reflects which preset label to show.
     #[serde(default)]
     pub active_preset_id: Option<String>,
-    /// Override punc_zh_enabled.  None = inherit global.
-    #[serde(default)]
-    pub punc_zh_enabled: Option<bool>,
     /// Override post_process_chain.  None = inherit global; Some(empty vec) = disable chain.
     #[serde(default)]
     pub post_process_chain: Option<Vec<String>>,
@@ -394,7 +391,6 @@ pub fn default_app_profiles() -> Vec<AppProfile> {
             auto_submit: Some(false),
             selected_model: None,
             active_preset_id: None,
-            punc_zh_enabled: Some(false),
             post_process_chain: None,
         },
         AppProfile {
@@ -421,7 +417,6 @@ pub fn default_app_profiles() -> Vec<AppProfile> {
             auto_submit: Some(false),
             selected_model: None,
             active_preset_id: None,
-            punc_zh_enabled: None,
             post_process_chain: None,
         },
         AppProfile {
@@ -448,7 +443,6 @@ pub fn default_app_profiles() -> Vec<AppProfile> {
             auto_submit: Some(false),
             selected_model: None,
             active_preset_id: None,
-            punc_zh_enabled: None,
             post_process_chain: None,
         },
         AppProfile {
@@ -467,7 +461,6 @@ pub fn default_app_profiles() -> Vec<AppProfile> {
             auto_submit: Some(true),
             selected_model: None,
             active_preset_id: None,
-            punc_zh_enabled: Some(false),
             post_process_chain: None,
         },
         AppProfile {
@@ -484,7 +477,6 @@ pub fn default_app_profiles() -> Vec<AppProfile> {
             auto_submit: None,
             selected_model: None,
             active_preset_id: None,
-            punc_zh_enabled: None,
             post_process_chain: None,
         },
     ]
@@ -616,11 +608,6 @@ pub struct AppSettings {
     /// When `None` or empty, falls back to `post_process_selected_prompt_id` (backward-compat).
     #[serde(default)]
     pub post_process_chain: Option<Vec<String>>,
-    /// When true (default), the CT-Transformer punctuation model is applied
-    /// to Chinese transcriptions from all ASR engines (Apple Speech, SenseVoice,
-    /// FunASR-Nano).  Set to false to disable the punctuation post-processing layer.
-    #[serde(default = "default_punc_zh_enabled")]
-    pub punc_zh_enabled: bool,
     /// Hotwords bias score used when loading the sherpa-onnx SenseVoice path
     /// (sense-voice-small-sherpa model). Maps to OfflineRecognizerConfig.hotwords_score.
     /// Range: 0.5 – 5.0. Default: 2.0. Has no effect on the transcribe-rs SenseVoice path.
@@ -662,7 +649,6 @@ pub struct AsrPreset {
     pub icon: String,
     pub model_id: String,
     pub language: String,
-    pub punc_zh_enabled: bool,
     pub require_post_process_chain: Option<Vec<String>>,
     #[serde(default)]
     pub require_apple_speech_on_device: Option<bool>,
@@ -675,7 +661,7 @@ pub fn default_asr_presets() -> Vec<AsrPreset> {
         AsrPreset {
             id: "chinese_balanced".to_string(),
             name: "Chinese Balanced".to_string(),
-            description: "SenseVoice + 中文标点 (CT-Punc)".to_string(),
+            description: "SenseVoice — Chinese-balanced offline".to_string(),
             icon: "🇨🇳".to_string(),
             // NOTE: kept on transcribe-rs sense-voice-int8 path. The sherpa
             // sense-voice-small variant would honour hotwords_file but
@@ -686,7 +672,6 @@ pub fn default_asr_presets() -> Vec<AsrPreset> {
             // recovery in the meantime.
             model_id: "sense-voice-int8".to_string(),
             language: "zh-Hans".to_string(),
-            punc_zh_enabled: true,
             require_post_process_chain: None,
             require_apple_speech_on_device: None,
             builtin: true,
@@ -703,7 +688,6 @@ pub fn default_asr_presets() -> Vec<AsrPreset> {
             icon: "🪶".to_string(),
             model_id: "qwen3-asr-mlx-8bit".to_string(),
             language: "zh-Hans".to_string(),
-            punc_zh_enabled: true,
             require_post_process_chain: None,
             require_apple_speech_on_device: None,
             builtin: true,
@@ -961,10 +945,6 @@ fn default_typing_tool() -> TypingTool {
     TypingTool::Auto
 }
 
-fn default_punc_zh_enabled() -> bool {
-    true
-}
-
 fn default_hotwords_boost() -> f32 {
     2.0
 }
@@ -1141,7 +1121,6 @@ pub fn ensure_v_0_8_15_drop_hidden_preset_migration(
             .find(|p| p.id == "chinese_balanced")
         {
             settings.selected_language = preset.language.clone();
-            settings.punc_zh_enabled = preset.punc_zh_enabled;
             if let Some(chain) = preset.require_post_process_chain.clone() {
                 settings.post_process_chain = Some(chain);
             }
@@ -1207,7 +1186,6 @@ pub fn ensure_v_0_8_16_drop_hidden_preset_migration(
             .find(|p| p.id == "chinese_balanced")
         {
             settings.selected_language = preset.language.clone();
-            settings.punc_zh_enabled = preset.punc_zh_enabled;
             if let Some(chain) = preset.require_post_process_chain.clone() {
                 settings.post_process_chain = Some(chain);
             }
@@ -1314,7 +1292,6 @@ fn reset_to_chinese_balanced(settings: &mut AppSettings) {
         .find(|p| p.id == "chinese_balanced")
     {
         settings.selected_language = preset.language.clone();
-        settings.punc_zh_enabled = preset.punc_zh_enabled;
         if let Some(chain) = preset.require_post_process_chain.clone() {
             settings.post_process_chain = Some(chain);
         }
@@ -1324,6 +1301,36 @@ fn reset_to_chinese_balanced(settings: &mut AppSettings) {
         settings.active_preset_id = Some(preset.id.clone());
         settings.selected_model = preset.model_id.clone();
     }
+}
+
+/// v_0_8_18 — CT-Transformer / punc_zh subsystem removal.
+///
+/// No data mutation required: serde already ignores the removed `punc_zh_enabled`
+/// field via `#[serde(default)]` on both `AppSettings` and `AppProfile`.  This
+/// migration exists solely as a version marker so the removal is visible in the
+/// `migration_applied` audit log.
+const MIGRATION_V_0_8_18_DROP_PUNC_ZH: &str = "v_0_8_18_drop_punc_zh_field";
+
+pub fn ensure_v_0_8_18_drop_punc_zh_migration(settings: &mut AppSettings) -> bool {
+    if settings
+        .migration_applied
+        .get(MIGRATION_V_0_8_18_DROP_PUNC_ZH)
+        .copied()
+        .unwrap_or(false)
+    {
+        return false; // already applied
+    }
+
+    log::info!(
+        "Migration {}: CT-Transformer punc_zh subsystem removed; \
+         punc_zh_enabled field (if present in stored JSON) silently ignored by serde",
+        MIGRATION_V_0_8_18_DROP_PUNC_ZH
+    );
+
+    settings
+        .migration_applied
+        .insert(MIGRATION_V_0_8_18_DROP_PUNC_ZH.to_string(), true);
+    true
 }
 
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
@@ -1450,7 +1457,6 @@ pub fn get_default_settings() -> AppSettings {
         diary_dir: None,
         diary_keywords: default_diary_keywords(),
         post_process_chain: None,
-        punc_zh_enabled: default_punc_zh_enabled(),
         hotwords_boost: default_hotwords_boost(),
         active_preset_id: None,
         migration_applied: HashMap::new(),
@@ -1537,6 +1543,7 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         changed |= ensure_v_0_8_16_drop_hidden_preset_migration(&mut settings, &visible_refs);
     }
     changed |= ensure_v_0_8_17_collapse_migration(&mut settings);
+    changed |= ensure_v_0_8_18_drop_punc_zh_migration(&mut settings);
     if changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
@@ -1571,6 +1578,7 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         changed |= ensure_v_0_8_16_drop_hidden_preset_migration(&mut settings, &visible_refs);
     }
     changed |= ensure_v_0_8_17_collapse_migration(&mut settings);
+    changed |= ensure_v_0_8_18_drop_punc_zh_migration(&mut settings);
     if changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
@@ -1843,6 +1851,53 @@ mod migration_tests {
         assert!(!changed);
         assert_eq!(s.active_preset_id.as_deref(), Some("apple_native"));
         assert_eq!(s.selected_model, "apple-speech");
+    }
+
+    // ── v0.8.18 drop-punc-zh migration tests ─────────────────────────────────
+
+    #[test]
+    fn v18_marks_migration_applied_and_returns_true() {
+        let mut s = get_default_settings();
+        s.migration_applied = HashMap::new();
+        let changed = ensure_v_0_8_18_drop_punc_zh_migration(&mut s);
+        assert!(changed, "first run should return true");
+        assert_eq!(
+            s.migration_applied.get(MIGRATION_V_0_8_18_DROP_PUNC_ZH),
+            Some(&true),
+            "migration flag must be set"
+        );
+    }
+
+    #[test]
+    fn v18_idempotent_when_already_applied() {
+        let mut s = get_default_settings();
+        s.migration_applied
+            .insert(MIGRATION_V_0_8_18_DROP_PUNC_ZH.to_string(), true);
+        let changed = ensure_v_0_8_18_drop_punc_zh_migration(&mut s);
+        assert!(!changed, "second run must be a no-op");
+    }
+
+    /// Old settings JSON with punc_zh_enabled present should deserialise cleanly
+    /// (serde ignores unknown/removed fields by default).
+    #[test]
+    fn v18_old_json_with_punc_zh_field_deserialises_ok() {
+        // Serialise a default AppSettings, then inject a punc_zh_enabled field
+        // into the JSON to simulate a stored settings from before v_0_8_18.
+        let defaults = get_default_settings();
+        let mut as_value = serde_json::to_value(&defaults).expect("serialise defaults");
+        as_value
+            .as_object_mut()
+            .unwrap()
+            .insert("punc_zh_enabled".to_string(), serde_json::Value::Bool(true));
+        let old_json = serde_json::to_string(&as_value).expect("re-serialise");
+
+        // serde must ignore the unknown field and produce a valid AppSettings.
+        let result: Result<AppSettings, _> = serde_json::from_str(&old_json);
+        assert!(
+            result.is_ok(),
+            "old JSON with punc_zh_enabled must deserialise without error: {:?}",
+            result.err()
+        );
     }
 }
 

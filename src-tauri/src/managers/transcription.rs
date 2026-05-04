@@ -4,7 +4,6 @@ use crate::audio_toolkit::{
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, MlxModelKind, ModelManager, SherpaModelKind};
 use crate::observability::{self, Outcome, Stage, Stopwatch};
-use crate::profile_resolver::resolve_effective_settings;
 use crate::settings::{
     get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, WhisperAcceleratorSetting,
 };
@@ -970,7 +969,6 @@ impl TranscriptionManager {
         }
 
         let settings = get_settings(&self.app_handle);
-        let effective = resolve_effective_settings(&settings);
 
         // Use override language if provided, otherwise fall back to settings.
         let language_to_use =
@@ -1110,17 +1108,7 @@ impl TranscriptionManager {
         );
         let filter_ms = t_filter.elapsed().as_millis();
 
-        // Apply CT-Transformer Chinese punctuation when enabled and language is Chinese.
-        // Use effective.punc_zh_enabled so profile overrides are honoured.
-        let t_punc = std::time::Instant::now();
-        let final_result = apply_punc_zh_if_applicable(
-            filtered_result,
-            &validated_language,
-            &settings.app_language,
-            effective.punc_zh_enabled,
-            &self.app_handle,
-        );
-        let punc_ms = t_punc.elapsed().as_millis();
+        let final_result = filtered_result;
 
         let et = std::time::Instant::now();
         let total_ms = (et - st).as_millis();
@@ -1129,8 +1117,8 @@ impl TranscriptionManager {
             total_ms
         );
         debug!(
-            "Pipeline timing (override): engine={}ms custom_words={}ms aliases={}ms filter={}ms punc={}ms total={}ms",
-            engine_ms, custom_words_ms, aliases_ms, filter_ms, punc_ms, total_ms
+            "Pipeline timing (override): engine={}ms custom_words={}ms aliases={}ms filter={}ms total={}ms",
+            engine_ms, custom_words_ms, aliases_ms, filter_ms, total_ms
         );
 
         if final_result.is_empty() {
@@ -1341,9 +1329,9 @@ impl TranscriptionManager {
                 ))
             }
             LoadedEngine::Sherpa(session) => {
-                // VERIFIED Qwen3 → custom_words → punc_zh pipeline:
+                // VERIFIED Qwen3 → custom_words pipeline:
                 // skip_word_correction only gates Whisper; Sherpa
-                // (including Qwen3Asr) flows through apply_custom_words + punc_zh
+                // (including Qwen3Asr) flows through apply_custom_words
                 // in the post-processing pipeline above do_transcribe.
 
                 // For Qwen3-ASR: chunk LONG audio only (>30 s) for EOS-truncation
@@ -1815,7 +1803,6 @@ impl TranscriptionManager {
 
         // Get current settings for configuration
         let settings = get_settings(&self.app_handle);
-        let effective = resolve_effective_settings(&settings);
 
         // Validate selected language against the model's supported languages.
         // If the language isn't supported, fall back to "auto" to prevent errors.
@@ -1976,17 +1963,7 @@ impl TranscriptionManager {
         );
         let filter_ms = t_filter.elapsed().as_millis();
 
-        // Apply CT-Transformer Chinese punctuation when enabled and language is Chinese.
-        // Use effective.punc_zh_enabled so profile overrides are honoured.
-        let t_punc = std::time::Instant::now();
-        let final_result = apply_punc_zh_if_applicable(
-            filtered_result,
-            &validated_language,
-            &settings.app_language,
-            effective.punc_zh_enabled,
-            &self.app_handle,
-        );
-        let punc_ms = t_punc.elapsed().as_millis();
+        let final_result = filtered_result;
 
         let et = std::time::Instant::now();
         let total_ms = (et - st).as_millis();
@@ -2000,8 +1977,8 @@ impl TranscriptionManager {
             total_ms, translation_note
         );
         debug!(
-            "Pipeline timing: engine={}ms custom_words={}ms aliases={}ms filter={}ms punc={}ms total={}ms",
-            engine_ms, custom_words_ms, aliases_ms, filter_ms, punc_ms, total_ms
+            "Pipeline timing: engine={}ms custom_words={}ms aliases={}ms filter={}ms total={}ms",
+            engine_ms, custom_words_ms, aliases_ms, filter_ms, total_ms
         );
 
         if final_result.is_empty() {
@@ -2013,141 +1990,6 @@ impl TranscriptionManager {
         self.maybe_unload_immediately("transcription");
 
         Ok(final_result)
-    }
-}
-
-/// Apply CT-Transformer Chinese punctuation restoration if the conditions are met.
-///
-/// Returns the punctuated text on success or `text` unchanged on any error/miss.
-/// Never panics — all errors are logged and gracefully skipped.
-fn apply_punc_zh_if_applicable(
-    text: String,
-    validated_language: &str,
-    app_language: &str,
-    punc_zh_enabled: bool,
-    app_handle: &tauri::AppHandle,
-) -> String {
-    if !punc_zh_enabled || text.is_empty() {
-        debug!(
-            "punc_zh: skipped (enabled={} empty={})",
-            punc_zh_enabled,
-            text.is_empty()
-        );
-        return text;
-    }
-
-    // Determine whether the *effective* language is Chinese.
-    // We check `validated_language` first (explicitly selected by user or model).
-    // When it is "auto" we fall back to `app_language`.
-    let lang_to_check = if validated_language == "auto" {
-        app_language
-    } else {
-        validated_language
-    };
-
-    let base_lang = lang_to_check
-        .split(&['-', '_'][..])
-        .next()
-        .unwrap_or(lang_to_check);
-
-    let language_says_zh = base_lang == "zh" || lang_to_check == "yue";
-
-    // Content-based fallback: when language metadata is ambiguous (e.g. Apple
-    // Speech preset with `auto` + non-Chinese app_language), inspect the
-    // transcription itself. The CT-Transformer-Punc model we ship is the
-    // zh-en vocab272727 variant — it punctuates Chinese text safely and is
-    // a no-op on pure ASCII, so applying it whenever any CJK char appears is
-    // both safe and correct.
-    let text_has_cjk = text.chars().any(|c| {
-        let cp = c as u32;
-        // CJK Unified Ideographs core + extension A + Compatibility + general
-        // CJK punctuation ranges. Covers 簡/繁 + Cantonese + Japanese kanji.
-        (0x3400..=0x4DBF).contains(&cp)         // CJK Ext A
-            || (0x4E00..=0x9FFF).contains(&cp)  // CJK Unified Ideographs
-            || (0xF900..=0xFAFF).contains(&cp)  // CJK Compatibility Ideographs
-            || (0x3000..=0x303F).contains(&cp) // CJK Symbols and Punctuation
-    });
-
-    debug!(
-        "punc_zh: validated_lang={} app_lang={} lang_to_check={} language_says_zh={} text_has_cjk={} text_len={}",
-        validated_language,
-        app_language,
-        lang_to_check,
-        language_says_zh,
-        text_has_cjk,
-        text.len()
-    );
-
-    if !language_says_zh && !text_has_cjk {
-        // Neither metadata nor content suggests Chinese — skip punc layer
-        debug!(
-            "punc_zh: skipped — neither language nor content suggests Chinese (text='{}')",
-            text.chars().take(50).collect::<String>()
-        );
-        return text;
-    }
-
-    // Density short-circuit: if the upstream engine (e.g. FunASR-Nano LLM) already
-    // produced punctuation, running CT-Punc again is wasted work that can also
-    // distort spacing around existing marks. Threshold 2% is empirically the
-    // floor below which a Chinese sentence almost certainly lacks proper marks.
-    let total_chars = text.chars().count();
-    if total_chars > 0 {
-        let punct_count = text
-            .chars()
-            .filter(|c| {
-                matches!(
-                    *c,
-                    '。' | '，'
-                        | '！'
-                        | '？'
-                        | '；'
-                        | '：'
-                        | '、'
-                        | '\u{201C}'
-                        | '\u{201D}'
-                        | '\u{2018}'
-                        | '\u{2019}'
-                        | '.'
-                        | ','
-                        | '!'
-                        | '?'
-                        | ';'
-                        | ':'
-                )
-            })
-            .count();
-        let density = punct_count as f32 / total_chars as f32;
-        if density >= 0.02 {
-            debug!(
-                "punc_zh: skipped (already punctuated, density={:.3} {}/{})",
-                density, punct_count, total_chars
-            );
-            return text;
-        }
-    }
-
-    // Build path: <app_data_dir>/models/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8
-    let model_dir = match crate::portable::app_data_dir(app_handle) {
-        Ok(d) => d
-            .join("models")
-            .join("sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8"),
-        Err(e) => {
-            warn!("punc_zh: cannot resolve app_data_dir: {}", e);
-            return text;
-        }
-    };
-
-    match crate::audio_toolkit::punc_zh::add_punctuation(&model_dir, &text) {
-        Ok(punctuated) => {
-            debug!("punc_zh: applied punctuation");
-            punctuated
-        }
-        Err(e) => {
-            // Model absent or inference failed — silently degrade
-            debug!("punc_zh: skipped ({})", e);
-            text
-        }
     }
 }
 

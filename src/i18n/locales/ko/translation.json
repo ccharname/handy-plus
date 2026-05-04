@@ -384,18 +384,6 @@
         "fromFile": "또는 파일에서 불러오기",
         "import": "가져오기",
         "preview": "{{add}}개 새 항목 · {{skip}}개 중복 · {{invalid}}개 유효하지 않음"
-      },
-      "puncZh": {
-        "cancel": "취소",
-        "description": "CT-Transformer 모델을 사용하여 중국어 전사에 자동으로 구두점을 추가합니다. 모든 ASR 엔진(Apple Speech, SenseVoice, FunASR-Nano)에 적용됩니다. 구두점 모델 다운로드 필요 (~50 MB).",
-        "download": "모델 다운로드",
-        "label": "중국어 구두점 (CT-Transformer)",
-        "modelDownloading": "구두점 모델 다운로드 중...",
-        "modelFailed": "다운로드 실패: {{error}}",
-        "modelMissing": "모델 미다운로드 — 중국어 구두점이 건너뛰어집니다.",
-        "modelReady": "모델 준비 완료 (76 MB)",
-        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
-        "retry": "다시 시도"
       }
     },
     "vocabulary": {
@@ -668,7 +656,6 @@
       "postProcessProvider": "후처리 공급자 재정의",
       "profileEnabled": "활성화됨",
       "profileName": "프로필 이름",
-      "puncZhEnabled": "중국어 구두점 (CT-Punc) 재정의",
       "removeMatcher": "제거",
       "selectedModel": "ASR 모델 재정의",
       "selectedModelHint": "'엔진 hot-swap'이 활성화된 경우에만 적용됩니다. 프로필당 첫 번째 전사 시 1~3초의 모델 로딩 지연이 추가됩니다.",
@@ -752,8 +739,5 @@
     "transcribing": "텍스트로 변환 중",
     "processing": "처리 중..."
   },
-  "toast": {
-    "puncMissingDescription": "CT-Punc 모델이 다운로드될 때까지 Apple Speech와 SenseVoice는 중국어 구두점을 생성하지 않습니다. 설정 → 고급을 열어 다운로드하세요.",
-    "puncMissingTitle": "중국어 구두점 모델 미다운로드"
-  }
+  "toast": {}
 }

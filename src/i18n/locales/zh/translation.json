@@ -384,18 +384,6 @@
         "confirmAdd": "全部添加",
         "cancel": "取消",
         "fileTypes": ".txt / .csv / .json"
-      },
-      "puncZh": {
-        "cancel": "取消",
-        "description": "使用 CT-Transformer 模型自动为中文转录添加标点符号。适用于所有 ASR 引擎（Apple Speech、SenseVoice、FunASR-Nano）。需要下载标点模型（约 50 MB）。",
-        "download": "下载模型",
-        "label": "中文标点（CT-Transformer）",
-        "modelDownloading": "正在下载标点模型...",
-        "modelFailed": "下载失败：{{error}}",
-        "modelMissing": "模型未下载 — 中文标点将被跳过。",
-        "modelReady": "模型已就绪（76 MB）",
-        "progressText": "{{percentage}}%（{{downloaded}} / {{total}}）",
-        "retry": "重试"
       }
     },
     "vocabulary": {
@@ -621,7 +609,6 @@
       "postProcessChainDisabled": "已禁用",
       "postProcessChainHint": "覆盖此配置文件的后处理提示词链。空列表将禁用链式模式。",
       "postProcessChainReset": "× 重置",
-      "puncZhEnabled": "中文标点（CT-Punc）覆盖",
       "selectedModel": "ASR 模型覆盖",
       "selectedModelHint": "仅在启用「热切换引擎」时生效。每个配置文件首次转录时会增加 1–3 秒的模型加载延迟。",
       "selectedPreset": "ASR 预设覆盖",
@@ -752,8 +739,5 @@
     "transcribing": "正在转录",
     "processing": "处理中..."
   },
-  "toast": {
-    "puncMissingDescription": "在下载 CT-Punc 模型前，Apple Speech 和 SenseVoice 不会生成中文标点。请打开设置 → 高级进行下载。",
-    "puncMissingTitle": "中文标点模型未下载"
-  }
+  "toast": {}
 }

@@ -3,7 +3,6 @@ pub mod cer;
 pub mod constants;
 pub mod itn_zh;
 pub mod punc_dedup;
-pub mod punc_zh;
 pub mod sense_voice_filter;
 pub mod silence_gate;
 pub mod text;

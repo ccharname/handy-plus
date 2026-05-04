@@ -81,7 +81,6 @@ pub struct BenchmarkReport {
     pub preset_name: String,
     pub model_id: String,
     pub language: String,
-    pub punc_zh_enabled: bool,
     pub timestamp: String,
     /// Benchmark mode that produced this report.
     #[serde(default = "default_bench_mode_str")]
@@ -237,16 +236,9 @@ pub async fn run_asr_benchmark(
             )
             .await
         }
-        BenchMode::PuncOnly => {
-            run_punc_only_mode(
-                app,
-                transcription_manager,
-                preset_id,
-                dataset_dir,
-                output_dir,
-            )
-            .await
-        }
+        BenchMode::PuncOnly => Err(
+            "BenchMode::PuncOnly is no longer supported (CT-Punc subsystem removed)".to_string(),
+        ),
         BenchMode::Chain => {
             run_chain_mode(
                 app,
@@ -312,7 +304,6 @@ async fn run_asr_mode(
         use crate::settings::{get_settings, write_settings};
         let mut settings = get_settings(&app);
         settings.selected_language = preset.language.clone();
-        settings.punc_zh_enabled = preset.punc_zh_enabled;
         if let Some(chain) = preset.require_post_process_chain.clone() {
             settings.post_process_chain = Some(chain);
         }
@@ -495,7 +486,6 @@ async fn run_asr_mode(
         preset_name: preset.name.clone(),
         model_id: preset.model_id.clone(),
         language: preset.language.clone(),
-        punc_zh_enabled: preset.punc_zh_enabled,
         timestamp: chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string(),
         bench_mode: "asr".to_string(),
         items,
@@ -512,149 +502,6 @@ async fn run_asr_mode(
         .map_err(|e| format!("Failed to write report to {}: {}", report_path.display(), e))?;
 
     log::info!("Benchmark report written to: {}", report_path.display());
-
-    Ok(report)
-}
-
-// ── BenchMode::PuncOnly ───────────────────────────────────────────────────────
-
-/// Run the punctuation-only benchmark.
-///
-/// Reads `<dataset_dir>/punc_input.txt` (one plain-text Chinese sentence per
-/// line).  Each line is fed to `punc_zh::add_punctuation` in a loop of 100
-/// iterations.  The first iteration constitutes the cold-start; iterations 2-100
-/// build the steady-state distribution.
-async fn run_punc_only_mode(
-    app: AppHandle,
-    _transcription_manager: State<'_, Arc<TranscriptionManager>>,
-    preset_id: String,
-    dataset_dir: String,
-    output_dir: String,
-) -> Result<BenchmarkReport, String> {
-    // Resolve punc model dir.
-    let model_dir = crate::portable::app_data_dir(&app)
-        .map_err(|e| format!("Cannot resolve app_data_dir: {}", e))?
-        .join("models")
-        .join("sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8");
-
-    if !crate::audio_toolkit::punc_zh::is_punc_model_present(&model_dir) {
-        return Err(format!(
-            "Punc model not found at {}. Download via the app settings first.",
-            model_dir.display()
-        ));
-    }
-
-    // Read input sentences.
-    let input_file = std::path::PathBuf::from(&dataset_dir).join("punc_input.txt");
-    if !input_file.exists() {
-        return Err(format!(
-            "punc_input.txt not found at {}",
-            input_file.display()
-        ));
-    }
-
-    let content = std::fs::read_to_string(&input_file)
-        .map_err(|e| format!("Cannot read punc_input.txt: {}", e))?;
-
-    let sentences: Vec<&str> = content
-        .lines()
-        .map(|l| l.trim())
-        .filter(|l| !l.is_empty())
-        .collect();
-
-    if sentences.is_empty() {
-        return Err("punc_input.txt contains no non-empty lines".to_string());
-    }
-
-    const ITERATIONS: usize = 100;
-    let total_sentences = sentences.len();
-
-    // Run on a blocking thread to avoid stalling the async runtime.
-    let model_dir_clone = model_dir.clone();
-    let sentences_owned: Vec<String> = sentences.iter().map(|s| s.to_string()).collect();
-    let preset_id_clone = preset_id.clone();
-    let app_clone = app.clone();
-
-    let items: Vec<BenchmarkItem> = tauri::async_runtime::spawn_blocking(move || {
-        let mut items: Vec<BenchmarkItem> = Vec::with_capacity(ITERATIONS * total_sentences);
-
-        for iter in 0..ITERATIONS {
-            for (sent_idx, sentence) in sentences_owned.iter().enumerate() {
-                // Emit progress.
-                let completed = iter * total_sentences + sent_idx;
-                let _ = app_clone.emit(
-                    "bench-progress",
-                    BenchProgressPayload {
-                        preset_id: preset_id_clone.clone(),
-                        completed,
-                        total: ITERATIONS * total_sentences,
-                        current_wav: format!("iter={} sent={}", iter, sent_idx),
-                    },
-                );
-
-                let t0 = Instant::now();
-                let result =
-                    crate::audio_toolkit::punc_zh::add_punctuation(&model_dir_clone, sentence)
-                        .unwrap_or_else(|e| {
-                            log::warn!("punc_zh error at iter={} sent={}: {}", iter, sent_idx, e);
-                            sentence.to_string()
-                        });
-                let latency_ms = t0.elapsed().as_millis() as u64;
-
-                let punc_count = count_punc(&result);
-                let char_count = result.chars().count();
-
-                items.push(BenchmarkItem {
-                    wav: format!("iter{:03}_sent{:02}", iter, sent_idx),
-                    hypothesis: result,
-                    latency_ms,
-                    punc_count,
-                    char_count,
-                    reference: None,
-                    cer: None,
-                    audio_ms: None,
-                    rtf: None,
-                });
-            }
-        }
-
-        items
-    })
-    .await
-    .map_err(|e| format!("PuncOnly bench task panicked: {}", e))?;
-
-    let summary = make_summary(&items, 0.0);
-
-    // Write report.
-    let timestamp = chrono::Utc::now().format("%Y-%m-%dT%H-%M-%SZ").to_string();
-    let report_filename = format!("{}_punc_only_{}.json", preset_id, timestamp);
-    let output_path = std::path::PathBuf::from(&output_dir);
-    std::fs::create_dir_all(&output_path)
-        .map_err(|e| format!("Cannot create output_dir '{}': {}", output_dir, e))?;
-
-    let report = BenchmarkReport {
-        preset_id: preset_id.clone(),
-        preset_name: "PuncOnly".to_string(),
-        model_id: model_dir.display().to_string(),
-        language: "zh".to_string(),
-        punc_zh_enabled: true,
-        timestamp: chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string(),
-        bench_mode: "punc_only".to_string(),
-        items,
-        summary,
-        chain_steps: vec![],
-        swap_records: vec![],
-    };
-
-    let json = serde_json::to_string_pretty(&report)
-        .map_err(|e| format!("Failed to serialize report: {}", e))?;
-    let report_path = output_path.join(&report_filename);
-    std::fs::write(&report_path, &json).map_err(|e| format!("Failed to write report: {}", e))?;
-
-    log::info!(
-        "PuncOnly benchmark report written to: {}",
-        report_path.display()
-    );
 
     Ok(report)
 }
@@ -867,7 +714,6 @@ async fn run_chain_mode(
         preset_name: "Chain".to_string(),
         model_id: "n/a".to_string(),
         language: "n/a".to_string(),
-        punc_zh_enabled: false,
         timestamp: chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string(),
         bench_mode: "chain".to_string(),
         items,
@@ -1063,7 +909,6 @@ async fn run_swap_mode(
         preset_name: "Swap".to_string(),
         model_id: "sense-voice-int8 / funasr-nano".to_string(),
         language: "n/a".to_string(),
-        punc_zh_enabled: false,
         timestamp: chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string(),
         bench_mode: "swap".to_string(),
         items,
@@ -1140,7 +985,6 @@ async fn run_accuracy_mode(
         use crate::settings::{get_settings, write_settings};
         let mut settings = get_settings(&app);
         settings.selected_language = preset.language.clone();
-        settings.punc_zh_enabled = preset.punc_zh_enabled;
         if let Some(chain) = preset.require_post_process_chain.clone() {
             settings.post_process_chain = Some(chain);
         }
@@ -1380,7 +1224,6 @@ async fn run_accuracy_mode(
         preset_name: preset.name.clone(),
         model_id: preset.model_id.clone(),
         language: preset.language.clone(),
-        punc_zh_enabled: preset.punc_zh_enabled,
         timestamp: chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string(),
         bench_mode: "accuracy".to_string(),
         items,

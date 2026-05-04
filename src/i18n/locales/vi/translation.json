@@ -384,18 +384,6 @@
         "fromFile": "Hoặc tải từ tệp",
         "import": "Nhập",
         "preview": "{{add}} mới · {{skip}} trùng lặp · {{invalid}} không hợp lệ"
-      },
-      "puncZh": {
-        "cancel": "Hủy",
-        "description": "Tự động thêm dấu câu vào các bản phiên âm tiếng Trung bằng mô hình CT-Transformer. Áp dụng cho tất cả các công cụ ASR (Apple Speech, SenseVoice, FunASR-Nano). Yêu cầu tải xuống mô hình dấu câu (~50 MB).",
-        "download": "Tải xuống mô hình",
-        "label": "Dấu câu tiếng Trung (CT-Transformer)",
-        "modelDownloading": "Đang tải xuống mô hình dấu câu...",
-        "modelFailed": "Tải xuống thất bại: {{error}}",
-        "modelMissing": "Chưa tải xuống mô hình — dấu câu tiếng Trung sẽ bị bỏ qua.",
-        "modelReady": "Mô hình sẵn sàng (76 MB)",
-        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
-        "retry": "Thử lại"
       }
     },
     "vocabulary": {
@@ -668,7 +656,6 @@
       "postProcessProvider": "Ghi đè nhà cung cấp hậu xử lý",
       "profileEnabled": "Đã bật",
       "profileName": "Tên hồ sơ",
-      "puncZhEnabled": "Ghi đè dấu câu tiếng Trung (CT-Punc)",
       "removeMatcher": "Xóa",
       "selectedModel": "Ghi đè mô hình ASR",
       "selectedModelHint": "Chỉ được tôn trọng khi 'Hoán đổi nóng công cụ' được bật. Thêm 1-3 giây độ trễ tải mô hình ở lần phiên âm đầu tiên cho mỗi hồ sơ.",
@@ -752,8 +739,5 @@
     "transcribing": "Đang chuyển đổi",
     "processing": "Đang xử lý..."
   },
-  "toast": {
-    "puncMissingDescription": "Apple Speech và SenseVoice sẽ không tạo dấu câu tiếng Trung cho đến khi mô hình CT-Punc được tải xuống. Mở Cài đặt → Nâng cao để tải xuống.",
-    "puncMissingTitle": "Chưa tải xuống mô hình dấu câu tiếng Trung"
-  }
+  "toast": {}
 }

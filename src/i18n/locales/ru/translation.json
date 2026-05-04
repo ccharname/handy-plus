@@ -384,18 +384,6 @@
         "fromFile": "Или загрузить из файла",
         "import": "Импорт",
         "preview": "{{add}} новых · {{skip}} дублей · {{invalid}} недопустимых"
-      },
-      "puncZh": {
-        "cancel": "Отмена",
-        "description": "Автоматически добавляет пунктуацию к китайским транскрипциям с помощью модели CT-Transformer. Применяется ко всем ASR-движкам (Apple Speech, SenseVoice, FunASR-Nano). Требует загрузки модели пунктуации (~50 МБ).",
-        "download": "Загрузить модель",
-        "label": "Китайская пунктуация (CT-Transformer)",
-        "modelDownloading": "Загрузка модели пунктуации...",
-        "modelFailed": "Загрузка не удалась: {{error}}",
-        "modelMissing": "Модель не загружена — китайская пунктуация будет пропущена.",
-        "modelReady": "Модель готова (76 МБ)",
-        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
-        "retry": "Повторить"
       }
     },
     "vocabulary": {
@@ -668,7 +656,6 @@
       "postProcessProvider": "Переопределение провайдера постобработки",
       "profileEnabled": "Включён",
       "profileName": "Название профиля",
-      "puncZhEnabled": "Переопределение китайской пунктуации (CT-Punc)",
       "removeMatcher": "Удалить",
       "selectedModel": "Переопределение модели ASR",
       "selectedModelHint": "Учитывается только при включённом 'Hot-swap движка'. Добавляет 1–3 с задержки загрузки модели при первой транскрипции для профиля.",
@@ -752,8 +739,5 @@
     "transcribing": "Расшифровка",
     "processing": "Обработка..."
   },
-  "toast": {
-    "puncMissingDescription": "Apple Speech и SenseVoice не будут генерировать китайскую пунктуацию, пока модель CT-Punc не загружена. Откройте Настройки → Дополнительно для загрузки.",
-    "puncMissingTitle": "Модель китайской пунктуации не загружена"
-  }
+  "toast": {}
 }

@@ -384,18 +384,6 @@
         "fromFile": "Lub wczytaj z pliku",
         "import": "Importuj",
         "preview": "{{add}} nowych · {{skip}} duplikatów · {{invalid}} nieprawidłowych"
-      },
-      "puncZh": {
-        "cancel": "Anuluj",
-        "description": "Automatycznie dodaje interpunkcję do chińskich transkrypcji przy użyciu modelu CT-Transformer. Dotyczy wszystkich silników ASR (Apple Speech, SenseVoice, FunASR-Nano). Wymaga pobrania modelu interpunkcji (~50 MB).",
-        "download": "Pobierz model",
-        "label": "Chińska interpunkcja (CT-Transformer)",
-        "modelDownloading": "Pobieranie modelu interpunkcji...",
-        "modelFailed": "Pobieranie nie powiodło się: {{error}}",
-        "modelMissing": "Model nie pobrany — chińska interpunkcja zostanie pominięta.",
-        "modelReady": "Model gotowy (76 MB)",
-        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
-        "retry": "Ponów"
       }
     },
     "vocabulary": {
@@ -668,7 +656,6 @@
       "postProcessProvider": "Zastąpienie dostawcy postprzetwarzania",
       "profileEnabled": "Włączony",
       "profileName": "Nazwa profilu",
-      "puncZhEnabled": "Zastąpienie chińskiej interpunkcji (CT-Punc)",
       "removeMatcher": "Usuń",
       "selectedModel": "Zastąpienie modelu ASR",
       "selectedModelHint": "Honorowane tylko gdy 'Hot-swap silnika' jest włączony. Dodaje 1–3 s opóźnienia ładowania modelu przy pierwszej transkrypcji dla profilu.",
@@ -752,8 +739,5 @@
     "transcribing": "Transkrypcja",
     "processing": "Przetwarzanie..."
   },
-  "toast": {
-    "puncMissingDescription": "Apple Speech i SenseVoice nie będą generować chińskiej interpunkcji dopóki model CT-Punc nie zostanie pobrany. Otwórz Ustawienia → Zaawansowane aby pobrać.",
-    "puncMissingTitle": "Model chińskiej interpunkcji nie pobrany"
-  }
+  "toast": {}
 }

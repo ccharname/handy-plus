@@ -384,18 +384,6 @@
         "fromFile": "Nebo načíst ze souboru",
         "import": "Importovat",
         "preview": "{{add}} nových · {{skip}} duplicitních · {{invalid}} neplatných"
-      },
-      "puncZh": {
-        "cancel": "Zrušit",
-        "description": "Automaticky přidává interpunkci do čínských přepisů pomocí modelu CT-Transformer. Platí pro všechny ASR enginy (Apple Speech, SenseVoice, FunASR-Nano). Vyžaduje stažení modelu interpunkce (~50 MB).",
-        "download": "Stáhnout model",
-        "label": "Čínská interpunkce (CT-Transformer)",
-        "modelDownloading": "Stahování modelu interpunkce...",
-        "modelFailed": "Stažení selhalo: {{error}}",
-        "modelMissing": "Model nestažen — čínská interpunkce bude přeskočena.",
-        "modelReady": "Model připraven (76 MB)",
-        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
-        "retry": "Zkusit znovu"
       }
     },
     "vocabulary": {
@@ -668,7 +656,6 @@
       "postProcessProvider": "Přepsání poskytovatele následného zpracování",
       "profileEnabled": "Povoleno",
       "profileName": "Název profilu",
-      "puncZhEnabled": "Přepsání čínské interpunkce (CT-Punc)",
       "removeMatcher": "Odebrat",
       "selectedModel": "Přepsání ASR modelu",
       "selectedModelHint": "Respektováno pouze při aktivovaném 'Hot-swap engine'. Přidává 1–3 s latence načítání modelu při první transkripci pro profil.",
@@ -752,8 +739,5 @@
     "transcribing": "Přepisuji",
     "processing": "Zpracovávám..."
   },
-  "toast": {
-    "puncMissingDescription": "Apple Speech a SenseVoice nebudou generovat čínskou interpunkci, dokud nebude stažen model CT-Punc. Otevřete Nastavení → Pokročilé pro stažení.",
-    "puncMissingTitle": "Model čínské interpunkce není stažen"
-  }
+  "toast": {}
 }

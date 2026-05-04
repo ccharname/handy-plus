@@ -384,18 +384,6 @@
         "fromFile": "Eller läs in från fil",
         "import": "Importera",
         "preview": "{{add}} nya · {{skip}} dubbletter · {{invalid}} ogiltiga"
-      },
-      "puncZh": {
-        "cancel": "Avbryt",
-        "description": "Lägger automatiskt till interpunktion i kinesiska transkriptioner med CT-Transformer-modellen. Gäller alla ASR-motorer (Apple Speech, SenseVoice, FunASR-Nano). Kräver nedladdning av interpunktionsmodellen (~50 MB).",
-        "download": "Ladda ner modell",
-        "label": "Kinesisk interpunktion (CT-Transformer)",
-        "modelDownloading": "Laddar ner interpunktionsmodell...",
-        "modelFailed": "Nedladdning misslyckades: {{error}}",
-        "modelMissing": "Modell ej nedladdad — kinesisk interpunktion hoppas över.",
-        "modelReady": "Modell klar (76 MB)",
-        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
-        "retry": "Försök igen"
       }
     },
     "vocabulary": {
@@ -668,7 +656,6 @@
       "postProcessProvider": "Åsidosättning av efterbearbetningsleverantör",
       "profileEnabled": "Aktiverad",
       "profileName": "Profilnamn",
-      "puncZhEnabled": "Åsidosättning av kinesisk interpunktion (CT-Punc)",
       "removeMatcher": "Ta bort",
       "selectedModel": "Åsidosättning av ASR-modell",
       "selectedModelHint": "Respekteras endast när 'Hot-swap-motor' är aktiverad. Lägger till 1–3 s modellinläsningslatens vid första transkriptionen per profil.",
@@ -752,8 +739,5 @@
     "transcribing": "Transkriberar",
     "processing": "Bearbetar..."
   },
-  "toast": {
-    "puncMissingDescription": "Apple Speech och SenseVoice producerar inte kinesisk interpunktion förrän CT-Punc-modellen har laddats ner. Öppna Inställningar → Avancerat för att ladda ner.",
-    "puncMissingTitle": "Kinesisk interpunktionsmodell ej nedladdad"
-  }
+  "toast": {}
 }

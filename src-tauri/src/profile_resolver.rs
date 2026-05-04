@@ -21,8 +21,6 @@ pub struct EffectiveSettings {
     /// Non-None when power mode matched a profile.
     pub matched_profile_id: Option<String>,
     pub matched_profile_name: Option<String>,
-    /// Resolved punc_zh_enabled: profile override takes precedence over global.
-    pub punc_zh_enabled: bool,
     /// Resolved post_process_chain: profile override takes precedence over global.
     /// None means fall back to single-prompt mode (backward-compat).
     pub post_process_chain: Option<Vec<String>>,
@@ -156,10 +154,6 @@ fn apply_profile(
         base.auto_submit = as_;
     }
 
-    if let Some(punc) = profile.punc_zh_enabled {
-        base.punc_zh_enabled = punc;
-    }
-
     if let Some(chain) = &profile.post_process_chain {
         base.post_process_chain = Some(chain.clone());
     }
@@ -179,7 +173,6 @@ fn baseline_from_settings(settings: &AppSettings) -> EffectiveSettings {
         selected_model: settings.selected_model.clone(),
         matched_profile_id: None,
         matched_profile_name: None,
-        punc_zh_enabled: settings.punc_zh_enabled,
         post_process_chain: settings.post_process_chain.clone(),
     }
 }

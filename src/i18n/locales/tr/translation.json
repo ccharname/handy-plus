@@ -384,18 +384,6 @@
         "fromFile": "Veya dosyadan yükle",
         "import": "İçe aktar",
         "preview": "{{add}} yeni · {{skip}} tekrarlı · {{invalid}} geçersiz"
-      },
-      "puncZh": {
-        "cancel": "İptal",
-        "description": "CT-Transformer modelini kullanarak Çince transkriptlere otomatik olarak noktalama ekler. Tüm ASR motorlarına (Apple Speech, SenseVoice, FunASR-Nano) uygulanır. Noktalama modelinin indirilmesini gerektirir (~50 MB).",
-        "download": "Modeli indir",
-        "label": "Çince Noktalama (CT-Transformer)",
-        "modelDownloading": "Noktalama modeli indiriliyor...",
-        "modelFailed": "İndirme başarısız: {{error}}",
-        "modelMissing": "Model indirilmedi — Çince noktalama atlanacak.",
-        "modelReady": "Model hazır (76 MB)",
-        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
-        "retry": "Yeniden dene"
       }
     },
     "vocabulary": {
@@ -668,7 +656,6 @@
       "postProcessProvider": "Son işlem sağlayıcısı geçersiz kılma",
       "profileEnabled": "Etkin",
       "profileName": "Profil adı",
-      "puncZhEnabled": "Çince noktalama (CT-Punc) geçersiz kılma",
       "removeMatcher": "Kaldır",
       "selectedModel": "ASR modeli geçersiz kılma",
       "selectedModelHint": "Yalnızca 'Motor hot-swap' etkinleştirildiğinde geçerlidir. Profil başına ilk transkripsiyon için 1–3 s model yükleme gecikmesi ekler.",
@@ -752,8 +739,5 @@
     "transcribing": "Transkribe ediliyor",
     "processing": "İşleniyor..."
   },
-  "toast": {
-    "puncMissingDescription": "CT-Punc modeli indirilene kadar Apple Speech ve SenseVoice Çince noktalama üretmez. İndirmek için Ayarlar → Gelişmiş'i açın.",
-    "puncMissingTitle": "Çince noktalama modeli indirilmedi"
-  }
+  "toast": {}
 }

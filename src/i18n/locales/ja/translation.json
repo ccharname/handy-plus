@@ -384,18 +384,6 @@
         "fromFile": "またはファイルから読み込む",
         "import": "インポート",
         "preview": "{{add}}件新規 · {{skip}}件重複 · {{invalid}}件無効"
-      },
-      "puncZh": {
-        "cancel": "キャンセル",
-        "description": "CT-Transformerモデルを使用して中国語の文字起こしに自動的に句読点を追加します。すべてのASRエンジン（Apple Speech、SenseVoice、FunASR-Nano）に適用されます。句読点モデルのダウンロードが必要です（~50 MB）。",
-        "download": "モデルをダウンロード",
-        "label": "中国語句読点（CT-Transformer）",
-        "modelDownloading": "句読点モデルをダウンロード中...",
-        "modelFailed": "ダウンロード失敗：{{error}}",
-        "modelMissing": "モデル未ダウンロード — 中国語句読点はスキップされます。",
-        "modelReady": "モデル準備完了（76 MB）",
-        "progressText": "{{percentage}}%（{{downloaded}} / {{total}}）",
-        "retry": "再試行"
       }
     },
     "vocabulary": {
@@ -668,7 +656,6 @@
       "postProcessProvider": "後処理プロバイダーオーバーライド",
       "profileEnabled": "有効",
       "profileName": "プロファイル名",
-      "puncZhEnabled": "中国語句読点（CT-Punc）オーバーライド",
       "removeMatcher": "削除",
       "selectedModel": "ASRモデルオーバーライド",
       "selectedModelHint": "「エンジンホットスワップ」が有効な場合のみ有効です。プロファイルごとに最初の文字起こし時に1〜3秒のモデル読み込み遅延が追加されます。",
@@ -752,8 +739,5 @@
     "transcribing": "文字起こし中",
     "processing": "処理中..."
   },
-  "toast": {
-    "puncMissingDescription": "CT-Puncモデルがダウンロードされるまで、Apple SpeechとSenseVoiceは中国語句読点を生成しません。設定→詳細設定を開いてダウンロードしてください。",
-    "puncMissingTitle": "中国語句読点モデルが未ダウンロード"
-  }
+  "toast": {}
 }

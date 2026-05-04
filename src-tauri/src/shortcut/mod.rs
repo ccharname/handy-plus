@@ -1181,16 +1181,6 @@ pub async fn get_available_accelerators() -> crate::managers::transcription::Ava
         .expect("get_available_accelerators panicked")
 }
 
-/// Enable or disable the CT-Transformer Chinese punctuation layer.
-#[tauri::command]
-#[specta::specta]
-pub fn set_punc_zh_enabled(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.punc_zh_enabled = enabled;
-    settings::write_settings(&app, settings);
-    Ok(())
-}
-
 /// Master switch that allows AppProfile.selected_model overrides to drive
 /// engine hot-swap. Off by default — swap costs 1-3s of latency on stop.
 #[tauri::command]

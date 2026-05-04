@@ -17,8 +17,6 @@ import { useSettings } from "../../../hooks/useSettings";
 import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationSelector";
 import { AccelerationSelector } from "../AccelerationSelector";
 import { LazyStreamClose } from "../LazyStreamClose";
-import { PuncZhToggle } from "../PuncZhToggle";
-
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
   const { getSetting } = useSettings();
@@ -44,7 +42,6 @@ export const AdvancedSettings: React.FC = () => {
 
       <SettingsGroup title={t("settings.advanced.groups.transcription")}>
         <AppendTrailingSpace descriptionMode="tooltip" grouped={true} />
-        <PuncZhToggle descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
 
       {experimentalEnabled && (

@@ -384,18 +384,6 @@
         "fromFile": "O cargar desde archivo",
         "import": "Importar",
         "preview": "{{add}} nueva · {{skip}} duplicada · {{invalid}} inválida"
-      },
-      "puncZh": {
-        "cancel": "Cancelar",
-        "description": "Agrega automáticamente puntuación a transcripciones en chino usando el modelo CT-Transformer. Se aplica a todos los motores ASR (Apple Speech, SenseVoice, FunASR-Nano). Requiere el modelo de puntuación (~50 MB).",
-        "download": "Descargar modelo",
-        "label": "Puntuación china (CT-Transformer)",
-        "modelDownloading": "Descargando modelo de puntuación...",
-        "modelFailed": "Descarga fallida: {{error}}",
-        "modelMissing": "Modelo no descargado — se omitirá la puntuación china.",
-        "modelReady": "Modelo listo (76 MB)",
-        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
-        "retry": "Reintentar"
       }
     },
     "vocabulary": {
@@ -668,7 +656,6 @@
       "postProcessProvider": "Anulación de proveedor de post-procesamiento",
       "profileEnabled": "Activado",
       "profileName": "Nombre del perfil",
-      "puncZhEnabled": "Anulación de puntuación china (CT-Punc)",
       "removeMatcher": "Eliminar",
       "selectedModel": "Anulación de modelo ASR",
       "selectedModelHint": "Solo se respeta cuando 'Hot-swap de motor' está activado. Agrega 1–3 s de latencia de carga de modelo en la primera transcripción por perfil.",
@@ -752,8 +739,5 @@
     "transcribing": "Transcribiendo",
     "processing": "Procesando..."
   },
-  "toast": {
-    "puncMissingDescription": "Apple Speech y SenseVoice no producirán puntuación china hasta que se descargue el modelo CT-Punc. Abrir Ajustes → Avanzado para descargar.",
-    "puncMissingTitle": "Modelo de puntuación china no descargado"
-  }
+  "toast": {}
 }

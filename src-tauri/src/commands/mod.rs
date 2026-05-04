@@ -229,7 +229,6 @@ pub fn add_app_profile(
         auto_submit: None,
         selected_model: None,
         active_preset_id: None,
-        punc_zh_enabled: None,
         post_process_chain: None,
     };
     settings.app_profiles.push(profile.clone());

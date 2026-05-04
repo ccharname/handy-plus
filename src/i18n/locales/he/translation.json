@@ -384,18 +384,6 @@
         "fromFile": "או טען מקובץ",
         "import": "ייבוא",
         "preview": "{{add}} חדשות · {{skip}} כפולות · {{invalid}} לא חוקיות"
-      },
-      "puncZh": {
-        "cancel": "ביטול",
-        "description": "מוסיף פיסוק אוטומטית לתמלולים בסינית באמצעות מודל CT-Transformer. חל על כל מנועי ASR (Apple Speech, SenseVoice, FunASR-Nano). מצריך הורדת מודל הפיסוק (~50 MB).",
-        "download": "הורד מודל",
-        "label": "פיסוק סינית (CT-Transformer)",
-        "modelDownloading": "מוריד מודל פיסוק...",
-        "modelFailed": "ההורדה נכשלה: {{error}}",
-        "modelMissing": "המודל לא הורד — פיסוק סינית ידולג.",
-        "modelReady": "המודל מוכן (76 MB)",
-        "progressText": "{{percentage}}% ({{downloaded}} / {{total}})",
-        "retry": "נסה שוב"
       }
     },
     "vocabulary": {
@@ -668,7 +656,6 @@
       "postProcessProvider": "דריסת ספק עיבוד לאחר",
       "profileEnabled": "מופעל",
       "profileName": "שם פרופיל",
-      "puncZhEnabled": "דריסת פיסוק סינית (CT-Punc)",
       "removeMatcher": "הסר",
       "selectedModel": "דריסת מודל ASR",
       "selectedModelHint": "מכובד רק כאשר 'hot-swap מנוע' מופעל. מוסיף 1-3 שניות השהייה בטעינת מודל בתמלול הראשון לפי פרופיל.",
@@ -752,8 +739,5 @@
     "transcribing": "מתמלל",
     "processing": "מעבד..."
   },
-  "toast": {
-    "puncMissingDescription": "Apple Speech ו-SenseVoice לא יפיקו פיסוק סינית עד שמודל CT-Punc יורד. פתח הגדרות ← מתקדם להורדה.",
-    "puncMissingTitle": "מודל פיסוק סינית לא הורד"
-  }
+  "toast": {}
 }

@@ -13,7 +13,6 @@ import { commands } from "@/bindings";
 const ASR_PRESET_DETACH_KEYS: (keyof Settings)[] = [
   "selected_model",
   "selected_language",
-  "punc_zh_enabled",
 ];
 
 interface SettingsStore {
@@ -170,7 +169,6 @@ const settingUpdaters: {
   diary_keywords: (value) => commands.setDiaryKeywords(value as string[]),
   post_process_chain: (value) =>
     commands.setPostProcessChain(value as string[] | null),
-  punc_zh_enabled: (value) => commands.setPuncZhEnabled(value as boolean),
   hotwords_boost: (value) => commands.setHotwordsBoost(value as number),
   profile_hot_swap_engine: (value) =>
     commands.setProfileHotSwapEngine(value as boolean),

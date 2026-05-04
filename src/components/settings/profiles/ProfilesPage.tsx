@@ -299,12 +299,6 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
         if (profile.paste_method) {
           chips.push({ icon: "⚡", label: profile.paste_method });
         }
-        if (profile.punc_zh_enabled !== null && profile.punc_zh_enabled !== undefined) {
-          chips.push({
-            icon: "・",
-            label: profile.punc_zh_enabled ? "punc on" : "punc off",
-          });
-        }
         if (profile.append_trailing_space === true) {
           chips.push({ icon: "␣", label: "trailing space" });
         }
@@ -426,22 +420,6 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
               <p className="text-[10px] text-mid-gray/50 mt-1">
                 {t("settings.profiles.selectedPresetHint")}
               </p>
-            </div>
-
-            {/* Chinese punctuation (CT-Punc) override */}
-            <div>
-              <label className="text-xs text-mid-gray/60 mb-1 block">
-                {t("settings.profiles.puncZhEnabled")}
-              </label>
-              <Dropdown
-                options={triStateOptions}
-                selectedValue={boolToTriState(profile.punc_zh_enabled)}
-                onSelect={(v) =>
-                  update({
-                    punc_zh_enabled: triStateToBool(v as TriState),
-                  })
-                }
-              />
             </div>
 
             {/* Post-process chain override (read-only chip + hint) */}

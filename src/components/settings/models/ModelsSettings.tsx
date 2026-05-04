@@ -1,8 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { AsrPresetCards } from "./AsrPresetCards";
-import { PuncZhToggle } from "../PuncZhToggle";
-import { SettingsGroup } from "../../ui/SettingsGroup";
 
 export const ModelsSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -20,11 +18,6 @@ export const ModelsSettings: React.FC = () => {
 
       {/* ASR Preset Cards — quick-switch section */}
       <AsrPresetCards />
-
-      {/* CT-Punc dependency toggle */}
-      <SettingsGroup title={t("settings.advanced.groups.transcription")}>
-        <PuncZhToggle descriptionMode="tooltip" grouped={true} />
-      </SettingsGroup>
     </div>
   );
 };

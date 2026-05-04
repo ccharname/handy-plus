@@ -6,8 +6,7 @@ pub enum BenchMode {
     /// WAV → ASR transcription (default, existing behaviour).
     #[default]
     Asr,
-    /// Punctuation-only: feed plain text through `punc_zh::add_punctuation` 100×.
-    /// Dataset: `<bench-dataset>/punc_input.txt` (one sentence per line, ≥10 lines).
+    /// Punctuation-only: removed (CT-Punc subsystem removed). Returns an error if selected.
     PuncOnly,
     /// Post-process chain: run `post_process_transcription` on a test input.
     /// Dataset: `<bench-dataset>/chain_test.json`

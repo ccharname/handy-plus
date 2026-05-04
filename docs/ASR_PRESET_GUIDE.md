@@ -10,9 +10,9 @@ This document explains what each preset is good for, the trade-offs between them
 
 | Use case | Preset | Why |
 |---|---|---|
-| Mostly Chinese dictation (writing, chat, notes) | **Chinese Balanced** | SenseVoice is fast (≈70 ms / 10 s clip), CT-Transformer-Punc adds standard Chinese punctuation, low memory footprint (~152 MB) |
-| Multilingual mixed input (zh+en+ja+...) — must run offline | **Multilingual Offline** | FunASR-Nano LLM-decoder handles 8+ languages well; CT-Punc still patches Chinese punctuation |
-| Fast English short commands, latency-critical, system-language-driven | **Apple Native** | SFSpeechRecognizer first-token latency is the lowest; v0.8.6 CT-Punc kicks in whenever recognised text contains CJK (content-based fallback — no longer depends on system locale) |
+| Mostly Chinese dictation (writing, chat, notes) | **Chinese Balanced** | SenseVoice is fast (≈70 ms / 10 s clip), built-in Chinese punctuation, low memory footprint (~152 MB) |
+| Multilingual (zh+yue+dialects+en) — Apple Silicon only | **Qwen3-ASR Realtime** | Qwen3-ASR-0.6B MLX, p50 1.2s, handles Cantonese / Shanghainese / Minnan dialects |
+| Anything else / power user | **Advanced (Customized)** — keep the per-field controls below the preset cards |
 | Anything else / power user | **Advanced (Customized)** — keep the per-field controls below the preset cards |
 
 If you don't know which one to start with: **Chinese Balanced is the v0.8.3-handy-plus.6 default**. Apply it once and start dictating.
@@ -245,9 +245,8 @@ Are you dictating in Chinese ≥ 80 % of the time?
 
 ## Reference
 
-- Settings struct: `src-tauri/src/settings.rs` (`AsrPreset`, `default_asr_presets`, `active_preset_id`, `profile_hot_swap_engine`, `punc_zh_enabled`, `hotwords_boost`, `diary_dir`, `post_process_chain`)
+- Settings struct: `src-tauri/src/settings.rs` (`AsrPreset`, `default_asr_presets`, `active_preset_id`, `profile_hot_swap_engine`, `hotwords_boost`, `diary_dir`, `post_process_chain`)
 - Apply / detach commands: `src-tauri/src/commands/asr_presets.rs`
-- Punctuation layer: `src-tauri/src/audio_toolkit/punc_zh.rs`
 - SenseVoice meta filter: `src-tauri/src/audio_toolkit/sense_voice_filter.rs`
 - Profile resolver: `src-tauri/src/profile_resolver.rs` (now also resolves `selected_model`)
 - Benchmark command: `src-tauri/src/commands/benchmark.rs`

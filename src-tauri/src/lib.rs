@@ -94,46 +94,6 @@ fn build_console_filter() -> env_filter::Filter {
     builder.build()
 }
 
-/// Remove the legacy (never-successfully-downloaded) punctuation model directory
-/// if it exists and contains at most 3 files (i.e., empty or only partial content).
-/// The real model has 7+ files. This cleans up stale directories left by v0.8.4 and
-/// earlier where the old zh-cn URL returned 404.
-fn cleanup_legacy_punc_model(app: &AppHandle) {
-    let Ok(data_dir) = crate::portable::app_data_dir(app) else {
-        return;
-    };
-    let legacy = data_dir
-        .join("models")
-        .join("sherpa-onnx-punct-ct-transformer-zh-cn-2024-04-12");
-    if !legacy.exists() {
-        return;
-    }
-    match std::fs::read_dir(&legacy) {
-        Ok(entries) => {
-            let count = entries.filter_map(|e| e.ok()).count();
-            // Threshold: <= 3 files = likely partial / failed download / empty.
-            // A fully-extracted real model has 7+ files.
-            if count <= 3 {
-                if let Err(e) = std::fs::remove_dir_all(&legacy) {
-                    log::warn!(
-                        "Failed to remove legacy punc dir {}: {}",
-                        legacy.display(),
-                        e
-                    );
-                } else {
-                    log::info!("Removed legacy empty punc dir {}", legacy.display());
-                }
-            } else {
-                log::warn!(
-                    "Legacy punc dir has {} files; refusing to remove (manual cleanup needed)",
-                    count
-                );
-            }
-        }
-        Err(e) => log::warn!("Cannot read legacy punc dir: {}", e),
-    }
-}
-
 fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
         if let Err(e) = main_window.unminimize() {
@@ -313,7 +273,6 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
                     let mut s = settings::get_settings(&app_clone);
                     s.selected_language = preset.language.clone();
-                    s.punc_zh_enabled = preset.punc_zh_enabled;
                     if let Some(chain) = preset.require_post_process_chain.clone() {
                         s.post_process_chain = Some(chain);
                     }
@@ -542,11 +501,8 @@ pub fn run(cli_args: CliArgs) {
             commands::history::update_history_limit,
             commands::history::update_recording_retention_period,
             helpers::clamshell::is_laptop,
-            shortcut::set_punc_zh_enabled,
             shortcut::set_hotwords_boost,
             shortcut::set_profile_hot_swap_engine,
-            commands::models::is_punc_downloaded,
-            commands::models::download_punc_model,
             commands::asr_presets::list_asr_presets,
             commands::asr_presets::apply_asr_preset,
             commands::asr_presets::detach_asr_preset,
@@ -713,10 +669,6 @@ pub fn run(cli_args: CliArgs) {
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
 
             initialize_core_logic(&app_handle);
-
-            // Clean up legacy punc model directory left by v0.8.4 and earlier
-            // (the old zh-cn URL 404'd so the directory is empty or partial).
-            cleanup_legacy_punc_model(&app_handle);
 
             // Pre-warm GPU/accelerator enumeration on a background thread.
             // The first call into transcribe_rs::whisper_cpp::gpu::list_gpu_devices
