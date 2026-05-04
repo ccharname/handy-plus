@@ -1657,6 +1657,55 @@ impl TranscriptionManager {
                     })
                 } else {
                     // Short audio path (or non-Qwen3 Sherpa): direct transcription.
+
+                    // FunASR-Nano VAD pre-filter: the LLM-decoder yields non-empty
+                    // token sequences even on silence/noise/tone inputs. Run a cheap
+                    // Silero pass and skip sherpa inference if < 8 speech frames
+                    // (240 ms cumulative voice) are detected.  Other Sherpa engines
+                    // (SenseVoice, Qwen3) are already self-contained or handled above.
+                    if matches!(session.kind, SherpaModelKind::FunAsrNano) {
+                        const FRAME_SAMPLES: usize = 480; // 30 ms @ 16 kHz
+                        const MIN_VOICE_FRAMES: usize = 8; // 240 ms threshold
+
+                        let vad_ok = self
+                            .app_handle
+                            .path()
+                            .resolve(
+                                "resources/models/silero_vad_v4.onnx",
+                                tauri::path::BaseDirectory::Resource,
+                            )
+                            .ok()
+                            .and_then(|vad_path| {
+                                crate::audio_toolkit::SileroVad::new(&vad_path, 0.3).ok()
+                            });
+
+                        if let Some(mut vad) = vad_ok {
+                            let total_frames = audio.len() / FRAME_SAMPLES;
+                            let voice_frames = audio
+                                .chunks(FRAME_SAMPLES)
+                                .filter(|f| f.len() == FRAME_SAMPLES)
+                                .filter(|f| vad.is_voice(f).unwrap_or(true))
+                                .count();
+
+                            if voice_frames < MIN_VOICE_FRAMES {
+                                debug!(
+                                    "FunASR-Nano: VAD detected {} speech frames / {} total — skipping transcription",
+                                    voice_frames, total_frames
+                                );
+                                return Ok(transcribe_rs::TranscriptionResult {
+                                    text: String::new(),
+                                    segments: None,
+                                });
+                            }
+                            debug!(
+                                "FunASR-Nano: VAD pre-check passed ({} speech frames)",
+                                voice_frames
+                            );
+                        } else {
+                            warn!("FunASR-Nano: VAD init failed; skipping pre-filter (fail-open)");
+                        }
+                    }
+
                     let stream = session.recognizer.create_stream();
                     stream.accept_waveform(16000, audio);
                     session.recognizer.decode(&stream);
