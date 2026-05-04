@@ -64,3 +64,21 @@ pub fn is_kde_plasma() -> bool {
 pub fn is_kde_wayland() -> bool {
     is_wayland() && is_kde_plasma()
 }
+
+/// True when running on macOS 26 (Tahoe) or later. Used to gate features
+/// that fault on the new SpeechAnalyzer-backed SFSpeechRecognizer (see
+/// is_apple_speech_available in swift/apple_speech.swift).
+#[cfg(target_os = "macos")]
+pub fn is_macos_26_or_later() -> bool {
+    let v = std::process::Command::new("sw_vers")
+        .arg("-productVersion")
+        .output()
+        .ok()
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .unwrap_or_default();
+    v.split('.')
+        .next()
+        .and_then(|major| major.trim().parse::<u32>().ok())
+        .map(|n| n >= 26)
+        .unwrap_or(false)
+}

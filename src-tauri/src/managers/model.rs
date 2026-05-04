@@ -878,7 +878,7 @@ impl ModelManager {
                     id: "apple-speech".to_string(),
                     name: "Apple Speech".to_string(),
                     description:
-                        "On-device dictation via Apple's Speech framework. macOS only, no download required. Note: Chinese output has no punctuation; partials only fire after stop. Use SenseVoice instead unless you need a specific Apple-only locale."
+                        "On-device dictation via Apple's Speech framework. macOS only, no download required. Note: Chinese output has no punctuation; partials only fire after stop. Use SenseVoice instead unless you need a specific Apple-only locale. macOS 26 (Tahoe) 暂不支持——SFSpeechRecognizer 在该系统内部走 SpeechAnalyzer，有致命 hang，请改用 SenseVoice 或 chinese_balanced preset。"
                             .to_string(),
                     filename: "".to_string(),
                     url: None,

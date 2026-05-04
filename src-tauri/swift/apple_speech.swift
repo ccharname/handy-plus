@@ -29,6 +29,17 @@ public func isAppleSpeechAvailable() -> Int32 {
     guard #available(macOS 10.15, *) else {
         return 0
     }
+    // macOS 26 (Tahoe) routes SFSpeechRecognizer through a new SpeechAnalyzer
+    // cooperative-queue backend.  Instantiating SFSpeechRecognizer — even as a
+    // probe — triggers SpeechRecognizerWorker.preRunRecognition() on that queue,
+    // which faults with SIGTRAP when the locale model is not pre-warmed.  This
+    // hangs the caller indefinitely (no timeout inside SpeechAnalyzer itself).
+    // Until a safe SpeechAnalyzer integration path is validated (see memory
+    // gotcha_apple_speechanalyzer_macos26.md), we disable Apple Speech on
+    // macOS 26+ to avoid the hang.
+    if #available(macOS 26, *) {
+        return 0
+    }
     // Check that at least one on-device recognizer is available by querying
     // the supported locales. We specifically verify on-device availability
     // using the default locale as a probe.

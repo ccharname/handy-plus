@@ -6,7 +6,15 @@ use tauri::{AppHandle, State};
 #[tauri::command]
 #[specta::specta]
 pub async fn list_asr_presets() -> Result<Vec<AsrPreset>, String> {
-    Ok(default_asr_presets())
+    let mut presets = default_asr_presets();
+    // Hide apple_native on macOS 26+: SFSpeechRecognizer routes through
+    // SpeechAnalyzer there and hangs the process — see is_apple_speech_available
+    // in swift/apple_speech.swift for the gate, and the matching gotcha memory.
+    #[cfg(target_os = "macos")]
+    if crate::utils::is_macos_26_or_later() {
+        presets.retain(|p| p.id != "apple_native");
+    }
+    Ok(presets)
 }
 
 #[tauri::command]
