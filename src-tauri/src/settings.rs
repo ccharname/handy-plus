@@ -1146,6 +1146,90 @@ pub fn ensure_app_profiles_defaults(settings: &mut AppSettings) -> bool {
     }
 }
 
+/// Returns the set of preset IDs that are visible to the user given the current
+/// settings, mirroring the logic in `commands::asr_presets::filtered_asr_presets`
+/// but operating on an already-loaded `AppSettings` (no `AppHandle` needed, so
+/// it is safe to call before or inside `get_settings`).
+pub fn visible_preset_ids_from_settings(settings: &AppSettings) -> Vec<String> {
+    let mut presets = default_asr_presets();
+    #[cfg(target_os = "macos")]
+    if crate::utils::is_macos_26_or_later() {
+        presets.retain(|p| p.id != "apple_native");
+    }
+    if !settings.experimental_enabled {
+        presets.retain(|p| p.builtin);
+    }
+    presets.into_iter().map(|p| p.id).collect()
+}
+
+/// One-time migration: if the stored `active_preset_id` is no longer present in
+/// the visible preset list (e.g. `apple_native` on macOS 26+ where
+/// SFSpeechRecognizer internally routes through SpeechAnalyzer and crashes),
+/// reset the preset fields to the `chinese_balanced` default so the user does
+/// not end up with a broken state on first transcription attempt.
+///
+/// `visible_preset_ids` is injected so the core logic stays testable without an
+/// `AppHandle` (callers supply `visible_preset_ids_from_settings(&settings)` in
+/// production and a mock slice in tests).
+const MIGRATION_V_0_8_15_DROP_HIDDEN_PRESET: &str = "v_0_8_15_drop_hidden_active_preset";
+
+pub fn ensure_v_0_8_15_drop_hidden_preset_migration(
+    settings: &mut AppSettings,
+    visible_preset_ids: &[&str],
+) -> bool {
+    if settings
+        .migration_applied
+        .get(MIGRATION_V_0_8_15_DROP_HIDDEN_PRESET)
+        .copied()
+        .unwrap_or(false)
+    {
+        return false; // already applied
+    }
+
+    let needs_reset = settings
+        .active_preset_id
+        .as_deref()
+        .map(|id| !visible_preset_ids.contains(&id))
+        .unwrap_or(false);
+
+    if needs_reset {
+        let old_id = settings
+            .active_preset_id
+            .as_deref()
+            .unwrap_or("<none>")
+            .to_string();
+
+        // Find the chinese_balanced preset definition and mirror apply_asr_preset
+        // (without calling load_model — TranscriptionManager is not yet started).
+        if let Some(preset) = default_asr_presets()
+            .into_iter()
+            .find(|p| p.id == "chinese_balanced")
+        {
+            settings.selected_language = preset.language.clone();
+            settings.punc_zh_enabled = preset.punc_zh_enabled;
+            if let Some(chain) = preset.require_post_process_chain.clone() {
+                settings.post_process_chain = Some(chain);
+            }
+            if let Some(on_device) = preset.require_apple_speech_on_device {
+                settings.apple_speech_require_on_device = on_device;
+            }
+            settings.active_preset_id = Some(preset.id.clone());
+            settings.selected_model = preset.model_id.clone();
+
+            log::info!(
+                "Migration {}: stored preset '{}' is now hidden — reset to chinese_balanced",
+                MIGRATION_V_0_8_15_DROP_HIDDEN_PRESET,
+                old_id,
+            );
+        }
+    }
+
+    settings
+        .migration_applied
+        .insert(MIGRATION_V_0_8_15_DROP_HIDDEN_PRESET.to_string(), true);
+    true
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -1349,6 +1433,11 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
     let mut changed = ensure_post_process_defaults(&mut settings);
     changed |= ensure_app_profiles_defaults(&mut settings);
     changed |= ensure_v_0_8_10_enable_builtins_migration(&mut settings);
+    {
+        let visible = visible_preset_ids_from_settings(&settings);
+        let visible_refs: Vec<&str> = visible.iter().map(|s| s.as_str()).collect();
+        changed |= ensure_v_0_8_15_drop_hidden_preset_migration(&mut settings, &visible_refs);
+    }
     if changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
@@ -1376,6 +1465,11 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
     let mut changed = ensure_post_process_defaults(&mut settings);
     changed |= ensure_app_profiles_defaults(&mut settings);
     changed |= ensure_v_0_8_10_enable_builtins_migration(&mut settings);
+    {
+        let visible = visible_preset_ids_from_settings(&settings);
+        let visible_refs: Vec<&str> = visible.iter().map(|s| s.as_str()).collect();
+        changed |= ensure_v_0_8_15_drop_hidden_preset_migration(&mut settings, &visible_refs);
+    }
     if changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
@@ -1481,6 +1575,76 @@ mod migration_tests {
             .find(|p| p.id == "builtin_code")
             .unwrap();
         assert!(!code_profile.enabled, "migration should be idempotent");
+    }
+
+    // ── v0.8.15 drop-hidden-preset migration tests ────────────────────────
+
+    /// Helper: build settings that look like an old user who had apple_native
+    /// selected and then upgraded to macOS 26 (where apple_native is hidden).
+    fn settings_with_active_preset(preset_id: &str) -> AppSettings {
+        let mut s = get_default_settings();
+        s.active_preset_id = Some(preset_id.to_string());
+        s.selected_model = "apple-speech".to_string();
+        s.migration_applied = HashMap::new();
+        s
+    }
+
+    #[test]
+    fn migration_resets_hidden_preset_to_chinese_balanced() {
+        let mut s = settings_with_active_preset("apple_native");
+        // Simulate macOS 26: apple_native is not visible.
+        let visible: &[&str] = &["chinese_balanced", "multilingual_offline"];
+        let changed = ensure_v_0_8_15_drop_hidden_preset_migration(&mut s, visible);
+
+        assert!(changed, "migration should report a change");
+        assert_eq!(
+            s.active_preset_id.as_deref(),
+            Some("chinese_balanced"),
+            "active_preset_id must be reset"
+        );
+        assert_eq!(
+            s.selected_model, "sense-voice-int8",
+            "selected_model must match chinese_balanced"
+        );
+        assert_eq!(
+            s.migration_applied
+                .get("v_0_8_15_drop_hidden_active_preset"),
+            Some(&true)
+        );
+    }
+
+    #[test]
+    fn migration_leaves_visible_preset_untouched() {
+        let mut s = settings_with_active_preset("chinese_balanced");
+        s.selected_model = "sense-voice-int8".to_string();
+        let visible: &[&str] = &["chinese_balanced", "multilingual_offline"];
+        let changed = ensure_v_0_8_15_drop_hidden_preset_migration(&mut s, visible);
+
+        assert!(changed, "migration flag itself causes a change");
+        assert_eq!(
+            s.active_preset_id.as_deref(),
+            Some("chinese_balanced"),
+            "preset should be unchanged"
+        );
+        assert_eq!(s.selected_model, "sense-voice-int8");
+    }
+
+    #[test]
+    fn migration_is_idempotent_when_already_applied() {
+        let mut s = settings_with_active_preset("apple_native");
+        s.selected_model = "apple-speech".to_string();
+        // Pre-mark as applied (simulates a user who already migrated).
+        s.migration_applied.insert(
+            "v_0_8_15_drop_hidden_active_preset".to_string(),
+            true,
+        );
+        let visible: &[&str] = &["chinese_balanced", "multilingual_offline"];
+        let changed = ensure_v_0_8_15_drop_hidden_preset_migration(&mut s, visible);
+
+        assert!(!changed, "already-applied migration must return false");
+        // Data should be untouched (apple_native still stored — migration skipped).
+        assert_eq!(s.active_preset_id.as_deref(), Some("apple_native"));
+        assert_eq!(s.selected_model, "apple-speech");
     }
 }
 
