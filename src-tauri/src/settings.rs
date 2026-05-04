@@ -1156,6 +1156,11 @@ pub fn visible_preset_ids_from_settings(settings: &AppSettings) -> Vec<String> {
     if crate::utils::is_macos_26_or_later() {
         presets.retain(|p| p.id != "apple_native");
     }
+    // Voxtral requires macOS aarch64 (mlx-audio-swift). Hide on Intel/Linux/Win
+    // so the migration treats stored voxtral preset as hidden → fall back.
+    if !cfg!(all(target_os = "macos", target_arch = "aarch64")) {
+        presets.retain(|p| p.id != "experimental_voxtral");
+    }
     if !settings.experimental_enabled {
         presets.retain(|p| p.builtin);
     }
