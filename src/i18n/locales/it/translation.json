@@ -626,6 +626,14 @@
         "description": "FunASR-Nano supporta 8+ lingue, completamente offline.",
         "name": "Multilingua Offline"
       },
+      "experimentalQwen3": {
+        "name": "Qwen3-ASR (Sperimentale)",
+        "description": "Tongyi 2026-01 SOTA. Modello int8 da 2,5 GB. Eccellente precisione in cinese, rilevamento automatico di 52 lingue. Segmentazione automatica audio lungo."
+      },
+      "experimentalVoxtral": {
+        "name": "Voxtral (Sperimentale)",
+        "description": "Voxtral Realtime 4-bit via mlx-audio-swift. ⚠️ p50 misurato ~10 s + il cantonese produce Devanagari + il hokkien restituisce vuoto — dialetti cinesi non utilizzabili, preferire Qwen3-ASR. Solo Apple Silicon. Il primo utilizzo scarica ~3,5 GB di pesi."
+      },
       "switching": "Cambio in corso...",
       "title": "Preset ASR"
     },

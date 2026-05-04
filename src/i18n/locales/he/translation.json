@@ -626,6 +626,14 @@
         "description": "FunASR-Nano תומך ב-8+ שפות, לחלוטין אופליין.",
         "name": "רב-לשוני אופליין"
       },
+      "experimentalQwen3": {
+        "name": "Qwen3-ASR (ניסיוני)",
+        "description": "Tongyi 2026-01 SOTA. מודל int8 בנפח 2.5 GB. דיוק מצוין לסינית, זיהוי אוטומטי של 52 שפות. חלוקה אוטומטית של שמע ארוך."
+      },
+      "experimentalVoxtral": {
+        "name": "Voxtral (ניסיוני)",
+        "description": "Voxtral Realtime 4-bit via mlx-audio-swift. ⚠️ p50 נמדד ~10 ש' + קנטונזית מפיקה Devanagari + הוקיין מחזיר ריק — ניבים סיניים אינם שמישים, מומלץ Qwen3-ASR. Apple Silicon בלבד. שימוש ראשון מוריד ~3.5 GB של משקלים."
+      },
       "switching": "מחליף...",
       "title": "הגדרות מוקדמות ASR"
     },

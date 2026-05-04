@@ -626,6 +626,14 @@
         "description": "FunASR-Nanoは8以上の言語をサポート、完全オフライン。",
         "name": "多言語オフライン"
       },
+      "experimentalQwen3": {
+        "name": "Qwen3-ASR（実験的）",
+        "description": "Tongyi 2026-01 SOTA。2.5 GB int8モデル。中国語精度優秀、52言語自動検出。長音声自動分割。"
+      },
+      "experimentalVoxtral": {
+        "name": "Voxtral（実験的）",
+        "description": "Voxtral Realtime 4-bit via mlx-audio-swift。⚠️ 実測p50 ~10秒 + 広東語がDevanagariを出力 + 閩南語が空返却 — 中国語方言は使用不可、Qwen3-ASRを推奨。Apple Siliconのみ。初回使用時に~3.5 GBの重みをダウンロード。"
+      },
       "switching": "切り替え中...",
       "title": "ASRプリセット"
     },

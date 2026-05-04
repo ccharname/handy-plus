@@ -626,6 +626,14 @@
         "description": "FunASR-Nano 支援 8 種以上語言，完全離線。",
         "name": "多語言離線"
       },
+      "experimentalQwen3": {
+        "name": "Qwen3-ASR（實驗）",
+        "description": "Tongyi 2026-01 SOTA。~2.5 GB int8 模型。中文準確度優秀，自動辨識 52 種語言。長音訊自動分段。"
+      },
+      "experimentalVoxtral": {
+        "name": "Voxtral（實驗）",
+        "description": "Voxtral Realtime 4-bit via mlx-audio-swift。⚠️ 實測 p50 ~10 秒 + 粵語輸出天城文、閩南語返回空白 — 中文方言不可用，請改用 Qwen3-ASR。僅支援 Apple Silicon。首次使用將下載 ~3.5 GB 權重。"
+      },
       "switching": "切換中...",
       "title": "ASR 預設"
     },

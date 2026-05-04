@@ -626,6 +626,14 @@
         "description": "FunASR-Nano 8'den fazla dili destekler, tamamen çevrimdışı.",
         "name": "Çok Dilli Çevrimdışı"
       },
+      "experimentalQwen3": {
+        "name": "Qwen3-ASR (Deneysel)",
+        "description": "Tongyi 2026-01 SOTA. 2,5 GB int8 modeli. Çince'de mükemmel doğruluk, 52 dil otomatik algılama. Uzun ses otomatik bölümleme."
+      },
+      "experimentalVoxtral": {
+        "name": "Voxtral (Deneysel)",
+        "description": "Voxtral Realtime 4-bit via mlx-audio-swift. ⚠️ Ölçülen p50 ~10 s + Kantonca Devanagari çıkışı veriyor + Hokkien boş döndürüyor — Çince lehçeler kullanılamaz, Qwen3-ASR tercih edin. Yalnızca Apple Silicon. İlk kullanımda ~3,5 GB ağırlık indirilir."
+      },
       "switching": "Geçiliyor...",
       "title": "ASR Önayarları"
     },

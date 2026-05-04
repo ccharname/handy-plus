@@ -626,6 +626,14 @@
         "description": "FunASR-Nano hỗ trợ 8+ ngôn ngữ, hoàn toàn ngoại tuyến.",
         "name": "Đa Ngôn Ngữ Ngoại Tuyến"
       },
+      "experimentalQwen3": {
+        "name": "Qwen3-ASR (Thử Nghiệm)",
+        "description": "Tongyi 2026-01 SOTA. Mô hình int8 2.5 GB. Độ chính xác tiếng Trung xuất sắc, tự động nhận diện 52 ngôn ngữ. Tự động phân đoạn âm thanh dài."
+      },
+      "experimentalVoxtral": {
+        "name": "Voxtral (Thử Nghiệm)",
+        "description": "Voxtral Realtime 4-bit via mlx-audio-swift. ⚠️ p50 đo được ~10 s + tiếng Quảng Đông xuất ra Devanagari + tiếng Mân Nam trả về rỗng — phương ngữ Trung Quốc không dùng được, ưu tiên Qwen3-ASR. Chỉ Apple Silicon. Lần đầu tải ~3.5 GB trọng số."
+      },
       "switching": "Đang chuyển...",
       "title": "Cài Sẵn ASR"
     },
