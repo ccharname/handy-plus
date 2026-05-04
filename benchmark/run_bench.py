@@ -415,6 +415,90 @@ def run_preset(
 # CLI entry point
 # ---------------------------------------------------------------------------
 
+def _summary_metrics(report: dict) -> dict:
+    """Extract the three metrics the regression gate cares about."""
+    summary = report.get("summary", {}) or {}
+    return {
+        "p50": summary.get("steady_p50_latency_ms") or summary.get("p50_latency_ms"),
+        "p95": summary.get("steady_p95_latency_ms") or summary.get("p95_latency_ms"),
+        "punc_density": summary.get("punctuation_density"),
+        "items": summary.get("total_items"),
+    }
+
+
+def _newest_baseline_for(preset_id: str, baseline_path: str) -> Optional[str]:
+    """Resolve --baseline arg to a concrete JSON file path for a given preset.
+
+    Accepts either a directory (search for newest matching `{preset_id}_*.json`,
+    skipping derivative files like `*_punc_only_*` / `*_swap_*`) or a single
+    JSON file (returned unchanged when its name matches the preset).
+    """
+    p = Path(baseline_path)
+    if p.is_file():
+        if p.name.startswith(f"{preset_id}_"):
+            return str(p)
+        return None
+    if not p.is_dir():
+        return None
+    candidates = sorted(
+        (
+            f for f in p.rglob(f"{preset_id}_*.json")
+            if "_punc_only_" not in f.name and "_swap_" not in f.name
+        ),
+        key=lambda f: f.stat().st_mtime,
+        reverse=True,
+    )
+    return str(candidates[0]) if candidates else None
+
+
+def check_regression(
+    preset_id: str,
+    new_report: dict,
+    baseline_path: str,
+    threshold_pct: float,
+) -> tuple[bool, str]:
+    """Compare new bench results against a baseline JSON.
+
+    Returns `(is_regression, message)`. `is_regression=True` when p50 or p95
+    worsens by more than `threshold_pct` percent or when error_count grows.
+    """
+    base_file = _newest_baseline_for(preset_id, baseline_path)
+    if base_file is None:
+        return False, f"[{preset_id}] no baseline file found for preset"
+    try:
+        with open(base_file, "r", encoding="utf-8") as fh:
+            baseline = json.load(fh)
+    except (OSError, json.JSONDecodeError) as exc:
+        return False, f"[{preset_id}] failed to read baseline {base_file}: {exc}"
+
+    base = _summary_metrics(baseline)
+    new = _summary_metrics(new_report)
+
+    msgs = []
+    is_regression = False
+    for metric in ("p50", "p95"):
+        b, n = base.get(metric), new.get(metric)
+        if not b or not n:
+            continue
+        delta_pct = (n - b) / b * 100.0
+        marker = ""
+        if delta_pct > threshold_pct:
+            is_regression = True
+            marker = " ❌ REGRESSION"
+        elif delta_pct < -threshold_pct:
+            marker = " ✅ improved"
+        msgs.append(f"{metric}: {b:>5} → {n:>5} ms ({delta_pct:+.1f}%){marker}")
+
+    base_errors = (baseline.get("summary", {}) or {}).get("errors")
+    new_errors = (new_report.get("summary", {}) or {}).get("errors")
+    if base_errors is not None and new_errors is not None and new_errors > base_errors:
+        is_regression = True
+        msgs.append(f"errors: {base_errors} → {new_errors} ❌ REGRESSION")
+
+    header = f"[{preset_id}] baseline={Path(base_file).name}"
+    return is_regression, "\n  ".join([header] + msgs)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Handy+ direct benchmark runner")
     parser.add_argument("--presets", default="chinese_balanced,multilingual_offline,apple_native",
@@ -430,6 +514,12 @@ def main() -> int:
                         help="Path to compiled apple_speech_bench binary")
     parser.add_argument("--skip-eval", action="store_true",
                         help="Skip eval.py after benchmarks")
+    parser.add_argument("--baseline", default="",
+                        help="Path to a baseline JSON or directory to compare against. "
+                             "If a directory is given the newest matching report per preset is picked. "
+                             "When set, exit code 2 is returned if any preset regresses by >--regression-pct.")
+    parser.add_argument("--regression-pct", type=float, default=15.0,
+                        help="Regression threshold (percent worse than baseline) for p50 / p95 (default: 15)")
     args = parser.parse_args()
 
     presets = [p.strip() for p in args.presets.split(",") if p.strip()]
@@ -453,6 +543,7 @@ def main() -> int:
     print(f"WAV files: {wav_count}\n")
 
     result_paths = []
+    new_reports: dict[str, dict] = {}
     for preset_id in presets:
         if preset_id not in PRESET_META:
             print(f"WARNING: Unknown preset '{preset_id}', skipping.", file=sys.stderr)
@@ -466,6 +557,7 @@ def main() -> int:
                 swift_bin,
             )
             result_paths.append(result["path"])
+            new_reports[preset_id] = result["report"]
         except Exception as exc:
             import traceback
             print(f"\nERROR running preset '{preset_id}': {exc}", file=sys.stderr)
@@ -483,6 +575,22 @@ def main() -> int:
         cmd = [sys.executable, eval_script, "--compare"] + result_paths
         print(f"\nRunning eval.py comparison...")
         subprocess.run(cmd, check=False)
+
+    # Regression gate (X1) — runs after eval comparison so the user sees both views.
+    if args.baseline:
+        print(f"\n{'='*60}")
+        print(f"Regression gate vs baseline: {args.baseline} (threshold {args.regression_pct}%)")
+        any_regression = False
+        for preset_id, report in new_reports.items():
+            is_regression, msg = check_regression(
+                preset_id, report, args.baseline, args.regression_pct
+            )
+            print(f"  {msg}")
+            any_regression = any_regression or is_regression
+        if any_regression:
+            print("\nRESULT: at least one preset regressed past the threshold.")
+            return 2
+        print("\nRESULT: all presets within threshold.")
 
     return 0
 
