@@ -172,13 +172,20 @@ fn ensure_metallib_installed() -> Result<(), String> {
 
     // Find a source. Priority:
     //   1. MLX_METALLIB_PATH env var (override for `cargo run --example` etc.)
-    //   2. Tauri resource bundle: <exe_dir>/../Resources/mlx/default.metallib
-    //   3. <exe_dir>/mlx/default.metallib (some bundle layouts)
+    //   2. Tauri resource bundle (DOUBLE `resources/` segment): Tauri stages
+    //      everything under `src-tauri/resources/**` into
+    //      `<App>.app/Contents/Resources/resources/...` — note the inner
+    //      `resources/` segment, which is the literal directory name from
+    //      our src-tauri layout, NOT a Tauri-injected one.
+    //   3. Single-segment fallback (`Contents/Resources/mlx/default.metallib`)
+    //      in case the bundle layout is rearranged in a future Tauri version.
+    //   4. <exe_dir>/mlx/default.metallib (some other bundle layouts)
     let candidates: Vec<std::path::PathBuf> = {
         let mut v = Vec::new();
         if let Ok(p) = std::env::var("MLX_METALLIB_PATH") {
             v.push(std::path::PathBuf::from(p));
         }
+        v.push(exe_dir.join("../Resources/resources/mlx/default.metallib"));
         v.push(exe_dir.join("../Resources/mlx/default.metallib"));
         v.push(exe_dir.join("mlx/default.metallib"));
         v
