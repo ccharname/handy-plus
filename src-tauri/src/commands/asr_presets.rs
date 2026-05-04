@@ -5,7 +5,7 @@ use tauri::{AppHandle, State};
 
 #[tauri::command]
 #[specta::specta]
-pub async fn list_asr_presets() -> Result<Vec<AsrPreset>, String> {
+pub async fn list_asr_presets(app: AppHandle) -> Result<Vec<AsrPreset>, String> {
     let mut presets = default_asr_presets();
     // Hide apple_native on macOS 26+: SFSpeechRecognizer routes through
     // SpeechAnalyzer there and hangs the process — see is_apple_speech_available
@@ -13,6 +13,16 @@ pub async fn list_asr_presets() -> Result<Vec<AsrPreset>, String> {
     #[cfg(target_os = "macos")]
     if crate::utils::is_macos_26_or_later() {
         presets.retain(|p| p.id != "apple_native");
+    }
+    // Gate non-builtin (experimental) presets behind the `experimental_enabled`
+    // setting. Triage 2026-05-04 confirmed both experimental presets ship with
+    // user-visible regressions today: voxtral hallucinates Devanagari on
+    // Cantonese & emits empty on Hokkien with p50 ~10s; qwen3 is solid but
+    // costs 2.5 GB disk. Hide them from the default UI; power users flip the
+    // experimental toggle in Advanced Settings to opt in.
+    let settings = get_settings(&app);
+    if !settings.experimental_enabled {
+        presets.retain(|p| p.builtin);
     }
     Ok(presets)
 }

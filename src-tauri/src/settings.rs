@@ -763,7 +763,7 @@ pub fn default_asr_presets() -> Vec<AsrPreset> {
         AsrPreset {
             id: "experimental_voxtral".to_string(),
             name: "Voxtral (实验)".to_string(),
-            description: "Voxtral Realtime 4-bit via mlx-audio-swift。多语言，4-bit 量化。首次使用会下载 ~3.5 GB 权重。仅 Apple Silicon。".to_string(),
+            description: "Voxtral Realtime 4-bit via mlx-audio-swift。⚠️ 实测 p50 ~10 秒 + 粤语会输出印地天城文、闽南语返回空 — 中文方言不可用，请改用 Qwen3-ASR。仅 Apple Silicon。首次使用会下载 ~3.5 GB 权重。".to_string(),
             icon: "⚡".to_string(),
             model_id: "voxtral-mlx-4bit".to_string(),
             language: "auto".to_string(),
