@@ -28,6 +28,11 @@ pub fn filtered_asr_presets(app: &AppHandle) -> Vec<AsrPreset> {
     // so bench / CLI A-B lookups by id still work, but the UI card is gone.
     // Original Intel/Linux/Win gate is now redundant — hidden everywhere.
     presets.retain(|p| p.id != "experimental_voxtral");
+    // sherpa-onnx Qwen3 preset is also hidden — same model weights as
+    // experimental_qwen3_mlx but 4× the disk (2.5 GB vs ~600 MB), 1.2× slower
+    // (p50 1453 ms vs 1188 ms), no streaming roadmap. The MLX preset wins on every
+    // axis on Apple Silicon. Kept in default_asr_presets for bench / CLI A-B only.
+    presets.retain(|p| p.id != "experimental_qwen3");
     let settings = get_settings(app);
     if !settings.experimental_enabled {
         presets.retain(|p| p.builtin);

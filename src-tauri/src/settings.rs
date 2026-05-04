@@ -1173,6 +1173,9 @@ pub fn visible_preset_ids_from_settings(settings: &AppSettings) -> Vec<String> {
     // identifies Chinese dialects Voxtral can't). Always hidden — kept in
     // default_asr_presets only for bench / CLI A-B lookups by id.
     presets.retain(|p| p.id != "experimental_voxtral");
+    // sherpa-onnx Qwen3 deprecated by MLX path on every axis (4× disk, 1.2× slower,
+    // no streaming roadmap). Always hidden — kept for bench A-B only.
+    presets.retain(|p| p.id != "experimental_qwen3");
     // qwen3_mlx requires macOS aarch64 (mlx-audio-swift). Hide on Intel/Linux/Win
     // so the migration treats stored mlx preset as hidden → fall back.
     if !cfg!(all(target_os = "macos", target_arch = "aarch64")) {
@@ -1249,6 +1252,72 @@ pub fn ensure_v_0_8_15_drop_hidden_preset_migration(
     settings
         .migration_applied
         .insert(MIGRATION_V_0_8_15_DROP_HIDDEN_PRESET.to_string(), true);
+    true
+}
+
+/// v_0_8_16 — re-runs the same hidden-preset reset logic for users who already
+/// applied v_0_8_15 (so the flag is set) but ended up on a preset that becomes
+/// hidden in a later release. Necessary because the v_0_8_15 flag is checked
+/// before the visible-set diff, so once-set never re-triggers.
+///
+/// Concrete trigger: 2026-05-04 hid `experimental_qwen3` (sherpa-onnx Qwen3
+/// deprecated by the MLX preset on every axis). Users with stored
+/// `active_preset_id = "experimental_qwen3"` and `migration_applied[v_0_8_15] = true`
+/// would otherwise stay on the now-invisible preset forever.
+const MIGRATION_V_0_8_16_DROP_HIDDEN_PRESET: &str = "v_0_8_16_drop_hidden_active_preset";
+
+pub fn ensure_v_0_8_16_drop_hidden_preset_migration(
+    settings: &mut AppSettings,
+    visible_preset_ids: &[&str],
+) -> bool {
+    if settings
+        .migration_applied
+        .get(MIGRATION_V_0_8_16_DROP_HIDDEN_PRESET)
+        .copied()
+        .unwrap_or(false)
+    {
+        return false;
+    }
+
+    let needs_reset = settings
+        .active_preset_id
+        .as_deref()
+        .map(|id| !visible_preset_ids.contains(&id))
+        .unwrap_or(false);
+
+    if needs_reset {
+        let old_id = settings
+            .active_preset_id
+            .as_deref()
+            .unwrap_or("<none>")
+            .to_string();
+
+        if let Some(preset) = default_asr_presets()
+            .into_iter()
+            .find(|p| p.id == "chinese_balanced")
+        {
+            settings.selected_language = preset.language.clone();
+            settings.punc_zh_enabled = preset.punc_zh_enabled;
+            if let Some(chain) = preset.require_post_process_chain.clone() {
+                settings.post_process_chain = Some(chain);
+            }
+            if let Some(on_device) = preset.require_apple_speech_on_device {
+                settings.apple_speech_require_on_device = on_device;
+            }
+            settings.active_preset_id = Some(preset.id.clone());
+            settings.selected_model = preset.model_id.clone();
+
+            log::info!(
+                "Migration {}: stored preset '{}' is now hidden — reset to chinese_balanced",
+                MIGRATION_V_0_8_16_DROP_HIDDEN_PRESET,
+                old_id,
+            );
+        }
+    }
+
+    settings
+        .migration_applied
+        .insert(MIGRATION_V_0_8_16_DROP_HIDDEN_PRESET.to_string(), true);
     true
 }
 
@@ -1459,6 +1528,7 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         let visible = visible_preset_ids_from_settings(&settings);
         let visible_refs: Vec<&str> = visible.iter().map(|s| s.as_str()).collect();
         changed |= ensure_v_0_8_15_drop_hidden_preset_migration(&mut settings, &visible_refs);
+        changed |= ensure_v_0_8_16_drop_hidden_preset_migration(&mut settings, &visible_refs);
     }
     if changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
@@ -1491,6 +1561,7 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         let visible = visible_preset_ids_from_settings(&settings);
         let visible_refs: Vec<&str> = visible.iter().map(|s| s.as_str()).collect();
         changed |= ensure_v_0_8_15_drop_hidden_preset_migration(&mut settings, &visible_refs);
+        changed |= ensure_v_0_8_16_drop_hidden_preset_migration(&mut settings, &visible_refs);
     }
     if changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
