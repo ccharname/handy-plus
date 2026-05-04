@@ -264,9 +264,11 @@ fn hf_cache_dir_name(model_id: &str) -> &'static str {
 const QWEN3_ASR_KEY_FILES: &[(&str, u64, &[u8])] = &[
     // config.json — plain JSON, ≥ 16 bytes, starts with `{`
     ("config.json", 16, b"{"),
-    // model.safetensors.index.json or first shard — index is ≥ 100 bytes
-    // We check the tokenizer vocab which is always present.
-    ("tokenizer.json", 64, b"{"),
+    // tokenizer_config.json — Qwen3-ASR-0.6B-8bit uses BPE (separate vocab.json
+    // + merges.txt) rather than a unified tokenizer.json, so we check the
+    // tokenizer config file instead. JSON, ≥ 64 bytes. Verified against actual
+    // mlx-community/Qwen3-ASR-0.6B-8bit snapshot 89e96d92ba34aca20b3e29fb10cc.
+    ("tokenizer_config.json", 64, b"{"),
 ];
 
 /// Perform lightweight integrity check on a snapshot directory:
