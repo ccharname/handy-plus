@@ -49,3 +49,7 @@ src-tauri/resources/_pink_originals/
 
 # Handoff files: session-local handoff notes (handoff skill)
 .handoffs/
+
+# Python bytecode cache (e.g. benchmark/__pycache__/run_bench.cpython-*.pyc)
+__pycache__/
+*.pyc
