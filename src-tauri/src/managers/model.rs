@@ -949,6 +949,46 @@ impl ModelManager {
             );
         }
 
+        // Qwen3-ASR-0.6B via mlx-audio-swift (Apple Silicon macOS only).
+        // Validated 2026-05-04: p50 1.2s / 粤语+沪语+闽南方言识别 / ~600 MB HF cache.
+        // Supersedes Voxtral on the MLX path (6.6x smaller, 8x faster, better dialect coverage).
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        {
+            let qwen3_mlx_languages: Vec<String> = vec![
+                "zh", "zh-Hans", "zh-Hant", "yue", "en", "ja", "ko",
+            ]
+            .into_iter()
+            .map(String::from)
+            .collect();
+
+            available_models.insert(
+                "qwen3-asr-mlx-8bit".to_string(),
+                ModelInfo {
+                    id: "qwen3-asr-mlx-8bit".to_string(),
+                    name: "Qwen3-ASR 0.6B MLX 8-bit".to_string(),
+                    description:
+                        "轻量 MLX 量化模型，~600 MB。实测 p50 1.2s，粤语/沪语/闽南方言精准识别。仅 Apple Silicon。"
+                            .to_string(),
+                    filename: "".to_string(),
+                    url: None,
+                    sha256: None,
+                    size_mb: 600,
+                    is_downloaded: false,
+                    is_downloading: false,
+                    partial_size: 0,
+                    is_directory: false,
+                    engine_type: EngineType::MlxAudio(MlxModelKind::Qwen3Asr06B),
+                    accuracy_score: 0.88,
+                    speed_score: 0.92,
+                    supports_translation: false,
+                    is_recommended: false,
+                    supported_languages: qwen3_mlx_languages,
+                    supports_language_selection: true,
+                    is_custom: false,
+                },
+            );
+        }
+
         // Auto-discover custom Whisper models (.bin files) in the models directory
         if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models) {
             warn!("Failed to discover custom models: {}", e);

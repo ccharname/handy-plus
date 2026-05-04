@@ -757,14 +757,27 @@ pub fn default_asr_presets() -> Vec<AsrPreset> {
             require_apple_speech_on_device: None,
             builtin: false,
         },
-        // Phase C2: Voxtral via mlx-audio-swift (Apple Silicon macOS only).
-        // This preset is non-streaming (Phase C2 file-based path).
-        // TODO(C3-streaming): switch to Qwen3-ASR 0.6B for Level-2 live PCM feed.
+        // Qwen3-ASR-0.6B via mlx-audio-swift (Apple Silicon macOS only).
+        // Formally validated 2026-05-04: p50 1.2s, 粤语/沪语/闽南方言全覆盖，替代 Voxtral。
+        AsrPreset {
+            id: "experimental_qwen3_mlx".to_string(),
+            name: "Qwen3-ASR Realtime (实验)".to_string(),
+            description: "~600 MB MLX 量化 / p50 1.2s / 粤语+沪语+闽南方言识别 / 仅 Apple Silicon。".to_string(),
+            icon: "🪶".to_string(),
+            model_id: "qwen3-asr-mlx-8bit".to_string(),
+            language: "zh-Hans".to_string(),
+            punc_zh_enabled: true,
+            require_post_process_chain: None,
+            require_apple_speech_on_device: None,
+            builtin: false,
+        },
+        // Voxtral via mlx-audio-swift — kept for historical A/B reference only.
+        // Superseded by Qwen3-ASR Realtime (6.6x smaller, 8x faster, better dialect coverage).
         AsrPreset {
             id: "experimental_voxtral".to_string(),
             name: "Voxtral (实验)".to_string(),
-            description: "Voxtral Realtime 4-bit via mlx-audio-swift。⚠️ 实测 p50 ~10 秒 + 粤语会输出印地天城文、闽南语返回空 — 中文方言不可用，请改用 Qwen3-ASR。仅 Apple Silicon。首次使用会下载 ~3.5 GB 权重。".to_string(),
-            icon: "⚡".to_string(),
+            description: "⚠️ 已被 Qwen3-ASR-Realtime 替代（更小更快+方言更强），保留仅作历史对照。Voxtral Realtime 4-bit via mlx-audio-swift。粤语输出乱码、闽南语返回空字符串。仅 Apple Silicon。首次下载 ~3.5 GB。".to_string(),
+            icon: "🐢".to_string(),
             model_id: "voxtral-mlx-4bit".to_string(),
             language: "auto".to_string(),
             punc_zh_enabled: true,
@@ -1156,10 +1169,11 @@ pub fn visible_preset_ids_from_settings(settings: &AppSettings) -> Vec<String> {
     if crate::utils::is_macos_26_or_later() {
         presets.retain(|p| p.id != "apple_native");
     }
-    // Voxtral requires macOS aarch64 (mlx-audio-swift). Hide on Intel/Linux/Win
-    // so the migration treats stored voxtral preset as hidden → fall back.
+    // MLX-based presets require macOS aarch64 (mlx-audio-swift). Hide on Intel/Linux/Win
+    // so the migration treats stored mlx preset as hidden → fall back.
     if !cfg!(all(target_os = "macos", target_arch = "aarch64")) {
         presets.retain(|p| p.id != "experimental_voxtral");
+        presets.retain(|p| p.id != "experimental_qwen3_mlx");
     }
     if !settings.experimental_enabled {
         presets.retain(|p| p.builtin);
