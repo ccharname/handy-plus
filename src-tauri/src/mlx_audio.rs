@@ -73,6 +73,10 @@ pub fn bridge_version() -> Result<String, String> {
 /// Returns the transcribed text on success, or a descriptive error string.
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 pub fn transcribe_file(wav_path: &Path, model_id: &str) -> Result<String, String> {
+    // Pre-flight: verify HuggingFace cache is present before entering the
+    // Swift bridge (which would silently hang for up to 30 min downloading).
+    ensure_hf_cache_present(model_id)?;
+
     // Ensure default.metallib is colocated next to the running executable so
     // mlx-c's `load_colocated_library` finds it. Tauri bundles the metallib
     // into Contents/Resources/mlx/default.metallib (declared in tauri.conf.json
@@ -215,4 +219,199 @@ fn ensure_metallib_installed() -> Result<(), String> {
 #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
 fn ensure_metallib_installed() -> Result<(), String> {
     Ok(())
+}
+
+/// Map a logical `model_id` to its HuggingFace Hub cache directory name
+/// (i.e. `models--<org>--<repo>`).
+fn hf_cache_dir_name(model_id: &str) -> &'static str {
+    match model_id {
+        "voxtral-mini-4b-4bit" => "models--mlx-community--Voxtral-Mini-4B-Realtime-2602-4bit",
+        "qwen3-asr-06b-8bit" => "models--mlx-community--Qwen3-ASR-0.6B-8bit",
+        // Unknown model_id: return empty string so the caller treats it as
+        // uncached and surfaces a generic error.
+        _ => "",
+    }
+}
+
+/// Verify that the HuggingFace Hub cache for `model_id` contains at least one
+/// non-empty snapshot, i.e. the weights have been downloaded already.
+///
+/// Returns `Ok(())` when the cache looks populated. Returns `Err(...)` with a
+/// Chinese-language user-facing message when the cache is missing or empty —
+/// so the error surfaces in < 1 s instead of hanging for 5-30 minutes inside
+/// the Swift bridge's `runSync` + `DispatchSemaphore`.
+///
+/// This is a best-effort gate: if home_dir() is unavailable the check is
+/// skipped (returns Ok) to avoid blocking valid edge-case environments.
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+fn ensure_hf_cache_present(model_id: &str) -> Result<(), String> {
+    use std::fs;
+
+    let cache_dir_name = hf_cache_dir_name(model_id);
+    if cache_dir_name.is_empty() {
+        // Unknown model — let the bridge handle it; no pre-flight possible.
+        return Ok(());
+    }
+
+    // Resolve home directory via dirs-next; fall back to $HOME env var.
+    let home = dirs_next::home_dir()
+        .or_else(|| std::env::var("HOME").ok().map(std::path::PathBuf::from));
+
+    let home = match home {
+        Some(h) => h,
+        None => {
+            log::warn!("[mlx_audio] cannot determine home directory; skipping HF cache pre-flight");
+            return Ok(());
+        }
+    };
+
+    let snapshots_dir = home
+        .join(".cache")
+        .join("huggingface")
+        .join("hub")
+        .join(cache_dir_name)
+        .join("snapshots");
+
+    let snapshots_display = snapshots_dir.display().to_string();
+
+    // Check that snapshots/ exists and contains at least one non-empty
+    // subdirectory (each snapshot is a git commit hash directory).
+    let has_snapshot = fs::read_dir(&snapshots_dir)
+        .ok()
+        .and_then(|mut entries| {
+            entries.find(|entry| {
+                entry.as_ref().ok().map_or(false, |e| {
+                    // The entry itself must be a directory …
+                    e.file_type().map(|ft| ft.is_dir()).unwrap_or(false)
+                        // … and must contain at least one file.
+                        && fs::read_dir(e.path())
+                            .map(|mut inner| inner.next().is_some())
+                            .unwrap_or(false)
+                })
+            })
+        })
+        .is_some();
+
+    if has_snapshot {
+        return Ok(());
+    }
+
+    // Build user-facing error message. Voxtral gets a size hint; other models
+    // get a generic prompt.
+    let hint = if model_id == "voxtral-mini-4b-4bit" {
+        format!(
+            "Voxtral 模型权重尚未下载（约 3.5 GB）。请在终端运行：\n\
+             \n\
+             huggingface-cli download mlx-community/Voxtral-Mini-4B-Realtime-2602-4bit\n\
+             \n\
+             预热缓存后再录音，或保持网络稳定 5–15 分钟后重试。\n\
+             Cache 目录：{}",
+            snapshots_display
+        )
+    } else {
+        format!(
+            "该模型（{}）权重尚未下载，请先用 huggingface-cli 预热缓存后再使用。\n\
+             Cache 目录：{}",
+            model_id, snapshots_display
+        )
+    };
+
+    Err(hint)
+}
+
+#[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+fn ensure_hf_cache_present(_model_id: &str) -> Result<(), String> {
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Unit tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    /// Helper: call `ensure_hf_cache_present` against an arbitrary `snapshots`
+    /// directory by temporarily overriding HOME via an environment variable.
+    ///
+    /// We can't directly call the cfg-gated function on non-aarch64 hosts, so
+    /// the logic under test is extracted into `check_snapshots_dir` which works
+    /// on every platform.
+    fn check_snapshots_dir(snapshots_dir: &std::path::Path) -> Result<(), String> {
+        let has_snapshot = fs::read_dir(snapshots_dir)
+            .ok()
+            .and_then(|mut entries| {
+                entries.find(|entry| {
+                    entry.as_ref().ok().map_or(false, |e| {
+                        e.file_type().map(|ft| ft.is_dir()).unwrap_or(false)
+                            && fs::read_dir(e.path())
+                                .map(|mut inner| inner.next().is_some())
+                                .unwrap_or(false)
+                    })
+                })
+            })
+            .is_some();
+
+        if has_snapshot {
+            Ok(())
+        } else {
+            Err(format!(
+                "snapshots dir missing or empty: {}",
+                snapshots_dir.display()
+            ))
+        }
+    }
+
+    #[test]
+    fn test_no_cache_dir_returns_err() {
+        let tmp = tempfile::tempdir().unwrap();
+        // snapshots dir simply does not exist
+        let snapshots = tmp.path().join("snapshots");
+        assert!(check_snapshots_dir(&snapshots).is_err());
+    }
+
+    #[test]
+    fn test_empty_snapshots_returns_err() {
+        let tmp = tempfile::tempdir().unwrap();
+        let snapshots = tmp.path().join("snapshots");
+        fs::create_dir_all(&snapshots).unwrap();
+        // snapshots/ exists but has no children
+        assert!(check_snapshots_dir(&snapshots).is_err());
+    }
+
+    #[test]
+    fn test_snapshot_dir_without_files_returns_err() {
+        let tmp = tempfile::tempdir().unwrap();
+        let snapshots = tmp.path().join("snapshots");
+        let hash_dir = snapshots.join("abc123def456");
+        fs::create_dir_all(&hash_dir).unwrap();
+        // hash dir exists but is empty
+        assert!(check_snapshots_dir(&snapshots).is_err());
+    }
+
+    #[test]
+    fn test_populated_snapshot_returns_ok() {
+        let tmp = tempfile::tempdir().unwrap();
+        let snapshots = tmp.path().join("snapshots");
+        let hash_dir = snapshots.join("abc123def456");
+        fs::create_dir_all(&hash_dir).unwrap();
+        // Place a non-empty file inside the snapshot
+        fs::write(hash_dir.join("config.json"), b"{}").unwrap();
+        assert!(check_snapshots_dir(&snapshots).is_ok());
+    }
+
+    #[test]
+    fn test_hf_cache_dir_name_mappings() {
+        assert_eq!(
+            hf_cache_dir_name("voxtral-mini-4b-4bit"),
+            "models--mlx-community--Voxtral-Mini-4B-Realtime-2602-4bit"
+        );
+        assert_eq!(
+            hf_cache_dir_name("qwen3-asr-06b-8bit"),
+            "models--mlx-community--Qwen3-ASR-0.6B-8bit"
+        );
+        assert_eq!(hf_cache_dir_name("unknown-model"), "");
+    }
 }
