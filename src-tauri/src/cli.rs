@@ -49,6 +49,10 @@ pub struct CliArgs {
     #[arg(long)]
     pub debug: bool,
 
+    /// Include full transcript text in observability logs (default: off for privacy)
+    #[arg(long)]
+    pub log_transcripts: bool,
+
     /// Run ASR benchmark for a preset (sent to running instance); requires --bench-dataset and --bench-output
     #[arg(long)]
     pub bench_preset: Option<String>,

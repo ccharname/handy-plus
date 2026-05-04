@@ -152,7 +152,10 @@ pub fn sanitise_contextual_strings(raw: &[String]) -> Vec<String> {
         }
 
         // Skip entries that are only ASCII punctuation / symbols
-        if trimmed.chars().all(|c| c.is_ascii_punctuation() || c.is_ascii_whitespace()) {
+        if trimmed
+            .chars()
+            .all(|c| c.is_ascii_punctuation() || c.is_ascii_whitespace())
+        {
             continue;
         }
 
@@ -315,10 +318,10 @@ mod tests {
     fn test_sanitise_contextual_strings_basic() {
         let raw: Vec<String> = vec![
             "GitHub".to_string(),
-            "github".to_string(),          // duplicate (case-insensitive) → dropped
-            "  Copilot  ".to_string(),      // trimmed → "Copilot"
-            "...".to_string(),              // all ASCII punctuation → dropped
-            "".to_string(),                 // empty → dropped
+            "github".to_string(),      // duplicate (case-insensitive) → dropped
+            "  Copilot  ".to_string(), // trimmed → "Copilot"
+            "...".to_string(),         // all ASCII punctuation → dropped
+            "".to_string(),            // empty → dropped
         ];
         let result = sanitise_contextual_strings(&raw);
         assert_eq!(result, vec!["GitHub", "Copilot"]);

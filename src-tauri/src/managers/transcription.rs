@@ -1,6 +1,9 @@
-use crate::audio_toolkit::{apply_custom_words, filter_transcription_output, VoiceActivityDetector};
+use crate::audio_toolkit::{
+    apply_custom_words, filter_transcription_output, VoiceActivityDetector,
+};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, MlxModelKind, ModelManager, SherpaModelKind};
+use crate::observability::{self, Outcome, Stage, Stopwatch};
 use crate::profile_resolver::resolve_effective_settings;
 use crate::settings::{
     get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, WhisperAcceleratorSetting,
@@ -294,9 +297,15 @@ impl TranscriptionManager {
     /// Clear the incremental paste cursor.  Call this at the same point
     /// `transcription-partial-clear` is emitted (start of each new transcription).
     pub fn reset_incremental_paste(&self) {
-        let mut cursor = self.incremental_paste_cursor.lock().unwrap_or_else(|p| p.into_inner());
+        let mut cursor = self
+            .incremental_paste_cursor
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
         cursor.clear();
-        let mut ts = self.last_incremental_paste_at.lock().unwrap_or_else(|p| p.into_inner());
+        let mut ts = self
+            .last_incremental_paste_at
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
         *ts = None;
     }
 
@@ -305,7 +314,10 @@ impl TranscriptionManager {
     /// the cursor to empty.  Called by `actions.rs` during final-paste to compute
     /// the residual delta.
     pub fn take_incremental_paste_cursor(&self) -> String {
-        let mut cursor = self.incremental_paste_cursor.lock().unwrap_or_else(|p| p.into_inner());
+        let mut cursor = self
+            .incremental_paste_cursor
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
         let value = cursor.clone();
         cursor.clear();
         value
@@ -412,7 +424,10 @@ impl TranscriptionManager {
                 MlxModelKind::VoxtralRealtime => "voxtral-mini-4b-4bit".to_string(),
                 MlxModelKind::Qwen3Asr06B => "qwen3-asr-06b-8bit".to_string(),
             };
-            info!("[mlx_audio] Engine ready: model_id_str={}", mlx_model_id_str);
+            info!(
+                "[mlx_audio] Engine ready: model_id_str={}",
+                mlx_model_id_str
+            );
             let loaded_engine = LoadedEngine::MlxAudio {
                 model_id_str: mlx_model_id_str,
             };
@@ -675,8 +690,7 @@ impl TranscriptionManager {
                                 if count >= QWEN3_HOTWORDS_MAX_ENTRIES {
                                     break;
                                 }
-                                let projected_len =
-                                    acc.chars().count() + w.chars().count() + 1; // +1 for \n
+                                let projected_len = acc.chars().count() + w.chars().count() + 1; // +1 for \n
                                 if projected_len > QWEN3_HOTWORDS_MAX_CHARS {
                                     break;
                                 }
@@ -725,10 +739,7 @@ impl TranscriptionManager {
                                     .into_owned(),
                             ),
                             tokenizer: Some(
-                                model_path
-                                    .join("tokenizer")
-                                    .to_string_lossy()
-                                    .into_owned(),
+                                model_path.join("tokenizer").to_string_lossy().into_owned(),
                             ),
                             // CRITICAL: override landmine defaults (128 / 512) that
                             // silently truncate long audio (same gotcha as FunASR-Nano).
@@ -783,8 +794,7 @@ impl TranscriptionManager {
                                 if count >= FUNASR_HOTWORDS_MAX_ENTRIES {
                                     break;
                                 }
-                                let projected_len =
-                                    acc.chars().count() + w.chars().count() + 1; // +1 for \n
+                                let projected_len = acc.chars().count() + w.chars().count() + 1; // +1 for \n
                                 if projected_len > FUNASR_HOTWORDS_MAX_CHARS {
                                     break;
                                 }
@@ -1089,7 +1099,10 @@ impl TranscriptionManager {
 
         let t_aliases = std::time::Instant::now();
         let aliased_result = if !settings.custom_word_aliases.is_empty() {
-            crate::audio_toolkit::apply_word_aliases(&corrected_result, &settings.custom_word_aliases)
+            crate::audio_toolkit::apply_word_aliases(
+                &corrected_result,
+                &settings.custom_word_aliases,
+            )
         } else {
             corrected_result
         };
@@ -1193,16 +1206,41 @@ impl TranscriptionManager {
                 // Silence/noise pre-filter: SenseVoice hallucinates "我。"/"嗯。"
                 // on pure-silence/tone clips. Skip the engine when VAD reports
                 // < 240 ms of voice frames (mirrors FunASR-Nano gate below).
+                let req = self
+                    .app_handle
+                    .try_state::<crate::observability::ActiveRequestId>()
+                    .map(|s| s.get())
+                    .unwrap_or_default();
                 if let Ok(vad_path) = self.app_handle.path().resolve(
                     "resources/models/silero_vad_v4.onnx",
                     tauri::path::BaseDirectory::Resource,
                 ) {
                     use crate::audio_toolkit::silence_gate;
-                    match silence_gate::check(audio, &vad_path) {
-                        silence_gate::SilenceGate::Silence { voice_frames, total_frames } => {
+                    let vad_sw = Stopwatch::start();
+                    let gate_result = silence_gate::check(audio, &vad_path);
+                    let vad_ms = vad_sw.elapsed_ms();
+                    let audio_duration_ms = (audio.len() as f64 / 16_000.0) * 1000.0;
+                    match gate_result {
+                        silence_gate::SilenceGate::Silence {
+                            voice_frames,
+                            total_frames,
+                        } => {
                             debug!(
                                 "SenseVoice: VAD detected {} speech frames / {} total — skipping transcription",
                                 voice_frames, total_frames
+                            );
+                            observability::ok_with(
+                                req,
+                                Stage::T3Vad,
+                                vad_ms,
+                                serde_json::json!({
+                                    "vad_ms": vad_ms as u64,
+                                    "audio_duration_ms": audio_duration_ms as u64,
+                                    "voice_frames": voice_frames,
+                                    "total_frames": total_frames,
+                                    "speech_ratio": if total_frames > 0 { voice_frames as f64 / total_frames as f64 } else { 0.0 },
+                                    "gate": "silence"
+                                }),
                             );
                             return Ok(transcribe_rs::TranscriptionResult {
                                 text: String::new(),
@@ -1210,10 +1248,34 @@ impl TranscriptionManager {
                             });
                         }
                         silence_gate::SilenceGate::Speech { voice_frames, .. } => {
-                            debug!("SenseVoice: VAD pre-check passed ({} speech frames)", voice_frames);
+                            debug!(
+                                "SenseVoice: VAD pre-check passed ({} speech frames)",
+                                voice_frames
+                            );
+                            let total_frames_est = (audio_duration_ms / 30.0) as u32;
+                            observability::ok_with(
+                                req,
+                                Stage::T3Vad,
+                                vad_ms,
+                                serde_json::json!({
+                                    "vad_ms": vad_ms as u64,
+                                    "audio_duration_ms": audio_duration_ms as u64,
+                                    "voice_frames": voice_frames,
+                                    "total_frames": total_frames_est,
+                                    "speech_ratio": if total_frames_est > 0 { voice_frames as f64 / total_frames_est as f64 } else { 1.0 },
+                                    "gate": "speech"
+                                }),
+                            );
                         }
                         silence_gate::SilenceGate::Unavailable => {
                             warn!("SenseVoice: VAD init failed; skipping pre-filter (fail-open)");
+                            observability::record_stage(
+                                req,
+                                Stage::T3Vad,
+                                Outcome::Error,
+                                vad_ms,
+                                Some(serde_json::json!({ "gate": "unavailable" })),
+                            );
                         }
                     }
                 }
@@ -1482,25 +1544,20 @@ impl TranscriptionManager {
                 //
                 // Chunk size: 25 s with 1 s overlap. Effective stride = 24 s.
                 // A 60 s recording produces 3 chunks ([0,25], [24,49], [48,60]).
-                if matches!(session.kind, SherpaModelKind::Qwen3Asr)
-                    && audio.len() > 16_000 * 30
-                {
+                if matches!(session.kind, SherpaModelKind::Qwen3Asr) && audio.len() > 16_000 * 30 {
                     // EOS-safety chunking: split at VAD boundaries, ≤25 s per chunk.
                     let t0 = std::time::Instant::now();
-                    let vad_path_result = self
-                        .app_handle
-                        .path()
-                        .resolve(
-                            "resources/models/silero_vad_v4.onnx",
-                            tauri::path::BaseDirectory::Resource,
-                        );
+                    let vad_path_result = self.app_handle.path().resolve(
+                        "resources/models/silero_vad_v4.onnx",
+                        tauri::path::BaseDirectory::Resource,
+                    );
 
                     // Constants used across all chunking paths.
                     // Chunk size = 8 s; overlap = 1 s prepended to the next chunk
                     // to give the model enough context for dedup at boundaries.
                     const FRAME_SAMPLES: usize = 480; // 30 ms @ 16 kHz
                     const MAX_CHUNK_SAMPLES: usize = 16_000 * 25; // 25 s — EOS safety
-                    const OVERLAP_SAMPLES: usize = 16_000 * 1;    // 1 s overlap
+                    const OVERLAP_SAMPLES: usize = 16_000 * 1; // 1 s overlap
 
                     let chunks: Vec<Vec<f32>> = match vad_path_result {
                         Ok(vad_path) => {
@@ -1522,9 +1579,7 @@ impl TranscriptionManager {
                                             current_chunk.extend_from_slice(frame);
                                             continue;
                                         }
-                                        let is_speech = vad
-                                            .is_voice(frame)
-                                            .unwrap_or(true); // on error, treat as speech
+                                        let is_speech = vad.is_voice(frame).unwrap_or(true); // on error, treat as speech
 
                                         if is_speech {
                                             current_chunk.extend_from_slice(frame);
@@ -1535,7 +1590,8 @@ impl TranscriptionManager {
                                                 let overlap_start = current_chunk
                                                     .len()
                                                     .saturating_sub(OVERLAP_SAMPLES);
-                                                let overlap = current_chunk[overlap_start..].to_vec();
+                                                let overlap =
+                                                    current_chunk[overlap_start..].to_vec();
                                                 all_chunks.push(std::mem::take(&mut current_chunk));
                                                 current_chunk = overlap;
                                             }
@@ -1631,8 +1687,7 @@ impl TranscriptionManager {
                         let stream = session.recognizer.create_stream();
                         stream.accept_waveform(16000, chunk.as_slice());
                         session.recognizer.decode(&stream);
-                        let chunk_text =
-                            stream.get_result().map(|r| r.text).unwrap_or_default();
+                        let chunk_text = stream.get_result().map(|r| r.text).unwrap_or_default();
 
                         if !chunk_text.is_empty() {
                             // Dedup overlap between previous chunk tail and this
@@ -1758,7 +1813,11 @@ impl TranscriptionManager {
             //   The bridge FFI already has the skeleton for `mlx_audio_feed_pcm` / `mlx_audio_stop`.
             LoadedEngine::MlxAudio { model_id_str } => {
                 let t0 = std::time::Instant::now();
-                info!("[mlx_audio] Transcribing {} samples with model '{}'", audio.len(), model_id_str);
+                info!(
+                    "[mlx_audio] Transcribing {} samples with model '{}'",
+                    audio.len(),
+                    model_id_str
+                );
 
                 // Write 16 kHz mono f32 audio to a temp WAV file.
                 // Use std::env::temp_dir() + a nanosecond-based unique name.
@@ -1781,20 +1840,24 @@ impl TranscriptionManager {
                     let mut writer = hound::WavWriter::create(&tmp_path, spec)
                         .map_err(|e| anyhow::anyhow!("Failed to create WAV writer: {}", e))?;
                     for &sample in audio {
-                        writer.write_sample(sample)
+                        writer
+                            .write_sample(sample)
                             .map_err(|e| anyhow::anyhow!("Failed to write WAV sample: {}", e))?;
                     }
-                    writer.finalize()
+                    writer
+                        .finalize()
                         .map_err(|e| anyhow::anyhow!("Failed to finalize WAV file: {}", e))?;
                 }
 
-                debug!("[mlx_audio] WAV written to {:?} in {}ms", tmp_path, t0.elapsed().as_millis());
+                debug!(
+                    "[mlx_audio] WAV written to {:?} in {}ms",
+                    tmp_path,
+                    t0.elapsed().as_millis()
+                );
 
                 // Call the Swift bridge (may trigger HF download on first use).
                 let text_result = crate::mlx_audio::transcribe_file(&tmp_path, model_id_str)
-                    .map_err(|e| {
-                        anyhow::anyhow!("[mlx_audio] transcribe_file failed: {}", e)
-                    });
+                    .map_err(|e| anyhow::anyhow!("[mlx_audio] transcribe_file failed: {}", e));
 
                 // Always clean up temp WAV regardless of transcription success.
                 let _ = std::fs::remove_file(&tmp_path);
@@ -1996,7 +2059,10 @@ impl TranscriptionManager {
         // Apply phonetic alias substitutions (exact substring, longer-first).
         let t_aliases = std::time::Instant::now();
         let aliased_result = if !settings.custom_word_aliases.is_empty() {
-            crate::audio_toolkit::apply_word_aliases(&corrected_result, &settings.custom_word_aliases)
+            crate::audio_toolkit::apply_word_aliases(
+                &corrected_result,
+                &settings.custom_word_aliases,
+            )
         } else {
             corrected_result
         };
@@ -2453,8 +2519,14 @@ pub(crate) fn dedup_overlap(prev_tail: &str, next_head: &str) -> usize {
     let next_norm = normalise_for_overlap(next_head);
 
     // Take last WINDOW chars of prev_norm
-    let prev_chars: Vec<char> = prev_norm.chars().rev().take(WINDOW).collect::<Vec<_>>()
-        .into_iter().rev().collect();
+    let prev_chars: Vec<char> = prev_norm
+        .chars()
+        .rev()
+        .take(WINDOW)
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect();
     // Take first WINDOW chars of next_norm
     let next_chars: Vec<char> = next_norm.chars().take(WINDOW).collect();
 
@@ -2529,8 +2601,8 @@ mod qwen3_bench {
 
     #[test]
     fn test_dedup_overlap_mixed_cjk_ascii() {
-        let prev  = "the model said hello 世界";
-        let next  = "hello 世界 and more";
+        let prev = "the model said hello 世界";
+        let next = "hello 世界 and more";
         let skip = dedup_overlap(prev, next);
         // "hello 世界" = 5 ASCII + 1 space + 6 CJK bytes = 12 bytes
         // but we count chars: h-e-l-l-o- -世-界 = 8 chars
@@ -2553,7 +2625,10 @@ mod qwen3_bench {
         let next = "ABCD more text";
         let skip = dedup_overlap(prev, next);
         // "ABCD" = 4 bytes in next_head (halfwidth ASCII)
-        assert_eq!(skip, 4, "fullwidth→halfwidth normalisation should enable match");
+        assert_eq!(
+            skip, 4,
+            "fullwidth→halfwidth normalisation should enable match"
+        );
     }
 
     // ── Hotwords bench (25 s sample, 8 s chunk regime) ──────────────────────
@@ -2580,8 +2655,8 @@ mod qwen3_bench {
         let wav_path = std::env::var("HANDY_QWEN3_BENCH_WAV")
             .expect("HANDY_QWEN3_BENCH_WAV must point to a 16 kHz mono WAV file (~25 s)");
 
-        let audio = crate::audio_toolkit::read_wav_samples(&wav_path)
-            .expect("Failed to read bench WAV");
+        let audio =
+            crate::audio_toolkit::read_wav_samples(&wav_path).expect("Failed to read bench WAV");
 
         eprintln!(
             "Audio: {} samples = {:.1} s",
@@ -2614,13 +2689,22 @@ mod qwen3_bench {
                 model_config: sherpa_onnx::OfflineModelConfig {
                     qwen3_asr: sherpa_onnx::OfflineQwen3ASRModelConfig {
                         conv_frontend: Some(
-                            model_path.join("conv_frontend.onnx").to_string_lossy().into_owned(),
+                            model_path
+                                .join("conv_frontend.onnx")
+                                .to_string_lossy()
+                                .into_owned(),
                         ),
                         encoder: Some(
-                            model_path.join("encoder.int8.onnx").to_string_lossy().into_owned(),
+                            model_path
+                                .join("encoder.int8.onnx")
+                                .to_string_lossy()
+                                .into_owned(),
                         ),
                         decoder: Some(
-                            model_path.join("decoder.int8.onnx").to_string_lossy().into_owned(),
+                            model_path
+                                .join("decoder.int8.onnx")
+                                .to_string_lossy()
+                                .into_owned(),
                         ),
                         tokenizer: Some(
                             model_path.join("tokenizer").to_string_lossy().into_owned(),
@@ -2662,7 +2746,10 @@ mod qwen3_bench {
             );
 
             if truncated {
-                eprintln!(">>> EOS truncation suspected at N={n}. Recommended cap = {}", n / 2);
+                eprintln!(
+                    ">>> EOS truncation suspected at N={n}. Recommended cap = {}",
+                    n / 2
+                );
                 break;
             }
         }
@@ -2697,8 +2784,8 @@ mod qwen3_bench {
             .or_else(|_| std::env::var("HANDY_QWEN3_BENCH_WAV"))
             .expect("Set HANDY_QWEN3_BENCH_WAV_50S (or HANDY_QWEN3_BENCH_WAV as fallback)");
 
-        let audio = crate::audio_toolkit::read_wav_samples(&wav_path)
-            .expect("Failed to read bench WAV");
+        let audio =
+            crate::audio_toolkit::read_wav_samples(&wav_path).expect("Failed to read bench WAV");
 
         eprintln!(
             "Long-audio bench: {} samples = {:.1} s",
@@ -2729,13 +2816,22 @@ mod qwen3_bench {
                 model_config: sherpa_onnx::OfflineModelConfig {
                     qwen3_asr: sherpa_onnx::OfflineQwen3ASRModelConfig {
                         conv_frontend: Some(
-                            model_path.join("conv_frontend.onnx").to_string_lossy().into_owned(),
+                            model_path
+                                .join("conv_frontend.onnx")
+                                .to_string_lossy()
+                                .into_owned(),
                         ),
                         encoder: Some(
-                            model_path.join("encoder.int8.onnx").to_string_lossy().into_owned(),
+                            model_path
+                                .join("encoder.int8.onnx")
+                                .to_string_lossy()
+                                .into_owned(),
                         ),
                         decoder: Some(
-                            model_path.join("decoder.int8.onnx").to_string_lossy().into_owned(),
+                            model_path
+                                .join("decoder.int8.onnx")
+                                .to_string_lossy()
+                                .into_owned(),
                         ),
                         tokenizer: Some(
                             model_path.join("tokenizer").to_string_lossy().into_owned(),
@@ -2777,7 +2873,11 @@ mod qwen3_bench {
             );
 
             if truncated {
-                eprintln!(">>> EOS truncation at N={n} with {:.0}s audio. Recommended cap = {}", audio.len() as f64 / 16000.0, n / 2);
+                eprintln!(
+                    ">>> EOS truncation at N={n} with {:.0}s audio. Recommended cap = {}",
+                    audio.len() as f64 / 16000.0,
+                    n / 2
+                );
                 break;
             }
         }
@@ -2812,8 +2912,8 @@ mod qwen3_bench {
         let wav_path = std::env::var("HANDY_QWEN3_BENCH_WAV")
             .expect("HANDY_QWEN3_BENCH_WAV must point to a 16 kHz mono WAV file (~25 s)");
 
-        let audio = crate::audio_toolkit::read_wav_samples(&wav_path)
-            .expect("Failed to read bench WAV");
+        let audio =
+            crate::audio_toolkit::read_wav_samples(&wav_path).expect("Failed to read bench WAV");
 
         eprintln!(
             "Temp A/B bench: {:.1} s audio. Probing 6 (temperature, top_p) cells.",
@@ -2826,10 +2926,10 @@ mod qwen3_bench {
         let cells: &[(f32, f32)] = &[
             (1e-6, 0.5),
             (1e-6, 0.8),
-            (0.0,  0.5),
-            (0.0,  0.8),
-            (0.1,  0.5),
-            (0.1,  0.8),
+            (0.0, 0.5),
+            (0.0, 0.8),
+            (0.1, 0.5),
+            (0.1, 0.8),
         ];
 
         let model_path = std::path::Path::new(&model_dir);
@@ -2839,13 +2939,22 @@ mod qwen3_bench {
                 model_config: sherpa_onnx::OfflineModelConfig {
                     qwen3_asr: sherpa_onnx::OfflineQwen3ASRModelConfig {
                         conv_frontend: Some(
-                            model_path.join("conv_frontend.onnx").to_string_lossy().into_owned(),
+                            model_path
+                                .join("conv_frontend.onnx")
+                                .to_string_lossy()
+                                .into_owned(),
                         ),
                         encoder: Some(
-                            model_path.join("encoder.int8.onnx").to_string_lossy().into_owned(),
+                            model_path
+                                .join("encoder.int8.onnx")
+                                .to_string_lossy()
+                                .into_owned(),
                         ),
                         decoder: Some(
-                            model_path.join("decoder.int8.onnx").to_string_lossy().into_owned(),
+                            model_path
+                                .join("decoder.int8.onnx")
+                                .to_string_lossy()
+                                .into_owned(),
                         ),
                         tokenizer: Some(
                             model_path.join("tokenizer").to_string_lossy().into_owned(),
@@ -2877,9 +2986,7 @@ mod qwen3_bench {
             let char_count = text.chars().count();
             let preview: String = text.chars().take(80).collect();
 
-            eprintln!(
-                "temp={temp:.0e} top_p={top_p:.2} chars={char_count:5} text={preview}"
-            );
+            eprintln!("temp={temp:.0e} top_p={top_p:.2} chars={char_count:5} text={preview}");
         }
 
         eprintln!("{:-<72}", "");

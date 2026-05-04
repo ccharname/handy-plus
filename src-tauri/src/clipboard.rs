@@ -31,9 +31,7 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 /// assert_eq!(compute_delta("你好", "你嗷世界"), None); // rewrite
 /// ```
 pub fn compute_delta(prev_cumulative: &str, new_cumulative: &str) -> Option<String> {
-    if new_cumulative.len() > prev_cumulative.len()
-        && new_cumulative.starts_with(prev_cumulative)
-    {
+    if new_cumulative.len() > prev_cumulative.len() && new_cumulative.starts_with(prev_cumulative) {
         Some(new_cumulative[prev_cumulative.len()..].to_string())
     } else {
         None
@@ -56,7 +54,11 @@ pub fn paste_incremental(delta: String, app_handle: AppHandle) -> Result<(), Str
     let paste_method = settings.paste_method;
     let paste_delay_ms = settings.paste_delay_ms;
 
-    info!("Incremental paste ({} chars) via {:?}", delta.len(), paste_method);
+    info!(
+        "Incremental paste ({} chars) via {:?}",
+        delta.len(),
+        paste_method
+    );
 
     let enigo_state = app_handle
         .try_state::<EnigoState>()
@@ -79,7 +81,13 @@ pub fn paste_incremental(delta: String, app_handle: AppHandle) -> Result<(), Str
             )?;
         }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
-            paste_via_clipboard(&mut enigo, &delta, &app_handle, &paste_method, paste_delay_ms)?;
+            paste_via_clipboard(
+                &mut enigo,
+                &delta,
+                &app_handle,
+                &paste_method,
+                paste_delay_ms,
+            )?;
         }
         PasteMethod::ExternalScript => {
             let script_path = settings
@@ -793,10 +801,7 @@ mod tests {
 
     #[test]
     fn compute_delta_clean_append_cjk() {
-        assert_eq!(
-            compute_delta("你好", "你好世界"),
-            Some("世界".to_string())
-        );
+        assert_eq!(compute_delta("你好", "你好世界"), Some("世界".to_string()));
     }
 
     #[test]
@@ -826,6 +831,9 @@ mod tests {
 
     #[test]
     fn compute_delta_completely_different_returns_none() {
-        assert_eq!(compute_delta("Hello there", "Something else entirely"), None);
+        assert_eq!(
+            compute_delta("Hello there", "Something else entirely"),
+            None
+        );
     }
 }

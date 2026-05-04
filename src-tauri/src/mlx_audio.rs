@@ -96,8 +96,8 @@ pub fn transcribe_file(wav_path: &Path, model_id: &str) -> Result<String, String
     )
     .map_err(|e| format!("WAV path contains NUL byte: {}", e))?;
 
-    let c_model_id = CString::new(model_id)
-        .map_err(|e| format!("model_id contains NUL byte: {}", e))?;
+    let c_model_id =
+        CString::new(model_id).map_err(|e| format!("model_id contains NUL byte: {}", e))?;
 
     let mut out_text: *mut c_char = std::ptr::null_mut();
     let mut out_error: *mut c_char = std::ptr::null_mut();
@@ -209,13 +209,8 @@ fn ensure_metallib_installed() -> Result<(), String> {
             )
         })?;
 
-    fs::copy(&src, &dest)
-        .map_err(|e| format!("copy {:?} → {:?}: {}", src, dest, e))?;
-    log::info!(
-        "[mlx_audio] installed metallib: {:?} → {:?}",
-        src,
-        dest
-    );
+    fs::copy(&src, &dest).map_err(|e| format!("copy {:?} → {:?}: {}", src, dest, e))?;
+    log::info!("[mlx_audio] installed metallib: {:?} → {:?}", src, dest);
     Ok(())
 }
 
@@ -257,8 +252,8 @@ fn ensure_hf_cache_present(model_id: &str) -> Result<(), String> {
     }
 
     // Resolve home directory via dirs-next; fall back to $HOME env var.
-    let home = dirs_next::home_dir()
-        .or_else(|| std::env::var("HOME").ok().map(std::path::PathBuf::from));
+    let home =
+        dirs_next::home_dir().or_else(|| std::env::var("HOME").ok().map(std::path::PathBuf::from));
 
     let home = match home {
         Some(h) => h,

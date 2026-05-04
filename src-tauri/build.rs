@@ -587,9 +587,8 @@ fn build_mlx_audio_bridge() {
     let sdk_swift_lib = Path::new(&sdk_path).join("usr/lib/swift");
 
     // Derive the absolute package path relative to the manifest directory.
-    let manifest_dir = PathBuf::from(
-        env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set"),
-    );
+    let manifest_dir =
+        PathBuf::from(env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set"));
     let pkg_abs = manifest_dir.join(PKG_PATH);
 
     println!("cargo:warning=Building mlx-audio-swift bridge (SPM resolve + compile — first run may take several minutes)");
@@ -649,8 +648,7 @@ fn build_mlx_audio_bridge() {
         .map(|p| p.to_string_lossy().into_owned())
         .collect::<Vec<_>>()
         .join("\n");
-    std::fs::write(&filelist_path, filelist_content)
-        .expect("Failed to write object file list");
+    std::fs::write(&filelist_path, filelist_content).expect("Failed to write object file list");
 
     let libtool_status = Command::new("libtool")
         .args([
@@ -701,11 +699,7 @@ fn build_mlx_audio_bridge() {
     // execute and any `await` blocks the calling thread forever. The pthread
     // bridge in bridge.swift::runSync depends on Concurrency to schedule the
     // detached task that drives mlx-audio-swift's async API.
-    for swift_lib in &[
-        "swift_Concurrency",
-        "swiftFoundation",
-        "swiftCore",
-    ] {
+    for swift_lib in &["swift_Concurrency", "swiftFoundation", "swiftCore"] {
         println!("cargo:rustc-link-lib={swift_lib}");
     }
 

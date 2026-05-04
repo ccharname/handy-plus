@@ -1727,10 +1727,8 @@ mod migration_tests {
         let mut s = settings_with_active_preset("apple_native");
         s.selected_model = "apple-speech".to_string();
         // Pre-mark as applied (simulates a user who already migrated).
-        s.migration_applied.insert(
-            "v_0_8_15_drop_hidden_active_preset".to_string(),
-            true,
-        );
+        s.migration_applied
+            .insert("v_0_8_15_drop_hidden_active_preset".to_string(), true);
         let visible: &[&str] = &["chinese_balanced", "multilingual_offline"];
         let changed = ensure_v_0_8_15_drop_hidden_preset_migration(&mut s, visible);
 

@@ -5,7 +5,6 @@ mod apple_intelligence;
 mod apple_speech;
 // mlx_audio is compiled unconditionally — the module itself gates its FFI
 // declarations behind #[cfg(all(target_os = "macos", target_arch = "aarch64"))].
-pub mod mlx_audio;
 mod audio_feedback;
 pub mod audio_toolkit;
 pub mod cli;
@@ -16,6 +15,8 @@ mod helpers;
 mod input;
 mod llm_client;
 mod managers;
+pub mod mlx_audio;
+pub mod observability;
 mod overlay;
 pub mod portable;
 mod profile_resolver;
@@ -50,6 +51,8 @@ use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_log::{Builder as LogBuilder, RotationStrategy, Target, TargetKind};
+
+use crate::observability::ObservabilityGuard;
 
 use crate::settings::get_settings;
 
@@ -211,6 +214,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
+    app_handle.manage(observability::ActiveRequestId::new());
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -320,14 +324,12 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                     s.selected_model = preset.model_id.clone();
                     settings::write_settings(&app_clone, s);
 
-                    match commands::models::switch_active_model(
-                        &app_clone,
-                        &preset.model_id,
-                    ) {
+                    match commands::models::switch_active_model(&app_clone, &preset.model_id) {
                         Ok(()) => {
                             log::info!(
                                 "ASR preset switched to {} (model={}) via tray.",
-                                preset.id, preset.model_id
+                                preset.id,
+                                preset.model_id
                             );
                         }
                         Err(e) => {
@@ -397,6 +399,32 @@ fn show_main_window_command(app: AppHandle) -> Result<(), String> {
 pub fn run(cli_args: CliArgs) {
     // Detect portable mode before anything else
     portable::init();
+
+    // ── Observability: initialise JSON JSONL logger ───────────────────────────
+    // Resolve log dir: ~/Library/Logs/Handy (or portable equivalent).
+    // We must initialise before the tauri builder so the guard outlives everything.
+    let obs_log_dir = {
+        #[cfg(target_os = "macos")]
+        {
+            dirs_next::home_dir()
+                .map(|h| h.join("Library/Logs/Handy"))
+                .unwrap_or_else(|| std::path::PathBuf::from("/tmp/handy-logs"))
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            dirs_next::data_local_dir()
+                .map(|d| d.join("Handy/logs"))
+                .unwrap_or_else(|| std::path::PathBuf::from("/tmp/handy-logs"))
+        }
+    };
+    if let Err(e) = std::fs::create_dir_all(&obs_log_dir) {
+        eprintln!(
+            "observability: could not create log dir {:?}: {}",
+            obs_log_dir, e
+        );
+    }
+    // _obs_guard must remain alive for the whole process lifetime.
+    let _obs_guard: ObservabilityGuard = observability::init(obs_log_dir, cli_args.log_transcripts);
 
     // Parse console logging directives from RUST_LOG, falling back to info-level logging
     // when the variable is unset

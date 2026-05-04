@@ -1194,9 +1194,8 @@ async fn run_accuracy_mode(
         .enumerate()
         .filter(|(_, line)| !line.trim().is_empty())
         .map(|(line_no, line)| {
-            serde_json::from_str::<ManifestEntry>(line).map_err(|e| {
-                format!("manifest.jsonl line {}: parse error: {}", line_no + 1, e)
-            })
+            serde_json::from_str::<ManifestEntry>(line)
+                .map_err(|e| format!("manifest.jsonl line {}: parse error: {}", line_no + 1, e))
         })
         .collect::<Result<Vec<_>, _>>()?;
 
@@ -1259,13 +1258,18 @@ async fn run_accuracy_mode(
             let hypothesis = tm_bench
                 .transcribe_with_language_override(samples, lang_override_bench.clone())
                 .unwrap_or_else(|e| {
-                    log::warn!("Accuracy bench: transcription error for {}: {}", wav_name, e);
+                    log::warn!(
+                        "Accuracy bench: transcription error for {}: {}",
+                        wav_name,
+                        e
+                    );
                     String::new()
                 });
             let latency_ms = t0.elapsed().as_millis() as u64;
 
             // CER and RTF.
-            let cer = crate::audio_toolkit::cer::character_error_rate(&entry.reference, &hypothesis);
+            let cer =
+                crate::audio_toolkit::cer::character_error_rate(&entry.reference, &hypothesis);
             let rtf = if audio_ms > 0 {
                 latency_ms as f64 / audio_ms as f64
             } else {
@@ -1323,14 +1327,8 @@ async fn run_accuracy_mode(
     // ── Step 4: aggregate statistics ────────────────────────────────────────
 
     // Collect CER and RTF values for items that were successfully processed.
-    let mut cer_values: Vec<f64> = items
-        .iter()
-        .filter_map(|it| it.cer)
-        .collect();
-    let mut rtf_values: Vec<f64> = items
-        .iter()
-        .filter_map(|it| it.rtf)
-        .collect();
+    let mut cer_values: Vec<f64> = items.iter().filter_map(|it| it.cer).collect();
+    let mut rtf_values: Vec<f64> = items.iter().filter_map(|it| it.rtf).collect();
     cer_values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     rtf_values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 

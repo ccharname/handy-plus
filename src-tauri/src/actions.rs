@@ -5,6 +5,7 @@ use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
+use crate::observability::{self, Outcome, RequestId, Stage, Stopwatch};
 use crate::profile_resolver::{resolve_effective_settings, EffectiveSettings};
 use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
@@ -609,6 +610,14 @@ impl ShortcutAction for TranscribeAction {
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
 
+        // t0_hotkey: from keydown dispatch into this handler.
+        // Mint a fresh request id and persist it so stop() can reference it.
+        let req = RequestId::new();
+        if let Some(active) = app.try_state::<crate::observability::ActiveRequestId>() {
+            active.set(req);
+        }
+        let t0_sw = Stopwatch::start();
+
         // Load model in the background
         let tm = app.state::<Arc<TranscriptionManager>>();
         let rm = app.state::<Arc<AudioRecordingManager>>();
@@ -676,9 +685,28 @@ impl ShortcutAction for TranscribeAction {
         }
 
         if recording_error.is_none() {
+            // t0_hotkey: dispatch succeeded, recording has started
+            observability::ok_with(
+                req,
+                Stage::T0Hotkey,
+                t0_sw.elapsed_ms(),
+                serde_json::json!({
+                    "binding_id": binding_id
+                }),
+            );
             // Dynamically register the cancel shortcut in a separate task to avoid deadlock
             shortcut::register_cancel_shortcut(app);
         } else {
+            // t0_hotkey: dispatch failed (microphone error etc.)
+            observability::record_stage(
+                req,
+                Stage::T0Hotkey,
+                Outcome::Error,
+                t0_sw.elapsed_ms(),
+                Some(
+                    serde_json::json!({ "binding_id": binding_id, "error": "recording_start_failed" }),
+                ),
+            );
             // Starting failed (for example due to blocked microphone permissions).
             // Revert UI state so we don't stay stuck in the recording overlay.
             utils::hide_recording_overlay(app);
@@ -719,6 +747,14 @@ impl ShortcutAction for TranscribeAction {
         let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
 
+        // Capture a per-request-id from the app state if available;
+        // fall back to a fresh one so stop() is always instrumented.
+        let req = app
+            .try_state::<crate::observability::ActiveRequestId>()
+            .map(|s| s.get())
+            .unwrap_or_else(RequestId::new);
+        let total_sw = Stopwatch::start();
+
         change_tray_icon(app, TrayIconState::Transcribing);
         show_transcribing_overlay(app);
 
@@ -737,6 +773,8 @@ impl ShortcutAction for TranscribeAction {
                 "Starting async transcription task for binding: {}",
                 binding_id
             );
+            let req_async = req;
+            let total_sw_async = total_sw;
 
             // Resolve Power Mode effective settings as early as possible, while the
             // foreground app is still the one the user was dictating into.
@@ -784,7 +822,9 @@ impl ShortcutAction for TranscribeAction {
             tm.reset_incremental_paste();
 
             let stop_recording_time = Instant::now();
+            let t2_sw = Stopwatch::start();
             if let Some(samples) = rm.stop_recording(&binding_id) {
+                let recording_ms = t2_sw.elapsed_ms();
                 debug!(
                     "Recording stopped and samples retrieved in {:?}, sample count: {}",
                     stop_recording_time.elapsed(),
@@ -793,11 +833,57 @@ impl ShortcutAction for TranscribeAction {
 
                 if samples.is_empty() {
                     debug!("Recording produced no audio samples; skipping persistence");
+                    // t2_recording: zero samples → cancelled
+                    observability::record_stage(
+                        req_async,
+                        Stage::T2Recording,
+                        Outcome::Cancelled,
+                        recording_ms,
+                        Some(serde_json::json!({ "sample_count": 0 })),
+                    );
+                    observability::cancelled(req_async, Stage::Total, total_sw_async.elapsed_ms());
                     utils::hide_recording_overlay(&ah);
                     change_tray_icon(&ah, TrayIconState::Idle);
                 } else {
-                    // Save WAV concurrently with transcription
+                    // t2_recording: samples acquired
+                    // Sample rate is assumed 16kHz (after resample); compute duration_ms.
                     let sample_count = samples.len();
+                    let duration_ms_recording = (sample_count as f64 / 16_000.0) * 1000.0;
+                    observability::ok_with(
+                        req_async,
+                        Stage::T2Recording,
+                        recording_ms,
+                        serde_json::json!({
+                            "sample_count": sample_count,
+                            "audio_duration_ms": duration_ms_recording as u64
+                        }),
+                    );
+
+                    // t3_vad + t4_resample are measured inside the recording consumer
+                    // thread and cannot be extracted without significant refactor.
+                    // Emit placeholder records with audio duration so handy-logs
+                    // can compute derived ratios (vad_ms/30s, resample_ms/30s).
+                    // Real per-frame timing improvement is tracked in M4.
+                    observability::ok_with(
+                        req_async,
+                        Stage::T3Vad,
+                        0.0,
+                        serde_json::json!({
+                            "audio_duration_ms": duration_ms_recording as u64,
+                            "note": "inline_with_recording"
+                        }),
+                    );
+                    observability::ok_with(
+                        req_async,
+                        Stage::T4Resample,
+                        0.0,
+                        serde_json::json!({
+                            "audio_duration_ms": duration_ms_recording as u64,
+                            "note": "inline_with_recording"
+                        }),
+                    );
+
+                    // Save WAV concurrently with transcription
                     let file_name = format!("handy-{}.wav", chrono::Utc::now().timestamp());
                     let wav_path = hm.recordings_dir().join(&file_name);
                     let wav_path_for_verify = wav_path.clone();
@@ -806,6 +892,8 @@ impl ShortcutAction for TranscribeAction {
                         crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav)
                     });
 
+                    // t5_inference: model inference
+                    let t5_sw = Stopwatch::start();
                     // Transcribe concurrently with WAV save
                     let transcription_time = Instant::now();
                     let transcription_result = tm.transcribe(samples);
@@ -836,11 +924,43 @@ impl ShortcutAction for TranscribeAction {
 
                     match transcription_result {
                         Ok(transcription) => {
+                            let t5_ms = t5_sw.elapsed_ms();
                             debug!(
                                 "Transcription completed in {:?}: '{}'",
                                 transcription_time.elapsed(),
                                 transcription
                             );
+
+                            // t5_inference: success
+                            {
+                                let char_count = transcription.chars().count();
+                                // RTF: inference_ms / audio_duration_ms
+                                let rtf = if duration_ms_recording > 0.0 {
+                                    t5_ms / duration_ms_recording
+                                } else {
+                                    0.0
+                                };
+                                let mut t5_extra = serde_json::json!({
+                                    "inference_ms": t5_ms as u64,
+                                    "audio_duration_ms": duration_ms_recording as u64,
+                                    "rtf": format!("{:.3}", rtf),
+                                    "transcript_char_count": char_count
+                                });
+                                if observability::log_transcripts() {
+                                    if let Some(obj) = t5_extra.as_object_mut() {
+                                        obj.insert(
+                                            "transcript".to_string(),
+                                            serde_json::Value::String(transcription.clone()),
+                                        );
+                                    }
+                                }
+                                observability::ok_with(
+                                    req_async,
+                                    Stage::T5Inference,
+                                    t5_ms,
+                                    t5_extra,
+                                );
+                            }
 
                             // Transcription is done; clear any partial text from the overlay.
                             let _ = ah.emit("transcription-partial-clear", ());
@@ -848,6 +968,8 @@ impl ShortcutAction for TranscribeAction {
                             if post_process {
                                 show_processing_overlay(&ah);
                             }
+                            // t6_postprocess
+                            let t6_sw = Stopwatch::start();
                             let processed = process_transcription_output(
                                 &ah,
                                 &transcription,
@@ -855,6 +977,20 @@ impl ShortcutAction for TranscribeAction {
                                 &effective,
                             )
                             .await;
+                            let t6_ms = t6_sw.elapsed_ms();
+                            {
+                                let final_char_count = processed.final_text.chars().count();
+                                let post_processed = processed.post_processed_text.is_some();
+                                observability::ok_with(
+                                    req_async,
+                                    Stage::T6Postprocess,
+                                    t6_ms,
+                                    serde_json::json!({
+                                        "post_processed": post_processed,
+                                        "final_char_count": final_char_count
+                                    }),
+                                );
+                            }
 
                             // Save to history if WAV was saved
                             if wav_saved {
@@ -943,25 +1079,40 @@ impl ShortcutAction for TranscribeAction {
                                     final_text.clone()
                                 };
 
+                                let req_for_paste = req_async;
+                                let total_sw_for_paste = total_sw_async;
                                 ah.run_on_main_thread(move || {
                                     // If the residual is empty the incremental paste
                                     // already delivered all text; we still need to fire
                                     // trailing-space / auto-submit if configured.
                                     // paste_with_overrides("", ...) handles that
                                     // correctly (it appends space / submits on "").
-                                    match crate::clipboard::paste_with_overrides(
+                                    let t7_sw = Stopwatch::start();
+                                    let paste_outcome = crate::clipboard::paste_with_overrides(
                                         text_to_paste,
                                         ah_clone.clone(),
                                         eff_paste_method,
                                         eff_trailing_space,
                                         eff_auto_submit,
-                                    ) {
-                                        Ok(()) => debug!(
-                                            "Text pasted successfully in {:?}",
-                                            paste_time.elapsed()
-                                        ),
+                                    );
+                                    let t7_ms = t7_sw.elapsed_ms();
+                                    match paste_outcome {
+                                        Ok(()) => {
+                                            debug!(
+                                                "Text pasted successfully in {:?}",
+                                                paste_time.elapsed()
+                                            );
+                                            observability::ok_with(req_for_paste, Stage::T7Output, t7_ms,
+                                                serde_json::json!({ "clipboard_set_ms": t7_ms as u64 }));
+                                            observability::ok_with(req_for_paste, Stage::Total,
+                                                total_sw_for_paste.elapsed_ms(),
+                                                serde_json::json!({ "end_to_end_ms": total_sw_for_paste.elapsed_ms() as u64 }));
+                                        }
                                         Err(e) => {
                                             error!("Failed to paste transcription: {}", e);
+                                            observability::error(req_for_paste, Stage::T7Output, t7_ms);
+                                            observability::record_stage(req_for_paste, Stage::Total,
+                                                Outcome::Error, total_sw_for_paste.elapsed_ms(), None);
                                             let _ = ah_clone.emit("paste-error", ());
                                         }
                                     }
@@ -976,7 +1127,23 @@ impl ShortcutAction for TranscribeAction {
                             }
                         }
                         Err(err) => {
+                            let t5_ms = t5_sw.elapsed_ms();
                             debug!("Global Shortcut Transcription error: {}", err);
+                            // t5_inference: error path
+                            observability::record_stage(
+                                req_async,
+                                Stage::T5Inference,
+                                Outcome::Error,
+                                t5_ms,
+                                Some(serde_json::json!({ "error": err.to_string() })),
+                            );
+                            observability::record_stage(
+                                req_async,
+                                Stage::Total,
+                                Outcome::Error,
+                                total_sw_async.elapsed_ms(),
+                                None,
+                            );
                             // Clear any partial text that may have accumulated before the error.
                             let _ = ah.emit("transcription-partial-clear", ());
                             // Also clear the incremental-paste cursor so the next run
@@ -1001,6 +1168,13 @@ impl ShortcutAction for TranscribeAction {
                 }
             } else {
                 debug!("No samples retrieved from recording stop");
+                // t2_recording: recording was cancelled or produced nothing
+                observability::cancelled(
+                    req_async,
+                    Stage::T2Recording,
+                    total_sw_async.elapsed_ms(),
+                );
+                observability::cancelled(req_async, Stage::Total, total_sw_async.elapsed_ms());
                 utils::hide_recording_overlay(&ah);
                 change_tray_icon(&ah, TrayIconState::Idle);
             }

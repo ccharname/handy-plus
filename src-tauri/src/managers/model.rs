@@ -812,8 +812,8 @@ impl ModelManager {
         // This list covers the most likely user languages; adding entries here
         // is advisory only — Qwen3 auto-detects regardless.
         let sherpa_qwen3_asr_languages: Vec<String> = vec![
-            "zh", "zh-Hans", "zh-Hant", "yue", "en", "ja", "ko",
-            "es", "fr", "de", "ru", "pt", "ar", "it",
+            "zh", "zh-Hans", "zh-Hant", "yue", "en", "ja", "ko", "es", "fr", "de", "ru", "pt",
+            "ar", "it",
         ]
         .into_iter()
         .map(String::from)
@@ -914,8 +914,8 @@ impl ModelManager {
         #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
         {
             let voxtral_languages: Vec<String> = vec![
-                "zh", "zh-Hans", "zh-Hant", "en", "es", "fr", "de", "ja", "ko",
-                "pt", "ru", "ar", "it", "nl", "pl", "tr", "vi", "hi", "th",
+                "zh", "zh-Hans", "zh-Hant", "en", "es", "fr", "de", "ja", "ko", "pt", "ru", "ar",
+                "it", "nl", "pl", "tr", "vi", "hi", "th",
             ]
             .into_iter()
             .map(String::from)
@@ -954,12 +954,11 @@ impl ModelManager {
         // Supersedes Voxtral on the MLX path (6.6x smaller, 8x faster, better dialect coverage).
         #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
         {
-            let qwen3_mlx_languages: Vec<String> = vec![
-                "zh", "zh-Hans", "zh-Hant", "yue", "en", "ja", "ko",
-            ]
-            .into_iter()
-            .map(String::from)
-            .collect();
+            let qwen3_mlx_languages: Vec<String> =
+                vec!["zh", "zh-Hans", "zh-Hant", "yue", "en", "ja", "ko"]
+                    .into_iter()
+                    .map(String::from)
+                    .collect();
 
             available_models.insert(
                 "qwen3-asr-mlx-8bit".to_string(),
@@ -1114,10 +1113,10 @@ impl ModelManager {
             // Cache path: ~/.cache/huggingface/hub/models--<org>--<model-name>/
             if let EngineType::MlxAudio(ref kind) = model.engine_type {
                 let hf_repo = match kind {
-                    MlxModelKind::VoxtralRealtime =>
-                        "mlx-community/Voxtral-Mini-4B-Realtime-2602-4bit",
-                    MlxModelKind::Qwen3Asr06B =>
-                        "mlx-community/Qwen3-ASR-0.6B-8bit",
+                    MlxModelKind::VoxtralRealtime => {
+                        "mlx-community/Voxtral-Mini-4B-Realtime-2602-4bit"
+                    }
+                    MlxModelKind::Qwen3Asr06B => "mlx-community/Qwen3-ASR-0.6B-8bit",
                 };
                 model.is_downloaded = is_hf_model_cached(hf_repo);
                 model.is_downloading = false;

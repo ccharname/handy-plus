@@ -274,8 +274,7 @@ fn get_filler_words_for_language(lang: &str) -> &'static [&'static str] {
         // (no filtering at all). Words like 那个/这个 are intentionally NOT
         // included here because they often carry meaning ("that one").
         "zh" => &[
-            "hmm", "mmm", "emm", "uhm", "umm", "en",
-            "嗯", "啊", "呃", "呢", "哦", "诶", "唉", "哎",
+            "hmm", "mmm", "emm", "uhm", "umm", "en", "嗯", "啊", "呃", "呢", "哦", "诶", "唉", "哎",
         ],
         // Conservative universal fallback (no "um", "eh", "ha")
         _ => &[

@@ -1,5 +1,6 @@
 use crate::audio_toolkit::{list_input_devices, vad::SmoothedVad, AudioRecorder, SileroVad};
 use crate::helpers::clamshell;
+use crate::observability::{self, Outcome, Stage, Stopwatch};
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
 use log::{debug, error, info};
@@ -290,6 +291,7 @@ impl AudioRecordingManager {
         }
 
         let start_time = Instant::now();
+        let t1_sw = Stopwatch::start();
 
         // Don't mute immediately - caller will handle muting after audio feedback
         let mut did_mute_guard = self.did_mute.lock().unwrap();
@@ -316,8 +318,21 @@ impl AudioRecordingManager {
 
         let mut recorder_opt = self.recorder.lock().unwrap();
         if let Some(rec) = recorder_opt.as_mut() {
-            rec.open(selected_device)
-                .map_err(|e| anyhow::anyhow!("Failed to open recorder: {}", e))?;
+            if let Err(e) = rec.open(selected_device) {
+                let req = self
+                    .app_handle
+                    .try_state::<crate::observability::ActiveRequestId>()
+                    .map(|s| s.get())
+                    .unwrap_or_default();
+                observability::record_stage(
+                    req,
+                    Stage::T1AudioCapture,
+                    Outcome::Error,
+                    t1_sw.elapsed_ms(),
+                    Some(serde_json::json!({ "error": e.to_string() })),
+                );
+                return Err(anyhow::anyhow!("Failed to open recorder: {}", e));
+            }
         }
 
         *open_flag = true;
@@ -326,10 +341,28 @@ impl AudioRecordingManager {
         // host audio device is producing samples yet; the first input callback
         // fires asynchronously one buffer period later (hardware dependent,
         // typically ~10–200ms on macOS, longer on Bluetooth/USB).
+        let capture_open_ms = t1_sw.elapsed_ms();
         info!(
             "Microphone stream initialized in {:?}",
             start_time.elapsed()
         );
+
+        // t1_audio_capture: cpal stream.play() returned
+        // We have no active request_id here (audio manager has no app state ref
+        // for the current request), so we use a sentinel.  The active req is
+        // picked up in actions.rs from the Tauri state.
+        let req = self
+            .app_handle
+            .try_state::<crate::observability::ActiveRequestId>()
+            .map(|s| s.get())
+            .unwrap_or_default();
+        observability::ok_with(
+            req,
+            Stage::T1AudioCapture,
+            capture_open_ms,
+            serde_json::json!({ "capture_open_ms": capture_open_ms as u64 }),
+        );
+
         Ok(())
     }
 
