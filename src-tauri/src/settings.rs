@@ -721,69 +721,22 @@ pub fn default_asr_presets() -> Vec<AsrPreset> {
             require_apple_speech_on_device: None,
             builtin: true,
         },
-        AsrPreset {
-            id: "multilingual_offline".to_string(),
-            name: "Multilingual Offline".to_string(),
-            description: "FunASR-Nano，多语言离线".to_string(),
-            icon: "🌐".to_string(),
-            model_id: "funasr-nano".to_string(),
-            language: "auto".to_string(),
-            punc_zh_enabled: true,
-            require_post_process_chain: None,
-            require_apple_speech_on_device: None,
-            builtin: true,
-        },
-        AsrPreset {
-            id: "apple_native".to_string(),
-            name: "Apple Native".to_string(),
-            description: "Apple Speech + CT-Punc 标点修补".to_string(),
-            icon: "🍎".to_string(),
-            model_id: "apple-speech".to_string(),
-            language: "auto".to_string(),
-            punc_zh_enabled: true,
-            require_post_process_chain: None,
-            require_apple_speech_on_device: Some(true),
-            builtin: true,
-        },
-        AsrPreset {
-            id: "experimental_qwen3".to_string(),
-            name: "Qwen3-ASR (实验)".to_string(),
-            description: "Tongyi 2026-01 SOTA，~2.5 GB int8。中文优秀，52 语言自动识别。长音频自动分段。".to_string(),
-            icon: "🧪".to_string(),
-            model_id: "qwen3-asr".to_string(),
-            language: "zh-Hans".to_string(),
-            punc_zh_enabled: true,
-            require_post_process_chain: None,
-            require_apple_speech_on_device: None,
-            builtin: false,
-        },
         // Qwen3-ASR-0.6B via mlx-audio-swift (Apple Silicon macOS only).
-        // Formally validated 2026-05-04: p50 1.2s, 粤语/沪语/闽南方言全覆盖，替代 Voxtral。
+        // Promoted to builtin 2026-05-04 (M1): p50 1.2s, 粤语/沪语/闽南方言全覆盖。
+        // Gate: only shown on macOS aarch64 via visible_preset_ids_from_settings().
         AsrPreset {
-            id: "experimental_qwen3_mlx".to_string(),
-            name: "Qwen3-ASR Realtime (实验)".to_string(),
-            description: "~600 MB MLX 量化 / p50 1.2s / 粤语+沪语+闽南方言识别 / 仅 Apple Silicon。".to_string(),
+            id: "qwen3_mlx".to_string(),
+            name: "Qwen3-ASR Realtime".to_string(),
+            description:
+                "~600 MB MLX 量化 / p50 1.2s / 粤语+沪语+闽南方言识别 / 仅 Apple Silicon。"
+                    .to_string(),
             icon: "🪶".to_string(),
             model_id: "qwen3-asr-mlx-8bit".to_string(),
             language: "zh-Hans".to_string(),
             punc_zh_enabled: true,
             require_post_process_chain: None,
             require_apple_speech_on_device: None,
-            builtin: false,
-        },
-        // Voxtral via mlx-audio-swift — kept for historical A/B reference only.
-        // Superseded by Qwen3-ASR Realtime (6.6x smaller, 8x faster, better dialect coverage).
-        AsrPreset {
-            id: "experimental_voxtral".to_string(),
-            name: "Voxtral (实验)".to_string(),
-            description: "⚠️ 已被 Qwen3-ASR-Realtime 替代（更小更快+方言更强），保留仅作历史对照。Voxtral Realtime 4-bit via mlx-audio-swift。粤语输出乱码、闽南语返回空字符串。仅 Apple Silicon。首次下载 ~3.5 GB。".to_string(),
-            icon: "🐢".to_string(),
-            model_id: "voxtral-mlx-4bit".to_string(),
-            language: "auto".to_string(),
-            punc_zh_enabled: true,
-            require_post_process_chain: None,
-            require_apple_speech_on_device: None,
-            builtin: false,
+            builtin: true,
         },
     ]
 }
@@ -1163,26 +1116,13 @@ pub fn ensure_app_profiles_defaults(settings: &mut AppSettings) -> bool {
 /// settings, mirroring the logic in `commands::asr_presets::filtered_asr_presets`
 /// but operating on an already-loaded `AppSettings` (no `AppHandle` needed, so
 /// it is safe to call before or inside `get_settings`).
-pub fn visible_preset_ids_from_settings(settings: &AppSettings) -> Vec<String> {
+pub fn visible_preset_ids_from_settings(_settings: &AppSettings) -> Vec<String> {
     let mut presets = default_asr_presets();
-    #[cfg(target_os = "macos")]
-    if crate::utils::is_macos_26_or_later() {
-        presets.retain(|p| p.id != "apple_native");
-    }
-    // Voxtral is deprecated end-to-end (Qwen3-ASR-MLX is 6.6× smaller, 8× faster,
-    // identifies Chinese dialects Voxtral can't). Always hidden — kept in
-    // default_asr_presets only for bench / CLI A-B lookups by id.
-    presets.retain(|p| p.id != "experimental_voxtral");
-    // sherpa-onnx Qwen3 deprecated by MLX path on every axis (4× disk, 1.2× slower,
-    // no streaming roadmap). Always hidden — kept for bench A-B only.
-    presets.retain(|p| p.id != "experimental_qwen3");
     // qwen3_mlx requires macOS aarch64 (mlx-audio-swift). Hide on Intel/Linux/Win
-    // so the migration treats stored mlx preset as hidden → fall back.
+    // so the v_0_8_17 migration treats stored qwen3_mlx as hidden → falls back to
+    // chinese_balanced on non-Apple-Silicon platforms.
     if !cfg!(all(target_os = "macos", target_arch = "aarch64")) {
-        presets.retain(|p| p.id != "experimental_qwen3_mlx");
-    }
-    if !settings.experimental_enabled {
-        presets.retain(|p| p.builtin);
+        presets.retain(|p| p.id != "qwen3_mlx");
     }
     presets.into_iter().map(|p| p.id).collect()
 }
@@ -1319,6 +1259,101 @@ pub fn ensure_v_0_8_16_drop_hidden_preset_migration(
         .migration_applied
         .insert(MIGRATION_V_0_8_16_DROP_HIDDEN_PRESET.to_string(), true);
     true
+}
+
+/// v_0_8_17 — M1 preset registry collapse. Physical removal of 4 legacy presets
+/// (apple_native / experimental_voxtral / experimental_qwen3 / multilingual_offline)
+/// and rename of experimental_qwen3_mlx → qwen3_mlx (promoted to builtin). // migration:
+///
+/// Migration rules:
+///   - stored id == "experimental_qwen3_mlx" → rewrite to "qwen3_mlx" (rename) // migration:
+///   - stored id ∈ {apple_native, experimental_voxtral, experimental_qwen3,
+///     multilingual_offline, qwen3_mlx (non-aarch64)} → reset to chinese_balanced
+///   - stored id == "chinese_balanced" → no-op
+///   - stored id == None → no-op (user never applied a preset)
+///
+/// Unlike v_0_8_15/16 this migration is NOT gated on visible_preset_ids — the
+/// source-of-truth is now the registry itself, not runtime visibility.
+const MIGRATION_V_0_8_17_COLLAPSE: &str = "v_0_8_17_collapse_to_two_presets";
+
+pub fn ensure_v_0_8_17_collapse_migration(settings: &mut AppSettings) -> bool {
+    if settings
+        .migration_applied
+        .get(MIGRATION_V_0_8_17_COLLAPSE)
+        .copied()
+        .unwrap_or(false)
+    {
+        return false; // already applied
+    }
+
+    let valid_ids = ["chinese_balanced", "qwen3_mlx"];
+    // On non-aarch64 platforms qwen3_mlx is not runnable; treat as removed.
+    let aarch64_macos = cfg!(all(target_os = "macos", target_arch = "aarch64"));
+
+    let changed = match settings.active_preset_id.as_deref() {
+        None => false,
+        // migration: Rename: experimental_qwen3_mlx → qwen3_mlx
+        Some("experimental_qwen3_mlx") => {
+            // migration:
+            if aarch64_macos {
+                log::info!(
+                    "Migration {}: renamed experimental_qwen3_mlx → qwen3_mlx", // migration:
+                    MIGRATION_V_0_8_17_COLLAPSE
+                );
+                settings.active_preset_id = Some("qwen3_mlx".to_string());
+                // model_id is already "qwen3-asr-mlx-8bit" — no change needed
+                true
+            } else {
+                // Non-Apple-Silicon: qwen3_mlx not runnable, fall through to reset
+                log::info!(
+                    "Migration {}: experimental_qwen3_mlx on non-aarch64 → reset to chinese_balanced", // migration:
+                    MIGRATION_V_0_8_17_COLLAPSE
+                );
+                reset_to_chinese_balanced(settings);
+                true
+            }
+        }
+        Some(id) if valid_ids.contains(&id) && (id != "qwen3_mlx" || aarch64_macos) => {
+            // Already on a valid preset for this platform
+            false
+        }
+        Some(old_id) => {
+            log::info!(
+                "Migration {}: stored preset '{}' removed — reset to chinese_balanced",
+                MIGRATION_V_0_8_17_COLLAPSE,
+                old_id
+            );
+            reset_to_chinese_balanced(settings);
+            true
+        }
+    };
+
+    settings
+        .migration_applied
+        .insert(MIGRATION_V_0_8_17_COLLAPSE.to_string(), true);
+    // Always return true so the flag itself is persisted even when no reset was needed.
+    let _ = changed;
+    true
+}
+
+/// Helper: apply chinese_balanced preset fields to settings without calling
+/// load_model (TranscriptionManager is not yet started at migration time).
+fn reset_to_chinese_balanced(settings: &mut AppSettings) {
+    if let Some(preset) = default_asr_presets()
+        .into_iter()
+        .find(|p| p.id == "chinese_balanced")
+    {
+        settings.selected_language = preset.language.clone();
+        settings.punc_zh_enabled = preset.punc_zh_enabled;
+        if let Some(chain) = preset.require_post_process_chain.clone() {
+            settings.post_process_chain = Some(chain);
+        }
+        if let Some(on_device) = preset.require_apple_speech_on_device {
+            settings.apple_speech_require_on_device = on_device;
+        }
+        settings.active_preset_id = Some(preset.id.clone());
+        settings.selected_model = preset.model_id.clone();
+    }
 }
 
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
@@ -1530,6 +1565,7 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         changed |= ensure_v_0_8_15_drop_hidden_preset_migration(&mut settings, &visible_refs);
         changed |= ensure_v_0_8_16_drop_hidden_preset_migration(&mut settings, &visible_refs);
     }
+    changed |= ensure_v_0_8_17_collapse_migration(&mut settings);
     if changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
@@ -1563,6 +1599,7 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         changed |= ensure_v_0_8_15_drop_hidden_preset_migration(&mut settings, &visible_refs);
         changed |= ensure_v_0_8_16_drop_hidden_preset_migration(&mut settings, &visible_refs);
     }
+    changed |= ensure_v_0_8_17_collapse_migration(&mut settings);
     if changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
@@ -1734,6 +1771,105 @@ mod migration_tests {
 
         assert!(!changed, "already-applied migration must return false");
         // Data should be untouched (apple_native still stored — migration skipped).
+        assert_eq!(s.active_preset_id.as_deref(), Some("apple_native"));
+        assert_eq!(s.selected_model, "apple-speech");
+    }
+
+    // ── v0.8.17 collapse-to-two-presets migration tests ──────────────────────
+
+    fn v17_settings(preset_id: &str) -> AppSettings {
+        let mut s = get_default_settings();
+        s.active_preset_id = Some(preset_id.to_string());
+        s.migration_applied = HashMap::new();
+        s
+    }
+
+    #[test]
+    fn v17_apple_native_resets_to_chinese_balanced() {
+        let mut s = v17_settings("apple_native");
+        ensure_v_0_8_17_collapse_migration(&mut s);
+        assert_eq!(s.active_preset_id.as_deref(), Some("chinese_balanced"));
+        assert_eq!(s.selected_model, "sense-voice-int8");
+        assert_eq!(
+            s.migration_applied.get(MIGRATION_V_0_8_17_COLLAPSE),
+            Some(&true)
+        );
+    }
+
+    #[test]
+    fn v17_experimental_voxtral_resets_to_chinese_balanced() {
+        let mut s = v17_settings("experimental_voxtral");
+        ensure_v_0_8_17_collapse_migration(&mut s);
+        assert_eq!(s.active_preset_id.as_deref(), Some("chinese_balanced"));
+        assert_eq!(s.selected_model, "sense-voice-int8");
+    }
+
+    #[test]
+    fn v17_experimental_qwen3_resets_to_chinese_balanced() {
+        let mut s = v17_settings("experimental_qwen3");
+        ensure_v_0_8_17_collapse_migration(&mut s);
+        assert_eq!(s.active_preset_id.as_deref(), Some("chinese_balanced"));
+        assert_eq!(s.selected_model, "sense-voice-int8");
+    }
+
+    #[test]
+    fn v17_multilingual_offline_resets_to_chinese_balanced() {
+        let mut s = v17_settings("multilingual_offline");
+        ensure_v_0_8_17_collapse_migration(&mut s);
+        assert_eq!(s.active_preset_id.as_deref(), Some("chinese_balanced"));
+        assert_eq!(s.selected_model, "sense-voice-int8");
+    }
+
+    #[test]
+    fn v17_experimental_qwen3_mlx_renamed_to_qwen3_mlx_on_aarch64() {
+        // migration:
+        // This test exercises the rename path. On non-aarch64 CI it will still
+        // compile and run; the cfg! check inside the migration handles the
+        // platform difference — on non-aarch64 it resets to chinese_balanced
+        // instead (both are valid outcomes, tested per-platform).
+        let mut s = v17_settings("experimental_qwen3_mlx"); // migration:
+        ensure_v_0_8_17_collapse_migration(&mut s);
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        {
+            assert_eq!(s.active_preset_id.as_deref(), Some("qwen3_mlx"));
+        }
+        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+        {
+            assert_eq!(s.active_preset_id.as_deref(), Some("chinese_balanced"));
+        }
+        assert_eq!(
+            s.migration_applied.get(MIGRATION_V_0_8_17_COLLAPSE),
+            Some(&true)
+        );
+    }
+
+    #[test]
+    fn v17_chinese_balanced_untouched() {
+        let mut s = v17_settings("chinese_balanced");
+        s.selected_model = "sense-voice-int8".to_string();
+        ensure_v_0_8_17_collapse_migration(&mut s);
+        assert_eq!(s.active_preset_id.as_deref(), Some("chinese_balanced"));
+        assert_eq!(s.selected_model, "sense-voice-int8");
+    }
+
+    #[test]
+    fn v17_none_preset_id_untouched() {
+        let mut s = get_default_settings();
+        s.active_preset_id = None;
+        s.migration_applied = HashMap::new();
+        ensure_v_0_8_17_collapse_migration(&mut s);
+        assert_eq!(s.active_preset_id, None);
+    }
+
+    #[test]
+    fn v17_idempotent_when_already_applied() {
+        let mut s = v17_settings("apple_native");
+        s.selected_model = "apple-speech".to_string();
+        s.migration_applied
+            .insert(MIGRATION_V_0_8_17_COLLAPSE.to_string(), true);
+        let changed = ensure_v_0_8_17_collapse_migration(&mut s);
+        // Should return false (already applied) and leave data untouched.
+        assert!(!changed);
         assert_eq!(s.active_preset_id.as_deref(), Some("apple_native"));
         assert_eq!(s.selected_model, "apple-speech");
     }

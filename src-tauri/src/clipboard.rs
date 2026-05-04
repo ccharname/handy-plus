@@ -15,6 +15,8 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 
 /// Compute the string that needs to be appended to reach `new_cumulative` from
 /// `prev_cumulative`.
+/// Used by incremental paste (reserved for future streaming ASR support).
+#[allow(dead_code)]
 ///
 /// Returns `Some(delta)` only when `new_cumulative` is a strict prefix-extension
 /// of `prev_cumulative` (i.e. the ASR emitted a clean append with no retroactive
@@ -45,6 +47,8 @@ pub fn compute_delta(prev_cumulative: &str, new_cumulative: &str) -> Option<Stri
 /// - append a trailing space (that is a final-paste responsibility)
 /// - fire auto-submit (same reason)
 /// - write to the clipboard save after pasting (final paste handles that once)
+/// Reserved for future streaming ASR support.
+#[allow(dead_code)]
 pub fn paste_incremental(delta: String, app_handle: AppHandle) -> Result<(), String> {
     if delta.is_empty() {
         return Ok(());

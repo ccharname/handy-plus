@@ -4,38 +4,17 @@ use std::sync::Arc;
 use tauri::{AppHandle, State};
 
 /// Single source of truth for which ASR presets a user actually sees.
-/// Filters `default_asr_presets()` by:
-///   1. macOS 26+ → drop `apple_native` (SFSpeechRecognizer routes through
-///      SpeechAnalyzer there and hangs the process — see
-///      `is_apple_speech_available` in swift/apple_speech.swift and the
-///      matching gotcha memory).
-///   2. `experimental_enabled == false` → drop non-builtin presets. Triage
-///      2026-05-04 confirmed both experimental presets ship with user-visible
-///      regressions today (voxtral: zh-yue → Devanagari, p50 ~10s; qwen3:
-///      2.5 GB on disk). Power users opt in via Advanced Settings.
+/// Filters `default_asr_presets()` by platform:
+///   - `qwen3_mlx` requires macOS aarch64 (mlx-audio-swift); hidden elsewhere.
 ///
 /// Both the settings UI (`list_asr_presets`) and the tray submenu must use
-/// this helper so a hidden preset can never be invoked from any entry point.
-pub fn filtered_asr_presets(app: &AppHandle) -> Vec<AsrPreset> {
+/// this helper so a platform-gated preset can never be invoked from any entry
+/// point on an incompatible platform.
+pub fn filtered_asr_presets(_app: &AppHandle) -> Vec<AsrPreset> {
     let mut presets = default_asr_presets();
-    #[cfg(target_os = "macos")]
-    if crate::utils::is_macos_26_or_later() {
-        presets.retain(|p| p.id != "apple_native");
-    }
-    // Voxtral is deprecated end-to-end: Qwen3-ASR-MLX is 6.6× smaller, 8× faster,
-    // and actually identifies Cantonese/Shanghainese/Hokkien (Voxtral hallucinates
-    // Devanagari or returns empty). The preset definition stays in default_asr_presets
-    // so bench / CLI A-B lookups by id still work, but the UI card is gone.
-    // Original Intel/Linux/Win gate is now redundant — hidden everywhere.
-    presets.retain(|p| p.id != "experimental_voxtral");
-    // sherpa-onnx Qwen3 preset is also hidden — same model weights as
-    // experimental_qwen3_mlx but 4× the disk (2.5 GB vs ~600 MB), 1.2× slower
-    // (p50 1453 ms vs 1188 ms), no streaming roadmap. The MLX preset wins on every
-    // axis on Apple Silicon. Kept in default_asr_presets for bench / CLI A-B only.
-    presets.retain(|p| p.id != "experimental_qwen3");
-    let settings = get_settings(app);
-    if !settings.experimental_enabled {
-        presets.retain(|p| p.builtin);
+    // qwen3_mlx is Apple Silicon only — hide on Intel macOS / Linux / Windows.
+    if !cfg!(all(target_os = "macos", target_arch = "aarch64")) {
+        presets.retain(|p| p.id != "qwen3_mlx");
     }
     presets
 }

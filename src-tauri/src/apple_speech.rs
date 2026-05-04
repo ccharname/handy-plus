@@ -1,3 +1,8 @@
+// apple_native preset was removed in M1; transcription dispatch no longer calls
+// this module. Keeping it for is_apple_speech_available (model registry) and
+// get_auth_status (commands/audio.rs permission UI). The FFI transcription
+// helpers are kept for potential future re-enablement.
+#![allow(dead_code)]
 use log::info;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_double, c_float, c_int, c_void};

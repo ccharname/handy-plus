@@ -65,10 +65,10 @@ pub fn is_kde_wayland() -> bool {
     is_wayland() && is_kde_plasma()
 }
 
-/// True when running on macOS 26 (Tahoe) or later. Used to gate features
-/// that fault on the new SpeechAnalyzer-backed SFSpeechRecognizer (see
-/// is_apple_speech_available in swift/apple_speech.swift).
+/// True when running on macOS 26 (Tahoe) or later.
+/// Kept for potential future use; apple_native preset was removed in M1.
 #[cfg(target_os = "macos")]
+#[allow(dead_code)]
 pub fn is_macos_26_or_later() -> bool {
     let v = std::process::Command::new("sw_vers")
         .arg("-productVersion")

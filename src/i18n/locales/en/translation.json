@@ -674,27 +674,11 @@
       "customized": "Customized (preset detached)",
       "chineseBalanced": {
         "name": "Chinese Balanced",
-        "description": "SenseVoice with CT-Punc auto-punctuation. Best for Chinese-first users."
+        "description": "SenseVoice + CT-Punc auto-punctuation. High Chinese accuracy, low latency. Best for Chinese-first users."
       },
-      "multilingualOffline": {
-        "name": "Multilingual Offline",
-        "description": "FunASR-Nano supporting 8+ languages, fully offline."
-      },
-      "appleNative": {
-        "name": "Apple Native",
-        "description": "Apple Speech with CT-Punc punctuation patch. Lowest latency for short commands."
-      },
-      "experimentalQwen3": {
-        "name": "Qwen3-ASR (Experimental)",
-        "description": "Tongyi 2026-01 SOTA. 2.5 GB int8 model. Excellent Chinese accuracy, 52-language auto-detect. Long-audio auto-chunking."
-      },
-      "experimentalQwen3Mlx": {
-        "name": "Qwen3-ASR Realtime (Experimental)",
+      "qwen3Mlx": {
+        "name": "Qwen3-ASR Realtime",
         "description": "~600 MB MLX quantized / p50 1.2s / Cantonese + Shanghainese + Hokkien dialect recognition / Apple Silicon only."
-      },
-      "experimentalVoxtral": {
-        "name": "Voxtral (Experimental)",
-        "description": "⚠️ Superseded by Qwen3-ASR-Realtime (smaller, faster, better dialect coverage). Kept for historical comparison only. Voxtral Realtime 4-bit via mlx-audio-swift. Cantonese outputs garbled text, Hokkien returns empty string. Apple Silicon only. First use downloads ~3.5 GB."
       }
     }
   },

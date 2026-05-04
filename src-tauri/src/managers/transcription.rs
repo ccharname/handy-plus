@@ -61,10 +61,10 @@ enum LoadedEngine {
     GigaAM(GigaAMModel),
     Canary(CanaryModel),
     Cohere(CohereModel),
-    /// Apple Speech (SFSpeechRecognizer) — no persistent model state; each
-    /// call creates a new SFSpeechAudioBufferRecognitionRequest internally.
-    /// The _default_locale field stores the BCP-47 locale resolved at load time
-    /// (reserved for future use when streaming partial results are added).
+    /// Apple Speech engine variant — kept for exhaustiveness since EngineType::AppleSpeech
+    /// still exists in model.rs (for legacy model registry compatibility). The apple_native
+    /// preset was removed in M1; this branch is unreachable in normal operation.
+    #[allow(dead_code)]
     AppleSpeech {
         _default_locale: String,
     },
@@ -361,67 +361,12 @@ impl TranscriptionManager {
             return Err(anyhow::anyhow!(error_msg));
         }
 
-        // AppleSpeech is a virtual model with no on-disk file.
-        // Skip get_model_path for it and short-circuit early.
-        #[cfg(target_os = "macos")]
-        if matches!(model_info.engine_type, EngineType::AppleSpeech) {
-            let emit_loading_failed_apple = |error_msg: &str| {
-                let _ = self.app_handle.emit(
-                    "model-state-changed",
-                    ModelStateEvent {
-                        event_type: "loading_failed".to_string(),
-                        model_id: Some(model_id.to_string()),
-                        model_name: Some(model_info.name.clone()),
-                        error: Some(error_msg.to_string()),
-                    },
-                );
-            };
-            if !crate::apple_speech::is_apple_speech_available() {
-                let error_msg = "Apple Speech is not available on this device";
-                emit_loading_failed_apple(error_msg);
-                return Err(anyhow::anyhow!(error_msg));
-            }
-            info!("Apple Speech engine ready (no model to load)");
-            // Resolve the default locale from the user's selected_language setting
-            // so future consumers (e.g. partial-result streaming) don't fall back
-            // to en-US on a Chinese / Japanese / etc. system.
-            let resolved_locale = map_to_bcp47(&get_settings(&self.app_handle).selected_language);
-            let loaded_engine = LoadedEngine::AppleSpeech {
-                _default_locale: resolved_locale,
-            };
-            {
-                let mut engine = self.lock_engine();
-                *engine = Some(loaded_engine);
-            }
-            {
-                let mut current_model = self.current_model_id.lock().unwrap();
-                *current_model = Some(model_id.to_string());
-            }
-            self.touch_activity();
-            let _ = self.app_handle.emit(
-                "model-state-changed",
-                ModelStateEvent {
-                    event_type: "loading_completed".to_string(),
-                    model_id: Some(model_id.to_string()),
-                    model_name: Some(model_info.name.clone()),
-                    error: None,
-                },
-            );
-            let load_duration = load_start.elapsed();
-            debug!(
-                "Apple Speech engine loaded (took {}ms)",
-                load_duration.as_millis()
-            );
-            return Ok(());
-        }
-
         // MlxAudio: virtual engine — no local model path needed.
         // The Swift bridge handles HF cache / download internally.
         // Short-circuit before get_model_path (which would fail on empty filename).
         #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
         if let EngineType::MlxAudio(ref kind) = model_info.engine_type {
             let mlx_model_id_str = match kind {
-                MlxModelKind::VoxtralRealtime => "voxtral-mini-4b-4bit".to_string(),
                 MlxModelKind::Qwen3Asr06B => "qwen3-asr-06b-8bit".to_string(),
             };
             info!(
@@ -551,10 +496,8 @@ impl TranscriptionManager {
                 LoadedEngine::Cohere(engine)
             }
             EngineType::AppleSpeech => {
-                // On macOS this branch is unreachable: AppleSpeech is handled
-                // by the early-return block above (before get_model_path).
-                // On other platforms we still need a match arm for exhaustiveness.
-                let error_msg = "Apple Speech is only available on macOS";
+                let error_msg =
+                    "Apple Speech preset has been removed. Use chinese_balanced instead.";
                 emit_loading_failed(error_msg);
                 return Err(anyhow::anyhow!(error_msg));
             }
@@ -1078,10 +1021,8 @@ impl TranscriptionManager {
             .model_manager
             .get_model_info(&settings.selected_model)
             .map(|info| {
-                matches!(
-                    info.engine_type,
-                    EngineType::Whisper | EngineType::AppleSpeech
-                )
+                // Whisper passes custom words as initial_prompt; no post-hoc correction needed.
+                matches!(info.engine_type, EngineType::Whisper)
             })
             .unwrap_or(false);
 
@@ -1338,194 +1279,17 @@ impl TranscriptionManager {
                     .transcribe(audio, &options)
                     .map_err(|e| anyhow::anyhow!("Cohere transcription failed: {}", e))
             }
-            #[cfg(target_os = "macos")]
             LoadedEngine::AppleSpeech { .. } => {
-                let bcp47 = map_to_bcp47(validated_language);
-                let contextual: Vec<String> = settings.custom_words.clone();
-                let require_on_device = settings.apple_speech_require_on_device;
-                let incremental_paste_enabled = settings.apple_speech_incremental_paste;
-                let paste_method = settings.paste_method;
-
-                info!(
-                    "Apple Speech: locale={} require_on_device={} incremental_paste={}",
-                    bcp47, require_on_device, incremental_paste_enabled
-                );
-
-                // Debounce interval for clipboard-based paste methods (CJK IME safety).
-                // Direct typing is not debounced — naturally throttled by Enigo.
-                const INCREMENTAL_DEBOUNCE_MS: u64 = 200;
-
-                let partial_app_handle = partial_emit_handle.clone();
-                let bcp47_clone = bcp47.clone();
-                let contextual_clone = contextual.clone();
-
-                // Clones of the shared incremental-paste state for the closure.
-                let cursor_arc = Arc::clone(&self.incremental_paste_cursor);
-                let last_paste_arc = Arc::clone(&self.last_incremental_paste_at);
-                let app_handle_for_paste = self.app_handle.clone();
-
-                let first_result = crate::apple_speech::transcribe_with_partials(
-                    audio,
-                    16000.0,
-                    &bcp47_clone,
-                    &contextual_clone,
-                    require_on_device,
-                    30_000,
-                    move |text| {
-                        debug!("Apple Speech partial: {}", text);
-                        let _ = partial_app_handle
-                            .emit("transcription-partial", serde_json::json!({ "text": text }));
-
-                        if incremental_paste_enabled {
-                            let mut cursor = cursor_arc.lock().unwrap_or_else(|p| p.into_inner());
-                            if let Some(delta) = crate::clipboard::compute_delta(&cursor, text) {
-                                // Debounce clipboard methods — Direct typing skips the gate.
-                                let should_paste = match paste_method {
-                                    crate::settings::PasteMethod::Direct => true,
-                                    crate::settings::PasteMethod::None => false,
-                                    _ => {
-                                        let mut last = last_paste_arc
-                                            .lock()
-                                            .unwrap_or_else(|p| p.into_inner());
-                                        let elapsed = last
-                                            .map(|t: Instant| t.elapsed().as_millis() as u64)
-                                            .unwrap_or(u64::MAX);
-                                        if elapsed >= INCREMENTAL_DEBOUNCE_MS {
-                                            *last = Some(Instant::now());
-                                            true
-                                        } else {
-                                            false
-                                        }
-                                    }
-                                };
-
-                                if should_paste {
-                                    // Advance cursor before releasing the lock so
-                                    // the next partial fires correctly even if paste
-                                    // itself is slow.
-                                    *cursor = text.to_string();
-                                    drop(cursor); // release lock before paste I/O
-                                    if let Err(e) = crate::clipboard::paste_incremental(
-                                        delta,
-                                        app_handle_for_paste.clone(),
-                                    ) {
-                                        warn!("Incremental paste failed: {}", e);
-                                    }
-                                }
-                                // else: debounced — cursor unchanged, will retry on
-                                // next partial when combined delta is larger
-                            }
-                        }
-                    },
-                );
-
-                // Helper: returns true for errors that should NOT trigger a network fallback.
-                let is_fatal_error = |msg: &str| {
-                    msg.contains("Apple Speech permission not granted")
-                        || msg.contains("Apple Speech authorization timed out")
-                };
-
-                match first_result {
-                    Ok(text) => Ok(transcribe_rs::TranscriptionResult {
-                        text,
-                        segments: None,
-                    }),
-                    Err(ref e) if require_on_device && !is_fatal_error(e) => {
-                        warn!(
-                            "Apple Speech on-device attempt failed ({}); retrying with network recognition",
-                            e
-                        );
-                        // Reset the incremental cursor before the network retry so
-                        // the second pass starts fresh.
-                        self.reset_incremental_paste();
-
-                        let partial_app_handle2 = partial_emit_handle.clone();
-                        let cursor_arc2 = Arc::clone(&self.incremental_paste_cursor);
-                        let last_paste_arc2 = Arc::clone(&self.last_incremental_paste_at);
-                        let app_handle_for_paste2 = self.app_handle.clone();
-                        crate::apple_speech::transcribe_with_partials(
-                            audio,
-                            16000.0,
-                            &bcp47,
-                            &contextual,
-                            false,
-                            30_000,
-                            move |text| {
-                                debug!("Apple Speech partial (network): {}", text);
-                                let _ = partial_app_handle2.emit(
-                                    "transcription-partial",
-                                    serde_json::json!({ "text": text }),
-                                );
-
-                                if incremental_paste_enabled {
-                                    let mut cursor = cursor_arc2
-                                        .lock()
-                                        .unwrap_or_else(|p| p.into_inner());
-                                    if let Some(delta) =
-                                        crate::clipboard::compute_delta(&cursor, text)
-                                    {
-                                        let should_paste = match paste_method {
-                                            crate::settings::PasteMethod::Direct => true,
-                                            crate::settings::PasteMethod::None => false,
-                                            _ => {
-                                                let mut last = last_paste_arc2
-                                                    .lock()
-                                                    .unwrap_or_else(|p| p.into_inner());
-                                                let elapsed = last
-                                                    .map(|t: Instant| {
-                                                        t.elapsed().as_millis() as u64
-                                                    })
-                                                    .unwrap_or(u64::MAX);
-                                                if elapsed >= INCREMENTAL_DEBOUNCE_MS {
-                                                    *last = Some(Instant::now());
-                                                    true
-                                                } else {
-                                                    false
-                                                }
-                                            }
-                                        };
-                                        if should_paste {
-                                            *cursor = text.to_string();
-                                            drop(cursor);
-                                            if let Err(e) = crate::clipboard::paste_incremental(
-                                                delta,
-                                                app_handle_for_paste2.clone(),
-                                            ) {
-                                                warn!(
-                                                    "Incremental paste (network retry) failed: {}",
-                                                    e
-                                                );
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                        )
-                        .map(|text| transcribe_rs::TranscriptionResult {
-                            text,
-                            segments: None,
-                        })
-                        .map_err(|e2| {
-                            error!("Apple Speech network fallback also failed: {}", e2);
-                            anyhow::anyhow!(
-                                "Apple Speech transcription failed (on-device and network both unavailable): {}",
-                                e2
-                            )
-                        })
-                    }
-                    Err(e) => {
-                        error!("Apple Speech transcription failed: {}", e);
-                        Err(anyhow::anyhow!("Apple Speech transcription failed: {}", e))
-                    }
-                }
-            }
-            #[cfg(not(target_os = "macos"))]
-            LoadedEngine::AppleSpeech { .. } => {
-                Err(anyhow::anyhow!("Apple Speech is only available on macOS"))
+                // apple_native preset was removed in M1. This branch is only reachable
+                // if a user somehow has a legacy stored model_id of "apple-speech".
+                // The v_0_8_17 migration should have reset them to chinese_balanced.
+                Err(anyhow::anyhow!(
+                    "Apple Speech preset has been removed. Please apply the chinese_balanced preset."
+                ))
             }
             LoadedEngine::Sherpa(session) => {
                 // VERIFIED Qwen3 → custom_words → punc_zh pipeline:
-                // skip_word_correction only gates Whisper | AppleSpeech; Sherpa
+                // skip_word_correction only gates Whisper; Sherpa
                 // (including Qwen3Asr) flows through apply_custom_words + punc_zh
                 // in the post-processing pipeline above do_transcribe.
 
@@ -1943,7 +1707,7 @@ impl TranscriptionManager {
             }
         };
 
-        // Clone app_handle for use inside the catch_unwind closure (AppleSpeech partial emitter).
+        // Clone app_handle for use inside the catch_unwind closure (MlxAudio partial emitter).
         let partial_emit_handle = self.app_handle.clone();
 
         // Perform transcription with the appropriate engine.
@@ -2037,10 +1801,8 @@ impl TranscriptionManager {
             .model_manager
             .get_model_info(&settings.selected_model)
             .map(|info| {
-                matches!(
-                    info.engine_type,
-                    EngineType::Whisper | EngineType::AppleSpeech
-                )
+                // Whisper passes custom words as initial_prompt; no post-hoc correction needed.
+                matches!(info.engine_type, EngineType::Whisper)
             })
             .unwrap_or(false);
 
@@ -2257,6 +2019,8 @@ fn apply_punc_zh_if_applicable(
 ///
 /// SFSpeechRecognizer requires full BCP-47 tags (e.g. "en-US") while the rest of
 /// Handy uses short ISO 639-1 codes (e.g. "en"). This function bridges the two.
+/// Kept for potential future use; apple_native preset was removed in M1.
+#[allow(dead_code)]
 pub fn map_to_bcp47(lang: &str) -> String {
     if lang == "auto" {
         // Apple Speech does not have a true "auto" locale. Inherit the macOS

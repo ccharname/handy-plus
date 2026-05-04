@@ -31,12 +31,7 @@ pub enum SherpaModelKind {
 /// Only supported on macOS Apple Silicon (macos + aarch64).
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub enum MlxModelKind {
-    /// mlx-community/Voxtral-Mini-4B-Realtime-2602-4bit
-    /// Multi-language 4-bit quantised model; ~3.5 GB HF cache.
-    /// Level-1 streaming only (buffered token-by-token; true live PCM feed
-    /// deferred to Phase C3 which requires Qwen3-ASR).
-    VoxtralRealtime,
-    /// mlx-community/Qwen3-ASR-0.6B-8bit — reserved for Phase C3 (Level-2 streaming).
+    /// mlx-community/Qwen3-ASR-0.6B-8bit — Level-2 streaming on Apple Silicon.
     Qwen3Asr06B,
 }
 
@@ -805,49 +800,6 @@ impl ModelManager {
             },
         );
 
-        // Qwen3-ASR-0.6B (int8) — Tongyi Lab 2026-01 release, ~2.5 GB int8
-        // Supports 52 languages and 22 Chinese dialects. LLM decoder (Qwen3 family).
-        // Experimental — not the default preset.
-        // Qwen3-ASR officially supports 52 languages + 22 Chinese dialects.
-        // This list covers the most likely user languages; adding entries here
-        // is advisory only — Qwen3 auto-detects regardless.
-        let sherpa_qwen3_asr_languages: Vec<String> = vec![
-            "zh", "zh-Hans", "zh-Hant", "yue", "en", "ja", "ko", "es", "fr", "de", "ru", "pt",
-            "ar", "it",
-        ]
-        .into_iter()
-        .map(String::from)
-        .collect();
-
-        available_models.insert(
-            "qwen3-asr".to_string(),
-            ModelInfo {
-                id: "qwen3-asr".to_string(),
-                name: "Qwen3-ASR 0.6B (sherpa)".to_string(),
-                description: "Tongyi Lab 2026-01 release. 52 languages, 22 Chinese dialects. ~2.5 GB int8. Experimental — long-audio EOS truncation risk if max_new_tokens too low.".to_string(),
-                // The archive extracts to a directory named:
-                // sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25
-                filename: "sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25".to_string(),
-                url: Some(
-                    "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2".to_string(),
-                ),
-                sha256: None,
-                size_mb: 2500,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: true,
-                engine_type: EngineType::Sherpa(SherpaModelKind::Qwen3Asr),
-                accuracy_score: 0.95,
-                speed_score: 0.40,
-                supports_translation: false,
-                is_recommended: false,
-                supported_languages: sherpa_qwen3_asr_languages,
-                supports_language_selection: true,
-                is_custom: false,
-            },
-        );
-
         // Register Apple Speech (SFSpeechRecognizer) as a virtual model on macOS.
         // No download required — it uses system capabilities directly.
         #[cfg(target_os = "macos")]
@@ -905,53 +857,8 @@ impl ModelManager {
         // `is_downloaded` is set to `false` here; `update_download_status()` will
         // flip it to `true` if the HF cache dir is present at app startup.
         // On first transcription the Swift bridge will auto-download from HF.
-        //
-        // TODO(C2-download-progress): wire HF download progress into the model
-        // selector UI. For now, first-use triggers a background download with no
-        // progress indicator — the overlay will appear frozen for ~2 min on initial
-        // ~3.5 GB Voxtral download. A future round should expose an HF download
-        // progress callback through the bridge FFI.
-        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-        {
-            let voxtral_languages: Vec<String> = vec![
-                "zh", "zh-Hans", "zh-Hant", "en", "es", "fr", "de", "ja", "ko", "pt", "ru", "ar",
-                "it", "nl", "pl", "tr", "vi", "hi", "th",
-            ]
-            .into_iter()
-            .map(String::from)
-            .collect();
-
-            available_models.insert(
-                "voxtral-mlx-4bit".to_string(),
-                ModelInfo {
-                    id: "voxtral-mlx-4bit".to_string(),
-                    name: "Voxtral Realtime 4-bit (MLX)".to_string(),
-                    description:
-                        "Mistral Voxtral-Mini-4B-Realtime-2602 via mlx-audio-swift. ~3.5 GB HF cache, on-device, multi-language. Experimental — first use downloads ~3.5 GB."
-                            .to_string(),
-                    filename: "".to_string(), // HF-managed; no local handy download
-                    url: None,                // mlx-audio-swift handles HF download
-                    sha256: None,
-                    size_mb: 3500,
-                    is_downloaded: false, // updated by update_download_status() via HF cache check
-                    is_downloading: false,
-                    partial_size: 0,
-                    is_directory: false,
-                    engine_type: EngineType::MlxAudio(MlxModelKind::VoxtralRealtime),
-                    accuracy_score: 0.92,
-                    speed_score: 0.55,
-                    supports_translation: false,
-                    is_recommended: false,
-                    supported_languages: voxtral_languages,
-                    supports_language_selection: true,
-                    is_custom: false,
-                },
-            );
-        }
-
         // Qwen3-ASR-0.6B via mlx-audio-swift (Apple Silicon macOS only).
         // Validated 2026-05-04: p50 1.2s / 粤语+沪语+闽南方言识别 / ~600 MB HF cache.
-        // Supersedes Voxtral on the MLX path (6.6x smaller, 8x faster, better dialect coverage).
         #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
         {
             let qwen3_mlx_languages: Vec<String> =
@@ -1113,9 +1020,6 @@ impl ModelManager {
             // Cache path: ~/.cache/huggingface/hub/models--<org>--<model-name>/
             if let EngineType::MlxAudio(ref kind) = model.engine_type {
                 let hf_repo = match kind {
-                    MlxModelKind::VoxtralRealtime => {
-                        "mlx-community/Voxtral-Mini-4B-Realtime-2602-4bit"
-                    }
                     MlxModelKind::Qwen3Asr06B => "mlx-community/Qwen3-ASR-0.6B-8bit",
                 };
                 model.is_downloaded = is_hf_model_cached(hf_repo);

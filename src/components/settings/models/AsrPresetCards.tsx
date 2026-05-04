@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { platform } from "@tauri-apps/plugin-os";
 import { commands } from "@/bindings";
 import type { AsrPreset } from "@/bindings";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -20,20 +19,12 @@ export const AsrPresetCards: React.FC = () => {
 
   const { models, downloadModel } = useModelStore();
 
-  // Determine current platform synchronously (plugin-os platform() is sync)
-  const currentPlatform = platform();
-  const isMacOS = currentPlatform === "macos";
-
   useEffect(() => {
     const load = async () => {
       try {
         const result = await commands.listAsrPresets();
         if (result.status === "ok") {
-          // Filter out apple_native on non-macOS platforms
-          const filtered = result.data.filter(
-            (p) => p.id !== "apple_native" || isMacOS,
-          );
-          setPresets(filtered);
+          setPresets(result.data);
         } else {
           console.error("Failed to load ASR presets:", result.error);
         }
@@ -44,7 +35,7 @@ export const AsrPresetCards: React.FC = () => {
       }
     };
     load();
-  }, [isMacOS]);
+  }, []);
 
   const isModelDownloaded = (modelId: string): boolean => {
     const model = models.find((m) => m.id === modelId);
