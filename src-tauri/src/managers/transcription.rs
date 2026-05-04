@@ -1,6 +1,6 @@
 use crate::audio_toolkit::{apply_custom_words, filter_transcription_output, VoiceActivityDetector};
 use crate::managers::audio::AudioRecordingManager;
-use crate::managers::model::{EngineType, ModelManager, SherpaModelKind};
+use crate::managers::model::{EngineType, MlxModelKind, ModelManager, SherpaModelKind};
 use crate::profile_resolver::resolve_effective_settings;
 use crate::settings::{
     get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, WhisperAcceleratorSetting,
@@ -68,6 +68,15 @@ enum LoadedEngine {
     /// sherpa-onnx offline recognizer (k2-fsa upstream crate).
     /// Supports SenseVoice, FunASR-Nano, and Qwen3-ASR model families.
     Sherpa(SherpaSession),
+    /// mlx-audio-swift bridge (Apple Silicon macOS only).
+    /// No persistent model object — the Swift bridge handles model loading/caching
+    /// internally via the HuggingFace Hub SDK on each call.  For this round
+    /// (Phase C2, non-streaming) a temp WAV file is written and passed to the bridge.
+    ///
+    /// `model_id_str` is the logical model id passed to `crate::mlx_audio::transcribe_file`.
+    MlxAudio {
+        model_id_str: String,
+    },
 }
 
 /// RAII guard that clears the `is_loading` flag and notifies waiters on drop.
@@ -322,7 +331,11 @@ impl TranscriptionManager {
             .get_model_info(model_id)
             .ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
 
-        if !model_info.is_downloaded {
+        // MlxAudio models are HuggingFace-managed: allow "not downloaded" (the Swift
+        // bridge will auto-download on first transcription call).  All other engines
+        // require the model file/dir to be present before we can load.
+        let skip_download_check = matches!(model_info.engine_type, EngineType::MlxAudio(_));
+        if !model_info.is_downloaded && !skip_download_check {
             let error_msg = "Model not downloaded";
             let _ = self.app_handle.emit(
                 "model-state-changed",
@@ -385,6 +398,45 @@ impl TranscriptionManager {
             let load_duration = load_start.elapsed();
             debug!(
                 "Apple Speech engine loaded (took {}ms)",
+                load_duration.as_millis()
+            );
+            return Ok(());
+        }
+
+        // MlxAudio: virtual engine — no local model path needed.
+        // The Swift bridge handles HF cache / download internally.
+        // Short-circuit before get_model_path (which would fail on empty filename).
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        if let EngineType::MlxAudio(ref kind) = model_info.engine_type {
+            let mlx_model_id_str = match kind {
+                MlxModelKind::VoxtralRealtime => "voxtral-mini-4b-4bit".to_string(),
+                MlxModelKind::Qwen3Asr06B => "qwen3-asr-06b-8bit".to_string(),
+            };
+            info!("[mlx_audio] Engine ready: model_id_str={}", mlx_model_id_str);
+            let loaded_engine = LoadedEngine::MlxAudio {
+                model_id_str: mlx_model_id_str,
+            };
+            {
+                let mut engine = self.lock_engine();
+                *engine = Some(loaded_engine);
+            }
+            {
+                let mut current_model = self.current_model_id.lock().unwrap();
+                *current_model = Some(model_id.to_string());
+            }
+            self.touch_activity();
+            let _ = self.app_handle.emit(
+                "model-state-changed",
+                ModelStateEvent {
+                    event_type: "loading_completed".to_string(),
+                    model_id: Some(model_id.to_string()),
+                    model_name: Some(model_info.name.clone()),
+                    error: None,
+                },
+            );
+            let load_duration = load_start.elapsed();
+            debug!(
+                "MLX audio engine ready (no model file to load, took {}ms)",
                 load_duration.as_millis()
             );
             return Ok(());
@@ -796,6 +848,14 @@ impl TranscriptionManager {
                 })?;
 
                 LoadedEngine::Sherpa(SherpaSession { recognizer, kind })
+            }
+            EngineType::MlxAudio(_) => {
+                // MlxAudio is handled by the early-return block above (before get_model_path).
+                // This arm is unreachable on macOS aarch64; on other platforms the cfg gate
+                // means this code path compiles for exhaustiveness only.
+                let error_msg = "MLX audio bridge is only available on macOS Apple Silicon";
+                emit_loading_failed(error_msg);
+                return Err(anyhow::anyhow!(error_msg));
             }
         };
 
@@ -1606,6 +1666,66 @@ impl TranscriptionManager {
                         segments: None,
                     })
                 }
+            }
+            // MlxAudio: write the audio buffer to a temp WAV file and call the bridge FFI.
+            // This is Phase C2 non-streaming path.
+            // TODO(C2-streaming): Replace the file-based path with a live PCM feed when
+            //   the Qwen3-ASR Level-2 StreamingInferenceSession is wired (Phase C3).
+            //   The bridge FFI already has the skeleton for `mlx_audio_feed_pcm` / `mlx_audio_stop`.
+            LoadedEngine::MlxAudio { model_id_str } => {
+                let t0 = std::time::Instant::now();
+                info!("[mlx_audio] Transcribing {} samples with model '{}'", audio.len(), model_id_str);
+
+                // Write 16 kHz mono f32 audio to a temp WAV file.
+                // Use std::env::temp_dir() + a nanosecond-based unique name.
+                // tempfile is only a dev-dependency — use manual temp path for production code.
+                // hound writes IEEE float PCM (format=3, bits_per_sample=32).
+                let tmp_path = {
+                    let ts = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .subsec_nanos();
+                    std::env::temp_dir().join(format!("handy_mlx_{}.wav", ts))
+                };
+                {
+                    let spec = hound::WavSpec {
+                        channels: 1,
+                        sample_rate: 16000,
+                        bits_per_sample: 32,
+                        sample_format: hound::SampleFormat::Float,
+                    };
+                    let mut writer = hound::WavWriter::create(&tmp_path, spec)
+                        .map_err(|e| anyhow::anyhow!("Failed to create WAV writer: {}", e))?;
+                    for &sample in audio {
+                        writer.write_sample(sample)
+                            .map_err(|e| anyhow::anyhow!("Failed to write WAV sample: {}", e))?;
+                    }
+                    writer.finalize()
+                        .map_err(|e| anyhow::anyhow!("Failed to finalize WAV file: {}", e))?;
+                }
+
+                debug!("[mlx_audio] WAV written to {:?} in {}ms", tmp_path, t0.elapsed().as_millis());
+
+                // Call the Swift bridge (may trigger HF download on first use).
+                let text_result = crate::mlx_audio::transcribe_file(&tmp_path, model_id_str)
+                    .map_err(|e| {
+                        anyhow::anyhow!("[mlx_audio] transcribe_file failed: {}", e)
+                    });
+
+                // Always clean up temp WAV regardless of transcription success.
+                let _ = std::fs::remove_file(&tmp_path);
+                let text = text_result?;
+
+                info!(
+                    "[mlx_audio] Transcription done in {}ms: {} chars",
+                    t0.elapsed().as_millis(),
+                    text.chars().count()
+                );
+
+                Ok(transcribe_rs::TranscriptionResult {
+                    text,
+                    segments: None,
+                })
             }
         }
     }

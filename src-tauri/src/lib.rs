@@ -3,6 +3,9 @@ mod actions;
 mod apple_intelligence;
 #[cfg(target_os = "macos")]
 mod apple_speech;
+// mlx_audio is compiled unconditionally — the module itself gates its FFI
+// declarations behind #[cfg(all(target_os = "macos", target_arch = "aarch64"))].
+mod mlx_audio;
 mod audio_feedback;
 pub mod audio_toolkit;
 pub mod cli;

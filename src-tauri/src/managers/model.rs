@@ -27,6 +27,19 @@ pub enum SherpaModelKind {
     Qwen3Asr,
 }
 
+/// Identifies which mlx-audio-swift model to use via the MLXAudioBridge.
+/// Only supported on macOS Apple Silicon (macos + aarch64).
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub enum MlxModelKind {
+    /// mlx-community/Voxtral-Mini-4B-Realtime-2602-4bit
+    /// Multi-language 4-bit quantised model; ~3.5 GB HF cache.
+    /// Level-1 streaming only (buffered token-by-token; true live PCM feed
+    /// deferred to Phase C3 which requires Qwen3-ASR).
+    VoxtralRealtime,
+    /// mlx-community/Qwen3-ASR-0.6B-8bit — reserved for Phase C3 (Level-2 streaming).
+    Qwen3Asr06B,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub enum EngineType {
     Whisper,
@@ -41,6 +54,11 @@ pub enum EngineType {
     /// sherpa-onnx offline recognizer path (k2-fsa upstream crate).
     /// `SherpaModelKind` selects which model family within the sherpa-onnx engine.
     Sherpa(SherpaModelKind),
+    /// mlx-audio-swift bridge path (Apple Silicon macOS only).
+    /// `MlxModelKind` selects which HuggingFace model to load.
+    /// Model weights are cached in ~/.cache/huggingface/hub/ and downloaded on
+    /// first use — no local download managed by handy's model manager.
+    MlxAudio(MlxModelKind),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -105,6 +123,51 @@ pub struct ModelManager {
     available_models: Mutex<HashMap<String, ModelInfo>>,
     cancel_flags: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
     extracting_models: Arc<Mutex<HashSet<String>>>,
+}
+
+/// Check whether a HuggingFace model is present in the local Hub cache.
+///
+/// The HF Hub cache layout places model snapshots under:
+///   `~/.cache/huggingface/hub/models--<org>--<repo>/snapshots/<hash>/`
+///
+/// We declare the model cached if at least one snapshot directory exists and
+/// contains at least one file. This is a heuristic — the model may be partially
+/// downloaded — but it matches the signal mlx-audio-swift uses internally.
+fn is_hf_model_cached(hf_repo: &str) -> bool {
+    // Convert "org/repo" → "models--org--repo"
+    let cache_dir_name = format!("models--{}", hf_repo.replace('/', "--"));
+
+    // Respect HF_HOME / HUGGINGFACE_HUB_CACHE env overrides (same as HF Python SDK).
+    let hf_cache_root = std::env::var("HUGGINGFACE_HUB_CACHE")
+        .or_else(|_| std::env::var("HF_HOME").map(|h| format!("{}/hub", h)))
+        .unwrap_or_else(|_| {
+            dirs_next::cache_dir()
+                .map(|d| d.join("huggingface").join("hub"))
+                .unwrap_or_else(|| PathBuf::from("~/.cache/huggingface/hub"))
+                .to_string_lossy()
+                .into_owned()
+        });
+
+    let snapshots_dir = PathBuf::from(&hf_cache_root)
+        .join(&cache_dir_name)
+        .join("snapshots");
+
+    if !snapshots_dir.exists() {
+        return false;
+    }
+
+    // At least one snapshot directory with at least one file → cached.
+    if let Ok(mut entries) = std::fs::read_dir(&snapshots_dir) {
+        entries.any(|e| {
+            e.ok()
+                .filter(|e| e.path().is_dir())
+                .and_then(|e| std::fs::read_dir(e.path()).ok())
+                .map(|mut d| d.next().is_some())
+                .unwrap_or(false)
+        })
+    } else {
+        false
+    }
 }
 
 impl ModelManager {
@@ -834,6 +897,55 @@ impl ModelManager {
             );
         }
 
+        // ── mlx-audio-swift models (Apple Silicon macOS only) ────────────────────
+        // Weights are managed by HuggingFace Hub (not by handy's download manager).
+        // `is_downloaded` is set to `false` here; `update_download_status()` will
+        // flip it to `true` if the HF cache dir is present at app startup.
+        // On first transcription the Swift bridge will auto-download from HF.
+        //
+        // TODO(C2-download-progress): wire HF download progress into the model
+        // selector UI. For now, first-use triggers a background download with no
+        // progress indicator — the overlay will appear frozen for ~2 min on initial
+        // ~3.5 GB Voxtral download. A future round should expose an HF download
+        // progress callback through the bridge FFI.
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        {
+            let voxtral_languages: Vec<String> = vec![
+                "zh", "zh-Hans", "zh-Hant", "en", "es", "fr", "de", "ja", "ko",
+                "pt", "ru", "ar", "it", "nl", "pl", "tr", "vi", "hi", "th",
+            ]
+            .into_iter()
+            .map(String::from)
+            .collect();
+
+            available_models.insert(
+                "voxtral-mlx-4bit".to_string(),
+                ModelInfo {
+                    id: "voxtral-mlx-4bit".to_string(),
+                    name: "Voxtral Realtime 4-bit (MLX)".to_string(),
+                    description:
+                        "Mistral Voxtral-Mini-4B-Realtime-2602 via mlx-audio-swift. ~3.5 GB HF cache, on-device, multi-language. Experimental — first use downloads ~3.5 GB."
+                            .to_string(),
+                    filename: "".to_string(), // HF-managed; no local handy download
+                    url: None,                // mlx-audio-swift handles HF download
+                    sha256: None,
+                    size_mb: 3500,
+                    is_downloaded: false, // updated by update_download_status() via HF cache check
+                    is_downloading: false,
+                    partial_size: 0,
+                    is_directory: false,
+                    engine_type: EngineType::MlxAudio(MlxModelKind::VoxtralRealtime),
+                    accuracy_score: 0.92,
+                    speed_score: 0.55,
+                    supports_translation: false,
+                    is_recommended: false,
+                    supported_languages: voxtral_languages,
+                    supports_language_selection: true,
+                    is_custom: false,
+                },
+            );
+        }
+
         // Auto-discover custom Whisper models (.bin files) in the models directory
         if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models) {
             warn!("Failed to discover custom models: {}", e);
@@ -951,6 +1063,22 @@ impl ModelManager {
             // Its availability is already set at registration time and does not
             // change unless the OS is updated (restart required either way).
             if matches!(model.engine_type, EngineType::AppleSpeech) {
+                continue;
+            }
+
+            // MLX models are managed by HuggingFace Hub, not by handy's models_dir.
+            // Check the HF cache directory for the model snapshot.
+            // Cache path: ~/.cache/huggingface/hub/models--<org>--<model-name>/
+            if let EngineType::MlxAudio(ref kind) = model.engine_type {
+                let hf_repo = match kind {
+                    MlxModelKind::VoxtralRealtime =>
+                        "mlx-community/Voxtral-Mini-4B-Realtime-2602-4bit",
+                    MlxModelKind::Qwen3Asr06B =>
+                        "mlx-community/Qwen3-ASR-0.6B-8bit",
+                };
+                model.is_downloaded = is_hf_model_cached(hf_repo);
+                model.is_downloading = false;
+                model.partial_size = 0;
                 continue;
             }
 

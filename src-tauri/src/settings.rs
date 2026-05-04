@@ -757,6 +757,21 @@ pub fn default_asr_presets() -> Vec<AsrPreset> {
             require_apple_speech_on_device: None,
             builtin: false,
         },
+        // Phase C2: Voxtral via mlx-audio-swift (Apple Silicon macOS only).
+        // This preset is non-streaming (Phase C2 file-based path).
+        // TODO(C3-streaming): switch to Qwen3-ASR 0.6B for Level-2 live PCM feed.
+        AsrPreset {
+            id: "experimental_voxtral".to_string(),
+            name: "Voxtral (实验)".to_string(),
+            description: "Voxtral Realtime 4-bit via mlx-audio-swift。多语言，4-bit 量化。首次使用会下载 ~3.5 GB 权重。仅 Apple Silicon。".to_string(),
+            icon: "⚡".to_string(),
+            model_id: "voxtral-mlx-4bit".to_string(),
+            language: "auto".to_string(),
+            punc_zh_enabled: true,
+            require_post_process_chain: None,
+            require_apple_speech_on_device: None,
+            builtin: false,
+        },
     ]
 }
 

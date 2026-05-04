@@ -8,6 +8,9 @@ fn main() {
     #[cfg(target_os = "macos")]
     build_foreground_app_bridge();
 
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    build_mlx_audio_bridge();
+
     generate_tray_translations();
 
     tauri_build::build()
@@ -520,4 +523,193 @@ fn build_foreground_app_bridge() {
     println!("cargo:rustc-link-lib=framework=CoreGraphics");
 
     println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
+}
+
+/// Build the mlx-audio-swift bridge for Apple Silicon macOS.
+///
+/// Strategy:
+///   1. Run `swift build -c release --target MLXAudioBridge` on the subpackage.
+///   2. Collect ALL .o files from the SPM build directory (mlx-audio-swift pulls ~15 packages).
+///   3. Merge with `libtool -static -filelist` into libmlx_audio.a.
+///   4. Emit cargo:rustc-link-* directives for the merged lib + required Apple frameworks.
+///
+/// Deployment target: macosx14.0 — MLX requires macOS 14 for the Metal 3 shader APIs.
+/// This is gated on aarch64 only; x86_64 Macs cannot run MLX.
+///
+/// SPM mirror config: if the dev machine has a pre-resolved .build (from the PoC),
+/// SPM will reuse it. On first run it clones mlx-audio-swift + 14 transitive deps.
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+fn build_mlx_audio_bridge() {
+    use std::env;
+    use std::path::{Path, PathBuf};
+    use std::process::Command;
+
+    const PKG_PATH: &str = "mlx_bridge_pkg";
+
+    println!("cargo:rerun-if-changed={PKG_PATH}/Package.swift");
+    println!("cargo:rerun-if-changed={PKG_PATH}/Sources/MLXAudioBridge/bridge.swift");
+
+    let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
+    let static_lib_path = out_dir.join("libmlx_audio.a");
+
+    // Locate SDK and swiftc via xcrun.
+    let sdk_path = env::var("SDKROOT").unwrap_or_else(|_| {
+        String::from_utf8(
+            Command::new("xcrun")
+                .args(["--sdk", "macosx", "--show-sdk-path"])
+                .output()
+                .expect("Failed to locate macOS SDK")
+                .stdout,
+        )
+        .expect("SDK path is not valid UTF-8")
+        .trim()
+        .to_string()
+    });
+
+    let swiftc_path = env::var("SWIFTC").unwrap_or_else(|_| {
+        String::from_utf8(
+            Command::new("xcrun")
+                .args(["--find", "swiftc"])
+                .output()
+                .expect("Failed to locate swiftc")
+                .stdout,
+        )
+        .expect("swiftc path is not valid UTF-8")
+        .trim()
+        .to_string()
+    });
+
+    let toolchain_swift_lib = Path::new(&swiftc_path)
+        .parent()
+        .and_then(|p| p.parent())
+        .map(|root| root.join("lib/swift/macosx"))
+        .expect("Unable to determine Swift toolchain lib directory");
+    let sdk_swift_lib = Path::new(&sdk_path).join("usr/lib/swift");
+
+    // Derive the absolute package path relative to the manifest directory.
+    let manifest_dir = PathBuf::from(
+        env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set"),
+    );
+    let pkg_abs = manifest_dir.join(PKG_PATH);
+
+    println!("cargo:warning=Building mlx-audio-swift bridge (SPM resolve + compile — first run may take several minutes)");
+
+    // Step 1: `swift build -c release --target MLXAudioBridge`
+    // SDKROOT must be set so SPM picks the right macOS SDK.
+    // Deployment target 14.0 — required by MLX Metal backend.
+    // SWIFT_DEPLOYMENT_TARGET tells swiftc to emit macosx14.0 min-version load commands.
+    let build_status = Command::new("swift")
+        .args([
+            "build",
+            "-c",
+            "release",
+            "--target",
+            "MLXAudioBridge",
+            "--package-path",
+            pkg_abs.to_str().expect("pkg path"),
+        ])
+        .env("SDKROOT", &sdk_path)
+        .env("SWIFT_DEPLOYMENT_TARGET", "14.0")
+        .status()
+        .expect("Failed to invoke `swift build` for MLXAudioBridge");
+
+    if !build_status.success() {
+        panic!("swift build failed for MLXAudioBridge. Check SPM resolve / network access.");
+    }
+
+    // Step 2: collect all .o files produced by SPM (includes mlx-audio-swift's deps).
+    // SPM places them under <pkg>/.build/arm64-apple-macosx/release/
+    let build_dir = pkg_abs
+        .join(".build")
+        .join("arm64-apple-macosx")
+        .join("release");
+
+    let mut object_files: Vec<PathBuf> = Vec::new();
+    collect_object_files(&build_dir, &mut object_files);
+
+    if object_files.is_empty() {
+        panic!(
+            "No .o files found under {}. swift build may have succeeded without producing objects.",
+            build_dir.display()
+        );
+    }
+
+    println!(
+        "cargo:warning=MLXAudioBridge: merging {} .o files into libmlx_audio.a",
+        object_files.len()
+    );
+
+    // Step 3: merge all objects into a single static lib with libtool.
+    // libtool handles the whitespace-in-filename issue that plagues filenames like
+    //   "OrderedDictionary+Partial MutableCollection.swift.o"
+    // by accepting a file-list argument via -filelist.
+    let filelist_path = out_dir.join("mlx_audio_objects.txt");
+    let filelist_content = object_files
+        .iter()
+        .map(|p| p.to_string_lossy().into_owned())
+        .collect::<Vec<_>>()
+        .join("\n");
+    std::fs::write(&filelist_path, filelist_content)
+        .expect("Failed to write object file list");
+
+    let libtool_status = Command::new("libtool")
+        .args([
+            "-static",
+            "-o",
+            static_lib_path.to_str().expect("static lib path"),
+            "-filelist",
+            filelist_path.to_str().expect("filelist path"),
+        ])
+        .status()
+        .expect("Failed to invoke libtool for MLXAudioBridge");
+
+    if !libtool_status.success() {
+        panic!("libtool failed to merge .o files into libmlx_audio.a");
+    }
+
+    // Step 4: emit Cargo link directives.
+    println!("cargo:rustc-link-search=native={}", out_dir.display());
+    println!("cargo:rustc-link-lib=static=mlx_audio");
+    println!(
+        "cargo:rustc-link-search=native={}",
+        toolchain_swift_lib.display()
+    );
+    println!("cargo:rustc-link-search=native={}", sdk_swift_lib.display());
+
+    // Required Apple frameworks for MLX Metal + audio pipeline.
+    // Foundation: Swift runtime / strings / concurrency.
+    // Metal / MetalPerformanceShaders / MetalPerformanceShadersGraph: MLX GPU backend.
+    // Accelerate: MLX CPU fallback + BLAS.
+    // CoreML: optional CoreML execution provider (may be used by some mlx-audio-swift paths).
+    // AVFoundation: audio file loading (loadAudioArray uses AVAudioFile internally).
+    for framework in &[
+        "Foundation",
+        "Metal",
+        "MetalPerformanceShaders",
+        "MetalPerformanceShadersGraph",
+        "Accelerate",
+        "CoreML",
+        "AVFoundation",
+    ] {
+        println!("cargo:rustc-link-lib=framework={framework}");
+    }
+
+    println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
+}
+
+/// Recursively collect all `.o` files under `dir` into `files`.
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+fn collect_object_files(dir: &std::path::Path, files: &mut Vec<std::path::PathBuf>) {
+    let entries = match std::fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            collect_object_files(&path, files);
+        } else if path.extension().and_then(|e| e.to_str()) == Some("o") {
+            files.push(path);
+        }
+    }
 }
