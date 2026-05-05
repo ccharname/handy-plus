@@ -386,6 +386,10 @@ fn build_foreground_app_bridge() {
     // AppKit and CoreGraphics are always available on macOS — no weak linking needed.
     println!("cargo:rustc-link-lib=framework=AppKit");
     println!("cargo:rustc-link-lib=framework=CoreGraphics");
+    // ApplicationServices is required by output::accessibility (kAXFocusedUIElementAttribute,
+    // kAXValueAttribute). The #[link] attribute inside a lib crate is ignored by rustc;
+    // framework linking must be emitted from build.rs.
+    println!("cargo:rustc-link-lib=framework=ApplicationServices");
 
     println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
 }

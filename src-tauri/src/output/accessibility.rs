@@ -80,10 +80,9 @@ mod macos {
         fn CFStringGetLength(the_string: CFStringRef) -> isize;
     }
 
-    extern "C" {
-        static kAXFocusedUIElementAttribute: *const c_void;
-        static kAXValueAttribute: *const c_void;
-    }
+    // kAXFocusedUIElementAttribute and kAXValueAttribute are CFSTR() macros in the
+    // macOS SDK headers (not exported linker symbols).  We create equivalent CFString
+    // values at call-site via rust_str_to_cf() instead of declaring extern statics.
 
     /// Convert a Rust &str into a CFStringRef.  The caller is responsible for
     /// releasing the returned CFString via `CFRelease`.
@@ -153,12 +152,15 @@ mod macos {
                 }
 
                 // 2. Focused element.
+                // kAXFocusedUIElementAttribute == CFSTR("AXFocusedUIElement")
+                let ax_focused_attr = rust_str_to_cf("AXFocusedUIElement");
                 let mut focused: CFTypeRef = std::ptr::null_mut();
                 let err = AXUIElementCopyAttributeValue(
                     system,
-                    kAXFocusedUIElementAttribute as CFStringRef,
+                    ax_focused_attr,
                     &mut focused,
                 );
+                CFRelease(ax_focused_attr as *const c_void);
                 CFRelease(system as *const c_void);
 
                 if err != AX_SUCCESS || focused.is_null() {
@@ -166,10 +168,12 @@ mod macos {
                 }
 
                 // 3. Read current value.
+                // kAXValueAttribute == CFSTR("AXValue")
+                let ax_value_attr = rust_str_to_cf("AXValue");
                 let mut current_val: CFTypeRef = std::ptr::null_mut();
                 let err2 = AXUIElementCopyAttributeValue(
                     focused as AXUIElementRef,
-                    kAXValueAttribute as CFStringRef,
+                    ax_value_attr,
                     &mut current_val,
                 );
 
@@ -187,15 +191,17 @@ mod macos {
                 let new_text = format!("{}{}", current_text, text);
                 let cf_new = rust_str_to_cf(&new_text);
                 if cf_new.is_null() {
+                    CFRelease(ax_value_attr as *const c_void);
                     CFRelease(focused);
                     return Err("Failed to create CFString for new value".into());
                 }
 
                 let err3 = AXUIElementSetAttributeValue(
                     focused as AXUIElementRef,
-                    kAXValueAttribute as CFStringRef,
+                    ax_value_attr,
                     cf_new as CFTypeRef,
                 );
+                CFRelease(ax_value_attr as *const c_void);
                 CFRelease(cf_new as *const c_void);
                 CFRelease(focused);
 
