@@ -85,6 +85,9 @@ impl AudioRecorder {
         let level_cb = self.level_cb.clone();
 
         let worker = std::thread::spawn(move || {
+            // FD-003 M3.5 #8: elevate VAD/audio-consumer thread to P-core QoS.
+            crate::platform::elevate_thread_qos("vad-recorder");
+
             let stop_flag = Arc::new(AtomicBool::new(false));
             let stop_flag_for_stream = stop_flag.clone();
             let init_result = (|| -> Result<(cpal::Stream, u32), String> {

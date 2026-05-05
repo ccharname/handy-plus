@@ -798,6 +798,8 @@ impl ShortcutAction for TranscribeAction {
                     let target = effective.selected_model.clone();
                     let tm_for_load = Arc::clone(&tm);
                     match tauri::async_runtime::spawn_blocking(move || {
+                        // FD-003 M3.5 #8: P-core binding for model-swap worker.
+                        crate::platform::elevate_thread_qos("model-hotswap");
                         tm_for_load.load_model(&target)
                     })
                     .await
@@ -890,6 +892,8 @@ impl ShortcutAction for TranscribeAction {
                     let wav_path_for_verify = wav_path.clone();
                     let samples_for_wav = samples.clone();
                     let wav_handle = tauri::async_runtime::spawn_blocking(move || {
+                        // FD-003 M3.5 #8: P-core binding for WAV-save worker.
+                        crate::platform::elevate_thread_qos("wav-save");
                         crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav)
                     });
 
