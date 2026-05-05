@@ -863,41 +863,225 @@ impl TranscriptionManager {
                         .unwrap_or(false);
 
                 if is_chunked_mode {
-                    // Check if AudioRecordingManager has an active streaming session.
-                    // If not, the session was already stopped/cancelled — return cursor.
+                    // ── FD-006 M3: Final-pass batch inference + divergence reconcile ──
+                    //
+                    // By the time we arrive here, the orchestrator has drained all
+                    // in-flight chunks and the drainer has stopped.  `audio` is the
+                    // full recorded buffer at 16 kHz mono (passed in from actions.rs).
+                    //
+                    // Steps:
+                    //   1. Run a batch (full-audio) inference to get the authoritative text.
+                    //   2. Compare with already-pasted streaming text (incremental_paste_cursor).
+                    //   3. Apply ReconcileAction: append tail OR backspace + retype.
+                    //   4. Emit t5b_final_pass observability.
+                    //   5. Return final_text so actions.rs T7Output sees residual = "".
+
                     let req = partial_emit_handle
                         .try_state::<crate::observability::ActiveRequestId>()
                         .map(|s| s.get())
                         .unwrap_or_default();
 
-                    let streamed_text = self.take_incremental_paste_cursor();
-                    let char_count = streamed_text.chars().count();
+                    // -- Step 1: batch inference on full audio ----------------------------
+                    let final_pass_start = std::time::Instant::now();
 
-                    info!(
-                        "[mlx_audio] chunked=true: returning {} streamed chars; \
-                         TODO M3: final-pass batch inference",
-                        char_count
+                    let audio_duration_ms = (audio.len() as f64 / 16_000.0) * 1000.0;
+
+                    // Write full audio to a temp WAV file (same pattern as the batch path).
+                    let tmp_path = {
+                        let ts = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .unwrap_or_default()
+                            .subsec_nanos();
+                        std::env::temp_dir().join(format!("handy_mlx_finalpass_{}.wav", ts))
+                    };
+
+                    let wav_result = (|| -> Result<()> {
+                        let spec = hound::WavSpec {
+                            channels: 1,
+                            sample_rate: 16000,
+                            bits_per_sample: 32,
+                            sample_format: hound::SampleFormat::Float,
+                        };
+                        let mut writer = hound::WavWriter::create(&tmp_path, spec)
+                            .map_err(|e| anyhow::anyhow!("WAV create failed: {}", e))?;
+                        for &sample in audio {
+                            writer
+                                .write_sample(sample)
+                                .map_err(|e| anyhow::anyhow!("WAV write_sample failed: {}", e))?;
+                        }
+                        writer
+                            .finalize()
+                            .map_err(|e| anyhow::anyhow!("WAV finalize failed: {}", e))?;
+                        Ok(())
+                    })();
+
+                    if let Err(e) = wav_result {
+                        warn!("[mlx_audio M3] failed to write WAV for final pass: {}", e);
+                        // Fall back: just return what was already streamed.
+                        let streamed_text = self.take_incremental_paste_cursor();
+                        return Ok(transcribe_rs::TranscriptionResult {
+                            text: streamed_text,
+                            segments: None,
+                        });
+                    }
+
+                    // Run batch inference; ignore partial callbacks (we only want final text).
+                    let mut final_text_from_batch = String::new();
+                    let batch_result = crate::mlx_audio::transcribe_streaming(
+                        &tmp_path,
+                        model_id_str,
+                        |partial: &str| {
+                            // Capture each cumulative partial; the last call is
+                            // the authoritative result.
+                            final_text_from_batch = partial.to_string();
+                        },
+                    );
+                    let _ = std::fs::remove_file(&tmp_path);
+
+                    let final_pass_ms = final_pass_start.elapsed().as_secs_f64() * 1000.0;
+
+                    let final_text = match batch_result {
+                        Ok(()) => final_text_from_batch,
+                        Err(e) => {
+                            warn!(
+                                "[mlx_audio M3] final-pass batch inference failed ({:.0}ms): {}",
+                                final_pass_ms, e
+                            );
+                            // On failure: return streamed content as-is (no reconcile).
+                            let streamed_text = self.take_incremental_paste_cursor();
+                            return Ok(transcribe_rs::TranscriptionResult {
+                                text: streamed_text,
+                                segments: None,
+                            });
+                        }
+                    };
+
+                    // -- Step 2: reconcile with already-pasted streaming text -------------
+                    let streamed = self.take_incremental_paste_cursor();
+
+                    let action =
+                        crate::output::reconcile::reconcile_streamed_with_final(&streamed, &final_text);
+
+                    let divergence_chars: usize;
+                    let backspace_chars: usize;
+                    let retype_chars: usize;
+
+                    match &action {
+                        crate::output::reconcile::ReconcileAction::NoOp => {
+                            divergence_chars = 0;
+                            backspace_chars = 0;
+                            retype_chars = 0;
+                            // Nothing to do — screen already matches.
+                        }
+                        crate::output::reconcile::ReconcileAction::AppendTail(tail) => {
+                            divergence_chars = tail.chars().count();
+                            backspace_chars = 0;
+                            retype_chars = tail.chars().count();
+                            // Append residual suffix via the streaming sink.
+                            // We use a fresh sink here since the chunked drainer
+                            // already closed its sink (no reference kept).
+                            if !tail.is_empty() {
+                                let mut sink = crate::output::select_sink_auto();
+                                if let Err(e) = sink.append(tail) {
+                                    warn!("[mlx_audio M3] sink.append (tail) failed: {}", e);
+                                } else {
+                                    // Track pasted so actions.rs residual = "".
+                                    self.append_incremental_paste(tail);
+                                    let _ = sink.finalize();
+                                }
+                            }
+                        }
+                        crate::output::reconcile::ReconcileAction::BackspaceAndRetype {
+                            backspaces,
+                            retype,
+                        } => {
+                            let bs = *backspaces;
+                            let rt = retype.clone();
+                            divergence_chars = streamed.chars().count()
+                                - (streamed.chars().count() - bs);
+                            backspace_chars = bs;
+                            retype_chars = rt.chars().count();
+
+                            // Erase divergent suffix via Backspace keystrokes.
+                            if bs > 0 {
+                                if let Some(enigo_state) =
+                                    partial_emit_handle.try_state::<crate::input::EnigoState>()
+                                {
+                                    if let Ok(mut enigo) = enigo_state.0.lock() {
+                                        if let Err(e) =
+                                            crate::input::send_backspaces(&mut enigo, bs)
+                                        {
+                                            error!(
+                                                "[mlx_audio M3] backspace × {} failed: {}",
+                                                bs, e
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Type the corrected suffix.
+                            if !rt.is_empty() {
+                                let mut sink = crate::output::select_sink_auto();
+                                if let Err(e) = sink.append(&rt) {
+                                    warn!("[mlx_audio M3] sink.append (retype) failed: {}", e);
+                                } else {
+                                    self.append_incremental_paste(&rt);
+                                    let _ = sink.finalize();
+                                }
+                            }
+                        }
+                    }
+
+                    // -- Step 4: observability -------------------------------------------
+                    let final_char_count = final_text.chars().count();
+                    tracing::info!(
+                        "[t5b_final_pass] final_pass_ms={:.0} audio_duration_ms={:.0} \
+                         divergence_chars={} backspace_chars={} retype_chars={} \
+                         final_char_count={}",
+                        final_pass_ms,
+                        audio_duration_ms,
+                        divergence_chars,
+                        backspace_chars,
+                        retype_chars,
+                        final_char_count,
                     );
 
                     observability::ok_with(
                         req,
                         crate::observability::Stage::T5Inference,
-                        0.0,
+                        final_pass_ms,
                         serde_json::json!({
                             "preset": "qwen3_mlx",
                             "chunked": true,
                             "streaming": true,
-                            "transcript_char_count": char_count,
-                            "note": "M2 placeholder — M3 adds final-pass batch inference"
+                            "final_pass_ms": final_pass_ms as u64,
+                            "audio_duration_ms": audio_duration_ms as u64,
+                            "divergence_chars": divergence_chars,
+                            "backspace_chars": backspace_chars,
+                            "retype_chars": retype_chars,
+                            "transcript_char_count": final_char_count,
                         }),
                     );
 
+                    info!(
+                        "[mlx_audio M3] final pass done: {:.0}ms, {} chars, \
+                         divergence={} bs={} retype={}",
+                        final_pass_ms, final_char_count, divergence_chars,
+                        backspace_chars, retype_chars,
+                    );
+
+                    // -- Step 5: return final_text ---------------------------------------
+                    // actions.rs T7Output will call take_incremental_paste_cursor() and
+                    // compute residual = final_text - cursor.  Since we updated the cursor
+                    // above (append_incremental_paste on tail / retype), the cursor now
+                    // equals final_text, so residual = "" and no duplicate paste happens.
                     return Ok(transcribe_rs::TranscriptionResult {
-                        text: streamed_text,
+                        text: final_text,
                         segments: None,
                     });
                 }
-                // ── End FD-006 M2 fast-path ────────────────────────────────
+                // ── End FD-006 M3 chunked fast-path ───────────────────────────────
 
                 // Resolve active request id for T5 observability.
                 let req = partial_emit_handle
