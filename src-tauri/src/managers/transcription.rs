@@ -510,6 +510,19 @@ impl TranscriptionManager {
         self.mlx_cancel_flag.load(Ordering::Acquire)
     }
 
+    /// Append `delta` to the incremental paste cursor. The MlxAudio
+    /// streaming path calls this after each successful `sink.append(delta)`
+    /// so that `take_incremental_paste_cursor()` in actions.rs T7Output
+    /// returns the cumulative pasted text, letting the batch sink path
+    /// compute residual = "" and skip duplicating the transcript on screen.
+    fn append_incremental_paste(&self, delta: &str) {
+        let mut cursor = self
+            .incremental_paste_cursor
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        cursor.push_str(delta);
+    }
+
     /// Transcribe audio, optionally overriding the language from settings.
     /// Pass `override_language = None` to use the language stored in settings.
     pub fn transcribe_with_language_override(
@@ -928,6 +941,10 @@ impl TranscriptionManager {
                                     let chars_appended = delta.chars().count();
                                     delta_computer.ack(chars_appended);
                                     partial_count += 1;
+                                    // Track what's been pasted so the batch
+                                    // T7Output stage in actions.rs can avoid
+                                    // duplicating already-streamed text.
+                                    self.append_incremental_paste(&delta);
                                 }
                                 let t7_ms = t7_sw.elapsed_ms();
                                 observability::ok_with(
@@ -1038,6 +1055,8 @@ impl TranscriptionManager {
                                 // Pure forward extension — append the suffix.
                                 if let Err(e) = sink.append(&suffix) {
                                     warn!("[T7] sink.append (finalize suffix) failed: {}", e);
+                                } else {
+                                    self.append_incremental_paste(&suffix);
                                 }
                             }
                             _ => {
@@ -1079,6 +1098,12 @@ impl TranscriptionManager {
                              (rtf={:.3}, first_token_ms={:.0}ms, {} partials): {} chars",
                             inference_ms, rtf, first_token_ms, partial_count, char_count
                         );
+
+                        // The incremental_paste_cursor now holds everything
+                        // we've already written to the focused app via the
+                        // streaming sink. actions.rs T7Output will reconcile:
+                        // since final_text == cursor, residual = "" and the
+                        // batch sink.append is skipped (no duplication).
 
                         Ok(transcribe_rs::TranscriptionResult {
                             text: final_text,
