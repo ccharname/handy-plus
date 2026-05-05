@@ -1118,20 +1118,22 @@ impl ShortcutAction for TranscribeAction {
                                     use crate::settings::PasteMethod;
                                     let suppress_paste = eff_paste_method == Some(PasteMethod::None);
 
-                                    let paste_outcome: Result<(), String> = if suppress_paste {
+                                    // Compute sink kind upfront so observability log below sees
+                                    // the actual runtime sink kind, not a constant placeholder.
+                                    let (sink_kind_for_obs, paste_outcome): (&'static str, Result<(), String>) = if suppress_paste {
                                         debug!("[T7] PasteMethod::None — suppressing output sink");
-                                        Ok(())
+                                        ("suppressed", Ok(()))
                                     } else if text_with_space.is_empty() {
                                         // Nothing to paste (e.g. incremental path already
                                         // delivered all text); still fire auto-submit below.
-                                        Ok(())
+                                        ("empty", Ok(()))
                                     } else {
                                         // Select the best sink for the frontmost app.
                                         let mut sink = output::select_sink_auto();
                                         let sink_kind = sink.kind_str();
 
                                         // For the batch path, append the full text then finalize.
-                                        sink.append(&text_with_space)
+                                        let outcome = sink.append(&text_with_space)
                                             .and_then(|()| sink.finalize())
                                             .map_err(|e| {
                                                 // If the preferred sink failed, fall back to
@@ -1152,7 +1154,8 @@ impl ShortcutAction for TranscribeAction {
                                                     Some(false),
                                                     Some(false),
                                                 )
-                                            })
+                                            });
+                                        (sink_kind, outcome)
                                     };
 
                                     let t7_ms = t7_sw.elapsed_ms();
@@ -1234,7 +1237,7 @@ impl ShortcutAction for TranscribeAction {
                                                 Stage::T7Output,
                                                 t7_ms,
                                                 serde_json::json!({
-                                                    "sink_kind": output::OBS_FIELD_SINK_KIND,
+                                                    "sink_kind": sink_kind_for_obs,
                                                     "paste_lag_ms": t7_ms as u64
                                                 }),
                                             );
