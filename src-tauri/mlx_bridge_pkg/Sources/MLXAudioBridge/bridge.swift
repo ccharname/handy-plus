@@ -204,6 +204,124 @@ public func mlxAudioTranscribeFile(
     }
 }
 
+// MARK: - Sendable wrapper for C pointer pair (Swift 6 strict concurrency)
+//
+// `UnsafeMutableRawPointer?` and `@convention(c)` function pointers are not
+// `Sendable` in Swift 6.  We need to ferry them across Task boundaries inside
+// `runSync`.  Marking the box `@unchecked Sendable` is safe here because:
+//   1. The pointers originate from the Rust caller and are guaranteed valid for
+//      the entire duration of the `runSync` call (which blocks the Rust thread
+//      via DispatchSemaphore until the async work finishes).
+//   2. We never store or alias the pointers beyond the scope of the Task.
+private struct StreamingCallbackContext: @unchecked Sendable {
+    let tokenCb: @convention(c) (UnsafePointer<CChar>?, UnsafeMutableRawPointer?) -> Void
+    let ctx: UnsafeMutableRawPointer?
+}
+
+// MARK: - Streaming file transcription
+
+/// Transcribe a WAV file using an mlx-community model, emitting cumulative partial
+/// text via a C callback on every decoded token.
+///
+/// Parameters:
+///   - wavPath: UTF-8 NUL-terminated path to a 16 kHz mono WAV file.
+///   - modelId: Logical model identifier (same as mlxAudioTranscribeFile).
+///   - tokenCb: Called on every token with (cumulative_text_cstring, ctx).
+///              The cstring is valid only for the duration of the callback.
+///              On the final `.result` event, tokenCb is also called with the
+///              full authoritative text (may differ from last cumulative partial
+///              due to whitespace trimming).
+///   - ctx: Opaque context pointer forwarded to every tokenCb call.
+///   - errorOut: On failure, set to a strdup'd error message. Caller frees via
+///              mlx_audio_bridge_free_string. nil on success.
+///
+/// Returns: 0 on success, non-zero on error.
+///
+/// Thread safety: blocks the calling thread (via DispatchSemaphore).
+/// Call from a dedicated Rust worker thread only.
+@_cdecl("mlx_audio_transcribe_streaming")
+public func mlxAudioTranscribeStreaming(
+    _ wavPath: UnsafePointer<CChar>,
+    _ modelId: UnsafePointer<CChar>,
+    _ tokenCb: @convention(c) (UnsafePointer<CChar>?, UnsafeMutableRawPointer?) -> Void,
+    _ ctx: UnsafeMutableRawPointer?,
+    _ errorOut: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32 {
+    errorOut?.pointee = nil
+
+    let wavPathStr = String(cString: wavPath)
+    let modelIdStr = String(cString: modelId)
+
+    // Map logical model id to HuggingFace repo path (same mapping as batch path).
+    let repoId: String
+    switch modelIdStr {
+    case "voxtral-mini-4b-4bit":
+        repoId = "mlx-community/Voxtral-Mini-4B-Realtime-2602-4bit"
+    case "qwen3-asr-06b-8bit":
+        repoId = "mlx-community/Qwen3-ASR-0.6B-8bit"
+    default:
+        repoId = modelIdStr
+    }
+
+    // Wrap the C pointers in @unchecked Sendable so they can cross the Task boundary.
+    let cbCtx = StreamingCallbackContext(tokenCb: tokenCb, ctx: ctx)
+
+    do {
+        try runSync { () async throws -> Void in
+            let audioURL = URL(fileURLWithPath: wavPathStr)
+            guard FileManager.default.fileExists(atPath: wavPathStr) else {
+                throw BridgeError.fileNotFound(wavPathStr)
+            }
+
+            // Load and normalise audio to 16 kHz mono.
+            let (inputSampleRate, inputAudio) = try loadAudioArray(from: audioURL)
+            let audio: MLXArray
+            if inputSampleRate != 16000 {
+                audio = try resampleAudio(inputAudio, from: inputSampleRate, to: 16000)
+            } else {
+                audio = inputAudio.ndim > 1 ? inputAudio.mean(axis: -1) : inputAudio
+            }
+
+            // Load model (from HF cache).
+            let model = try await loadSTTModel(repo: repoId)
+
+            let params = STTGenerateParameters(
+                maxTokens: 4096,
+                temperature: 0.0,
+                verbose: false,
+                language: ""    // auto-detect
+            )
+
+            // Accumulate tokens into cumulative partial; emit callback on every token.
+            var accumulated = ""
+            for try await event in model.generateStream(audio: audio, generationParameters: params) {
+                switch event {
+                case .token(let tokenText):
+                    accumulated += tokenText
+                    // Emit cumulative partial — cstring is valid inside withCString block.
+                    accumulated.withCString { cstr in
+                        cbCtx.tokenCb(cstr, cbCtx.ctx)
+                    }
+                case .result(let output):
+                    // Emit final authoritative text (trimmed, post-processed).
+                    // This may differ from last accumulated partial by whitespace.
+                    let finalText = output.text
+                    finalText.withCString { cstr in
+                        cbCtx.tokenCb(cstr, cbCtx.ctx)
+                    }
+                default:
+                    break
+                }
+            }
+        }
+        return 0
+    } catch {
+        let msg = "\(error)"
+        errorOut?.pointee = strdup(msg)
+        return 1
+    }
+}
+
 // MARK: - Model loader
 
 /// Route a HuggingFace repo id to the appropriate mlx-audio-swift STTGenerationModel.

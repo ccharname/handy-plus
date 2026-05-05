@@ -814,11 +814,10 @@ impl TranscriptionManager {
                         r
                     })
             }
-            // MlxAudio: write the audio buffer to a temp WAV file and call the bridge FFI.
-            // This is Phase C2 non-streaming path.
-            // TODO(C2-streaming): Replace the file-based path with a live PCM feed when
-            //   the Qwen3-ASR Level-2 StreamingInferenceSession is wired (Phase C3).
-            //   The bridge FFI already has the skeleton for `mlx_audio_feed_pcm` / `mlx_audio_stop`.
+            // MlxAudio: write the audio buffer to a temp WAV file, then call the
+            // streaming bridge FFI (M2.6 C3 path).  Per-token callbacks feed
+            // DeltaComputer → StreamingSink so text appears at the cursor in
+            // real-time during inference.
             LoadedEngine::MlxAudio { model_id_str } => {
                 // Resolve active request id for T5 observability.
                 let req = partial_emit_handle
@@ -837,9 +836,6 @@ impl TranscriptionManager {
                 );
 
                 // Write 16 kHz mono f32 audio to a temp WAV file.
-                // Use std::env::temp_dir() + a nanosecond-based unique name.
-                // tempfile is only a dev-dependency — use manual temp path for production code.
-                // hound writes IEEE float PCM (format=3, bits_per_sample=32).
                 let tmp_path = {
                     let ts = std::time::SystemTime::now()
                         .duration_since(std::time::UNIX_EPOCH)
@@ -872,38 +868,103 @@ impl TranscriptionManager {
                     tmp_path, wav_write_ms
                 );
 
-                // Record bridge call start time for first_token_ms estimation.
-                // In Phase C2 (batch), the "first token" is approximated as the
-                // wall-clock time from bridge entry to inference completion, since
-                // the Swift bridge does not expose streaming callbacks yet.
-                // Phase C3 (streaming) will replace this with a real per-token
-                // callback that records the exact first-token timestamp.
+                // ── M2.6 C3 streaming path ─────────────────────────────────────
+                // Set up StreamingSink + DeltaComputer for cursor-at-token UX.
+                let mut sink = crate::output::select_sink_auto();
+                let mut delta_computer = crate::output::DeltaComputer::new();
+
+                // first_token_ms: time from bridge_start to first on_partial call.
                 let bridge_start = Stopwatch::start();
+                let mut first_token_ms: f64 = 0.0;
+                let mut first_token_seen = false;
+                let mut partial_count: u32 = 0;
+                // The final cumulative text from the last `.result` event.
+                let mut final_text = String::new();
 
-                // Call the Swift bridge (may trigger HF download on first use).
-                let text_result = crate::mlx_audio::transcribe_file(&tmp_path, model_id_str)
-                    .map_err(|e| anyhow::anyhow!("[mlx_audio] transcribe_file failed: {}", e));
+                // Cancel flag snapshot: captured once before entering bridge;
+                // inside the closure we re-check on every partial to allow
+                // graceful abort of an in-progress streaming session.
+                let cancelled_before = self.is_cancelled();
+                if cancelled_before {
+                    let _ = std::fs::remove_file(&tmp_path);
+                    return Err(anyhow::anyhow!("mlx_audio: cancelled"));
+                }
 
-                // first_token_ms: in C2 this is the full bridge round-trip time.
-                // When C3 streaming is wired, this will be replaced by the time
-                // to the first emitted token (from bridge_start).
-                let first_token_ms = bridge_start.elapsed_ms();
+                let stream_result = crate::mlx_audio::transcribe_streaming(
+                    &tmp_path,
+                    model_id_str,
+                    |partial: &str| {
+                        // Record first-token latency on the very first callback.
+                        if !first_token_seen {
+                            first_token_ms = bridge_start.elapsed_ms();
+                            first_token_seen = true;
+                        }
+
+                        // Cancel race: check flag inside callback; if cancel was
+                        // requested mid-stream, stop appending.  We cannot abort
+                        // the Swift Task from Rust, but we can at least stop
+                        // writing to the sink.
+                        if self.is_cancelled() {
+                            // Reset DeltaComputer so next session starts clean.
+                            delta_computer.reset();
+                            sink.cancel();
+                            return;
+                        }
+
+                        // Feed cumulative partial into DeltaComputer.
+                        match delta_computer.compute(partial) {
+                            crate::output::Action::Append(delta) => {
+                                let t7_sw = Stopwatch::start();
+                                if let Err(e) = sink.append(&delta) {
+                                    warn!("[T7] sink.append failed: {}", e);
+                                } else {
+                                    let chars_appended = delta.chars().count();
+                                    delta_computer.ack(chars_appended);
+                                    partial_count += 1;
+                                }
+                                let t7_ms = t7_sw.elapsed_ms();
+                                observability::ok_with(
+                                    req,
+                                    Stage::T7Output,
+                                    t7_ms,
+                                    serde_json::json!({
+                                        "sink_kind": sink.kind_str(),
+                                        "paste_lag_ms": t7_ms as u64,
+                                        "partial_count": partial_count,
+                                        "streaming": true
+                                    }),
+                                );
+                            }
+                            crate::output::Action::Skip => {
+                                // Retroactive rewrite or backpressure — wait for next partial.
+                            }
+                            crate::output::Action::Finalize { .. } => {
+                                // compute() does not emit Finalize; only DeltaComputer::finalize()
+                                // does.  Nothing to do here.
+                            }
+                        }
+
+                        // Track the last callback value as final_text; the Swift
+                        // bridge emits the authoritative `.result` text as the last
+                        // callback invocation.
+                        final_text = partial.to_string();
+                    },
+                );
+
                 let inference_ms = t5_sw.elapsed_ms();
 
-                // Always clean up temp WAV regardless of transcription success.
+                // Always clean up temp WAV regardless of outcome.
                 let _ = std::fs::remove_file(&tmp_path);
 
                 // ── Cancel race check ──────────────────────────────────────────
-                // The bridge call is blocking.  If the user pressed cancel while
-                // inference was running, the flag is set; we discard the result
-                // here and record outcome=cancelled so the T5 span is correct.
-                // ──────────────────────────────────────────────────────────────
                 if self.is_cancelled() {
                     let rtf = if audio_duration_ms > 0.0 {
                         inference_ms / audio_duration_ms
                     } else {
                         0.0
                     };
+                    sink.cancel();
+                    delta_computer.reset();
                     observability::record_stage(
                         req,
                         Stage::T5Inference,
@@ -915,25 +976,28 @@ impl TranscriptionManager {
                             "audio_duration_ms": audio_duration_ms as u64,
                             "rtf": rtf,
                             "first_token_ms": first_token_ms as u64,
+                            "streaming": true,
+                            "partial_count": partial_count,
                             "cancelled_post_bridge": true
                         })),
                     );
                     info!(
-                        "[mlx_audio] Inference result discarded (cancel requested mid-bridge) \
+                        "[mlx_audio] Streaming result discarded (cancel requested mid-bridge) \
                          after {:.0}ms",
                         inference_ms
                     );
                     return Err(anyhow::anyhow!("mlx_audio: cancelled"));
                 }
 
-                match text_result {
+                match stream_result {
                     Err(e) => {
-                        // Bridge returned an error.
+                        // Bridge error.
                         let rtf = if audio_duration_ms > 0.0 {
                             inference_ms / audio_duration_ms
                         } else {
                             0.0
                         };
+                        sink.cancel();
                         observability::record_stage(
                             req,
                             Stage::T5Inference,
@@ -945,23 +1009,47 @@ impl TranscriptionManager {
                                 "audio_duration_ms": audio_duration_ms as u64,
                                 "rtf": rtf,
                                 "first_token_ms": first_token_ms as u64,
-                                "error": e.to_string()
+                                "streaming": true,
+                                "partial_count": partial_count,
+                                "error": e
                             })),
                         );
-                        Err(e)
+                        Err(anyhow::anyhow!("[mlx_audio] transcribe_streaming failed: {}", e))
                     }
-                    Ok(text) => {
-                        let char_count = text.chars().count();
+                    Ok(()) => {
+                        // ── Finalize: apply DeltaComputer finalize on the authoritative text.
+                        // final_text is the full text from the last `.result` callback.
+                        // We call finalize() so any tail divergence (whitespace, punctuation
+                        // corrections) is handled — Finalize action carries backspace info.
+                        // For simplicity in C3, we just call sink.finalize() here; the
+                        // DeltaComputer finalize action is advisory for now.
+                        let finalize_action = delta_computer.finalize(&final_text);
+                        match finalize_action {
+                            crate::output::Action::Finalize { replace_tail_n: 0, with: suffix }
+                                if !suffix.is_empty() =>
+                            {
+                                // Pure forward extension — append the suffix.
+                                if let Err(e) = sink.append(&suffix) {
+                                    warn!("[T7] sink.append (finalize suffix) failed: {}", e);
+                                }
+                            }
+                            _ => {
+                                // Either already matched, or divergence we accept for now.
+                                // Finalize the sink without further appending.
+                            }
+                        }
+
+                        if let Err(e) = sink.finalize() {
+                            warn!("[T7] sink.finalize failed: {}", e);
+                        }
+
+                        let char_count = final_text.chars().count();
                         let rtf = if audio_duration_ms > 0.0 {
                             inference_ms / audio_duration_ms
                         } else {
                             0.0
                         };
 
-                        // Emit T5 observability span with Qwen3-MLX sub-metrics.
-                        // first_token_ms: Phase C2 approximation (full bridge time).
-                        //   Phase C3 streaming will record the real first-token time.
-                        // prefill_ms / decode_ms are not available in Phase C2.
                         observability::ok_with(
                             req,
                             Stage::T5Inference,
@@ -973,18 +1061,20 @@ impl TranscriptionManager {
                                 "rtf": rtf,
                                 "first_token_ms": first_token_ms as u64,
                                 "transcript_char_count": char_count,
-                                "c2_batch": true
+                                "streaming": true,
+                                "partial_count": partial_count,
+                                "sink_kind": sink.kind_str()
                             }),
                         );
 
                         info!(
-                            "[mlx_audio] Transcription done in {:.0}ms \
-                             (rtf={:.3}, first_token_ms={:.0}ms): {} chars",
-                            inference_ms, rtf, first_token_ms, char_count
+                            "[mlx_audio] Streaming transcription done in {:.0}ms \
+                             (rtf={:.3}, first_token_ms={:.0}ms, {} partials): {} chars",
+                            inference_ms, rtf, first_token_ms, partial_count, char_count
                         );
 
                         Ok(transcribe_rs::TranscriptionResult {
-                            text,
+                            text: final_text,
                             segments: None,
                         })
                     }

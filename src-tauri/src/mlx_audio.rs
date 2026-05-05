@@ -38,6 +38,22 @@ extern "C" {
         out_text: *mut *mut c_char,
         out_error: *mut *mut c_char,
     ) -> i32;
+
+    /// Streaming file transcription — emits cumulative partial text via `token_cb`
+    /// on every decoded token, then a final authoritative result.
+    ///
+    /// `token_cb(cstr, ctx)` is called from the Swift async dispatch thread;
+    /// `cstr` is valid only for the duration of the callback (stack CString).
+    /// Returns 0 on success; sets *error_out to a strdup'd error message on error.
+    /// Caller must free error_out via `ffi_mlx_audio_bridge_free_string`.
+    #[link_name = "mlx_audio_transcribe_streaming"]
+    fn ffi_mlx_audio_transcribe_streaming(
+        wav_path: *const c_char,
+        model_id: *const c_char,
+        token_cb: extern "C" fn(*const c_char, *mut std::os::raw::c_void),
+        ctx: *mut std::os::raw::c_void,
+        error_out: *mut *mut c_char,
+    ) -> i32;
 }
 
 /// Return the bridge version string (e.g. "handy-mlx-bridge/0.1.0 mlx-audio-swift/0.1.2").
@@ -140,6 +156,112 @@ pub fn transcribe_file(wav_path: &Path, model_id: &str) -> Result<String, String
 
 #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
 pub fn transcribe_file(_wav_path: &Path, _model_id: &str) -> Result<String, String> {
+    Err("MLX audio bridge is only available on macOS Apple Silicon".to_string())
+}
+
+/// Streaming transcription: invoke the Swift bridge's `mlx_audio_transcribe_streaming`
+/// and call `on_partial` for every cumulative partial emitted (including the final
+/// authoritative result).
+///
+/// `on_partial` receives the cumulative text so far; the last call delivers the final
+/// authoritative transcript (may differ from the previous partial by whitespace).
+///
+/// The closure runs synchronously on the calling thread for each token emitted by
+/// the Swift async Task (serialised via DispatchSemaphore in the bridge).
+///
+/// # Safety contract
+///
+/// The `ctx` pointer passed to the C trampoline is a `*mut Box<dyn FnMut(&str)>`
+/// pointing into a local on this stack frame.  The Swift bridge guarantees that
+/// all `token_cb` calls happen *before* `ffi_mlx_audio_transcribe_streaming`
+/// returns, so the pointer is valid for the entire FFI call lifetime.
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+pub fn transcribe_streaming<F>(
+    wav_path: &Path,
+    model_id: &str,
+    mut on_partial: F,
+) -> Result<(), String>
+where
+    F: FnMut(&str),
+{
+    // Pre-flight: same HF cache + metallib checks as batch path.
+    ensure_hf_cache_present(model_id)?;
+    if let Err(e) = ensure_metallib_installed() {
+        log::warn!("[mlx_audio] metallib install warning (best-effort): {}", e);
+    }
+
+    let c_path = CString::new(
+        wav_path
+            .to_str()
+            .ok_or_else(|| "WAV path contains non-UTF-8 characters".to_string())?,
+    )
+    .map_err(|e| format!("WAV path contains NUL byte: {}", e))?;
+
+    let c_model_id =
+        CString::new(model_id).map_err(|e| format!("model_id contains NUL byte: {}", e))?;
+
+    // C trampoline: recover `on_partial` from ctx and call it with the token text.
+    // Safety: ctx points to a valid `Box<dyn FnMut(&str)>` pinned on this stack
+    // frame for the duration of the FFI call.
+    extern "C" fn trampoline(
+        token_cstr: *const c_char,
+        ctx: *mut std::os::raw::c_void,
+    ) {
+        if token_cstr.is_null() || ctx.is_null() {
+            return;
+        }
+        // SAFETY: ctx was set to `&mut on_partial_box as *mut _ as *mut c_void`
+        // and remains valid while `ffi_mlx_audio_transcribe_streaming` executes.
+        unsafe {
+            let s = CStr::from_ptr(token_cstr).to_string_lossy();
+            let cb = ctx as *mut Box<dyn FnMut(&str)>;
+            (**cb)(s.as_ref());
+        }
+    }
+
+    // Box the closure so we have a fat-pointer compatible with *mut c_void.
+    // We do NOT leak it: the Box is dropped at end of this function after the FFI
+    // call returns (at which point no more trampoline calls can occur).
+    let mut on_partial_box: Box<dyn FnMut(&str)> = Box::new(&mut on_partial);
+    let ctx_ptr = &mut on_partial_box as *mut Box<dyn FnMut(&str)> as *mut std::os::raw::c_void;
+
+    let mut error_out: *mut c_char = std::ptr::null_mut();
+
+    let rc = unsafe {
+        ffi_mlx_audio_transcribe_streaming(
+            c_path.as_ptr(),
+            c_model_id.as_ptr(),
+            trampoline,
+            ctx_ptr,
+            &mut error_out,
+        )
+    };
+
+    // Drop the box before inspecting the error (no more callbacks possible).
+    drop(on_partial_box);
+
+    if rc == 0 {
+        Ok(())
+    } else {
+        let err_msg = if error_out.is_null() {
+            format!("mlx_audio_transcribe_streaming returned error code {}", rc)
+        } else {
+            let s = unsafe { CStr::from_ptr(error_out) }
+                .to_string_lossy()
+                .into_owned();
+            unsafe { ffi_mlx_audio_bridge_free_string(error_out) };
+            s
+        };
+        Err(err_msg)
+    }
+}
+
+#[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+pub fn transcribe_streaming<F: FnMut(&str)>(
+    _wav_path: &Path,
+    _model_id: &str,
+    _on_partial: F,
+) -> Result<(), String> {
     Err("MLX audio bridge is only available on macOS Apple Silicon".to_string())
 }
 
@@ -672,5 +794,116 @@ mod tests {
     fn metallib_resolve_empty_candidates_returns_err() {
         let result = resolve_metallib_path(&[]);
         assert!(result.is_err());
+    }
+
+    // ── Streaming callback mechanics tests (M2.6) ─────────────────────────────
+    //
+    // These tests verify the Rust-side closure + DeltaComputer integration
+    // without invoking the real Swift FFI (which requires a model download).
+    // We simulate the token callback sequence by directly calling the closure.
+
+    /// Simulate a C token callback sequence and verify DeltaComputer + accumulator.
+    #[test]
+    fn streaming_closure_accumulates_partials_correctly() {
+        use crate::output::{Action, DeltaComputer};
+
+        // Simulate what the C trampoline does: calls the closure with cumulative partials.
+        // These are the cumulative strings that the Swift bridge would emit.
+        let simulated_partials = vec![
+            "你",
+            "你好",
+            "你好世",
+            "你好世界",
+            "你好世界。",  // final result (authoritative, with punctuation)
+        ];
+
+        let mut delta_computer = DeltaComputer::new();
+        let mut appended: Vec<String> = Vec::new();
+        let mut final_text = String::new();
+
+        for partial in &simulated_partials {
+            final_text = partial.to_string();
+            match delta_computer.compute(partial) {
+                Action::Append(delta) => {
+                    appended.push(delta.clone());
+                    let chars = delta.chars().count();
+                    delta_computer.ack(chars);
+                }
+                Action::Skip => {}
+                Action::Finalize { .. } => {}
+            }
+        }
+
+        // Every cumulative partial should produce exactly one character delta.
+        assert_eq!(appended, vec!["你", "好", "世", "界", "。"],
+            "each cumulative partial should produce a 1-char delta");
+        assert_eq!(final_text, "你好世界。", "final_text should be last partial");
+    }
+
+    /// Verify that a retroactive rewrite mid-stream is skipped (prefix-only policy).
+    #[test]
+    fn streaming_closure_skips_retroactive_rewrite() {
+        use crate::output::{Action, DeltaComputer};
+
+        let mut dc = DeltaComputer::new();
+        let mut appended: Vec<String> = Vec::new();
+
+        // Forward extension.
+        if let Action::Append(d) = dc.compute("Hello") { appended.push(d.clone()); dc.ack(d.chars().count()); }
+        if let Action::Append(d) = dc.compute("Hello world") { appended.push(d.clone()); dc.ack(d.chars().count()); }
+
+        // Retroactive rewrite (different first word) — should be skipped.
+        let act = dc.compute("Hi world");
+        assert_eq!(act, Action::Skip, "retroactive rewrite must be skipped");
+
+        // Forward extension resumes cleanly.
+        if let Action::Append(d) = dc.compute("Hello world!") { appended.push(d.clone()); dc.ack(d.chars().count()); }
+
+        assert_eq!(appended, vec!["Hello", " world", "!"],
+            "only valid forward extensions should be appended");
+    }
+
+    /// Simulate high-speed partial flood: backpressure drops intermediates when
+    /// the pending queue is at capacity.
+    #[test]
+    fn streaming_closure_backpressure_drops_excess_partials() {
+        use crate::output::{Action, DeltaComputer};
+
+        const MAX_Q: usize = 20; // mirrors DeltaComputer::MAX_QUEUE_CHARS
+        let mut dc = DeltaComputer::new();
+        let mut append_count = 0u32;
+
+        // Emit exactly MAX_QUEUE_CHARS chars — fits within the cap (pending_chars=0).
+        let big_chunk = "a".repeat(MAX_Q);
+        match dc.compute(&big_chunk) {
+            // Do NOT ack — leave pending_chars = MAX_Q (queue full).
+            Action::Append(_) => { append_count += 1; }
+            Action::Skip => {}
+            _ => {}
+        }
+
+        // Immediately try to extend by 1 more without acking — pending is full,
+        // so pending_chars + 1 > MAX_Q → DeltaComputer must drop this partial.
+        let extended = format!("{}b", big_chunk);
+        let act = dc.compute(&extended);
+        assert_eq!(act, Action::Skip, "backpressure should drop this partial when pending is full");
+
+        assert_eq!(append_count, 1, "only the initial chunk should be appended");
+    }
+
+    /// Verify `transcribe_streaming` stub returns Err on non-aarch64 platforms
+    /// (no model, no FFI — just checks the cfg-gated non-aarch64 path compiles).
+    #[test]
+    #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+    fn transcribe_streaming_non_apple_returns_err() {
+        let tmp = tempfile::tempdir().unwrap();
+        let wav = tmp.path().join("test.wav");
+        std::fs::write(&wav, b"RIFF").unwrap();
+        let mut received: Vec<String> = Vec::new();
+        let result = transcribe_streaming(&wav, "qwen3-asr-06b-8bit", |p| {
+            received.push(p.to_string());
+        });
+        assert!(result.is_err(), "non-aarch64 stub must return Err");
+        assert!(received.is_empty(), "no partials should be emitted on error path");
     }
 }
