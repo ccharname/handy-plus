@@ -152,7 +152,7 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
       const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
       const a = document.createElement("a");
       a.href = url;
-      a.download = `handy-custom-words-${date}.txt`;
+      a.download = `v2t-custom-words-${date}.txt`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
