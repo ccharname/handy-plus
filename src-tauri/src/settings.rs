@@ -248,6 +248,12 @@ pub enum OrtAcceleratorSetting {
     #[serde(rename = "directml")]
     DirectMl,
     Rocm,
+    /// Apple CoreML execution provider (macOS/iOS — Neural Engine, GPU, or CPU).
+    /// FD-003 M3.5 #2: enabled via transcribe-rs ort-coreml feature.
+    /// On Apple Silicon, CoreML EP routes SenseVoice CTC ops to Neural Engine / GPU,
+    /// reducing t5_inference RTF by an estimated 30-60%.
+    #[serde(rename = "coreml")]
+    CoreMl,
 }
 
 #[derive(Clone, Serialize, Deserialize, Type)]
@@ -901,6 +907,20 @@ fn default_hotwords_boost() -> f32 {
     2.0
 }
 
+/// FD-003 M3.5 #2: default ORT accelerator.
+/// CoreML on macOS aarch64 (Apple Silicon) for SenseVoice Neural Engine path;
+/// Auto everywhere else.
+fn default_ort_accelerator() -> OrtAcceleratorSetting {
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    {
+        OrtAcceleratorSetting::CoreMl
+    }
+    #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+    {
+        OrtAcceleratorSetting::Auto
+    }
+}
+
 fn default_apple_speech_incremental_paste() -> bool {
     true
 }
@@ -1449,7 +1469,10 @@ pub fn get_default_settings() -> AppSettings {
         typing_tool: default_typing_tool(),
         external_script_path: None,
         custom_filler_words: None,
-        ort_accelerator: OrtAcceleratorSetting::default(),
+        // FD-003 M3.5 #2: default to CoreML EP on Apple Silicon for SenseVoice
+        // acceleration (Neural Engine / GPU path, estimated RTF -30-60%).
+        // Other platforms keep Auto (CPU or best available EP).
+        ort_accelerator: default_ort_accelerator(),
         extra_recording_buffer_ms: 0,
         power_mode_enabled: default_power_mode_enabled(),
         app_profiles: default_app_profiles(),

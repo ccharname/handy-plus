@@ -71,7 +71,7 @@ tar = "0.4.44"
 flate2 = "1.0"
 bzip2 = "0.4"
 sha2 = "0.10"
-transcribe-rs = { version = "0.3.8", features = ["onnx"] }
+transcribe-rs = { version = "0.3.8", features = ["onnx", "ort-coreml"] }  # FD-003 M3.5 #2: CoreML EP
 handy-keys = "0.2.4"
 ferrous-opencc = "0.2.3"
 clap = { version = "4", features = ["derive"] }

@@ -1404,6 +1404,8 @@ pub fn apply_accelerator_settings(app: &tauri::AppHandle) {
         OrtAcceleratorSetting::Cuda => accel::OrtAccelerator::Cuda,
         OrtAcceleratorSetting::DirectMl => accel::OrtAccelerator::DirectMl,
         OrtAcceleratorSetting::Rocm => accel::OrtAccelerator::Rocm,
+        // FD-003 M3.5 #2: CoreML EP — routes SenseVoice CTC ops to Apple Neural Engine.
+        OrtAcceleratorSetting::CoreMl => accel::OrtAccelerator::CoreMl,
     };
     accel::set_ort_accelerator(ort_pref);
     info!("ORT accelerator set to: {}", ort_pref);
