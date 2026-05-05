@@ -880,7 +880,7 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
     vec![LLMPrompt {
         id: "default_improve_transcriptions".to_string(),
         name: "Improve Transcriptions".to_string(),
-        prompt: "Clean this transcript:\n1. Fix spelling, capitalization, and punctuation errors\n2. Convert number words to digits (twenty-five → 25, ten percent → 10%, five dollars → $5)\n3. Replace spoken punctuation with symbols (period → ., comma → ,, question mark → ?)\n4. Remove filler words (um, uh, like as filler)\n5. Keep the language in the original version (if it was french, keep it in french for example)\n\nPreserve exact meaning and word order. Do not paraphrase or reorder content.\n\nReturn only the cleaned transcript.\n\nTranscript:\n${output}".to_string(),
+        prompt: "Clean the transcript according to these rules:\n1. Fix obvious typos and mis-recognized homophones\n2. Remove filler words in any language: um, uh, hmm, like (as filler), 嗯, 啊, 呃, 那个, 就是说\n3. Convert spelled-out numbers to digits in any language: twenty-five → 25, 二十五 → 25, ten percent → 10%, 百分之十 → 10%\n4. Replace spoken punctuation with symbols: period → ., comma → ,, question mark → ?, 句号 → 。, 逗号 → ,\n5. Keep the original language. Never translate.\n6. Preserve word order and meaning. Never paraphrase, reorder, summarise, or rewrite.\n7. Never add new content, explanations, headers, footnotes, comments, parentheticals, or meta-commentary about the input.\n8. If the transcript is already clean, output it verbatim with no commentary.\n\nOUTPUT FORMAT: ONLY the cleaned transcript text. No quotes, no labels, no language tags, no explanations.\n\nTranscript:\n${output}".to_string(),
     }]
 }
 
