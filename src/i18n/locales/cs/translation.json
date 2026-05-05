@@ -106,7 +106,7 @@
     },
     "permissions": {
       "title": "Vyžadována oprávnění",
-      "description": "Handy potřebuje několik oprávnění pro správné fungování.",
+      "description": "v2t potřebuje několik oprávnění pro správné fungování.",
       "microphone": {
         "title": "Přístup k mikrofonu",
         "description": "Potřebný pro zachycení vašeho hlasu k přepisu."
@@ -182,7 +182,7 @@
     "general": {
       "title": "Obecné",
       "shortcut": {
-        "title": "Zkratky Handy",
+        "title": "Zkratky v2t",
         "description": "Nastavte klávesové zkratky pro spuštění nahrávání řeči na text",
         "loading": "Načítám zkratky...",
         "none": "Žádné zkratky nejsou nastavené",
@@ -273,11 +273,11 @@
       },
       "autostart": {
         "label": "Spouštět při startu",
-        "description": "Automaticky spustit Handy po přihlášení do počítače."
+        "description": "Automaticky spustit v2t po přihlášení do počítače."
       },
       "showTrayIcon": {
         "label": "Zobrazit ikonu v systémové liště",
-        "description": "Zobrazit ikonu Handy v systémové liště."
+        "description": "Zobrazit ikonu v2t v systémové liště."
       },
       "overlay": {
         "title": "Pozice překryvu",
@@ -470,7 +470,7 @@
       },
       "updateChecks": {
         "label": "Kontrolovat aktualizace",
-        "description": "Automaticky kontrolovat nové verze Handy"
+        "description": "Automaticky kontrolovat nové verze v2t"
       },
       "soundTheme": {
         "label": "Zvukový motiv",
@@ -529,11 +529,11 @@
       "title": "O aplikaci",
       "version": {
         "title": "Verze",
-        "description": "Aktuální verze Handy"
+        "description": "Aktuální verze v2t"
       },
       "appDataDirectory": {
         "title": "Adresář dat aplikace",
-        "description": "Umístění, kde Handy ukládá data"
+        "description": "Umístění, kde v2t ukládá data"
       },
       "sourceCode": {
         "title": "Zdrojový kód",
@@ -542,20 +542,30 @@
       },
       "supportDevelopment": {
         "title": "Podpořte vývoj",
-        "description": "Pomozte nám pokračovat ve vývoji Handy",
+        "description": "Pomozte nám pokračovat ve vývoji v2t",
         "button": "Přispět"
       },
       "acknowledgments": {
         "title": "Poděkování",
-        "whisper": {
-          "title": "Whisper.cpp",
-          "description": "Vysoce výkonné inferenční zpracování modelu automatického rozpoznávání řeči Whisper od OpenAI",
-          "details": "Handy používá Whisper.cpp pro rychlé lokální zpracování řeči na text. Díky skvělé práci Georgiho Gerganova a přispěvatelů."
+        "sensevoice": {
+          "title": "SenseVoice (FunAudioLLM)",
+          "description": "High-accuracy multilingual speech recognition and emotion detection model",
+          "details": "v2t uses SenseVoice-Small INT8 via transcribe-rs for fast, local speech-to-text. Thanks to FunAudioLLM / Alibaba DAMO Academy and the transcribe-rs contributors."
+        },
+        "qwen3mlx": {
+          "title": "Qwen3-ASR (mlx-audio-swift)",
+          "description": "LLM-decoder speech recognition model optimised for Apple Silicon via MLX",
+          "details": "v2t uses Qwen3-ASR-0.6B-8bit on Apple Silicon via the mlx-audio-swift bridge. Thanks to Alibaba Qwen Team, the MLX project, and mlx-audio-swift contributors."
+        },
+        "silero_vad": {
+          "title": "Silero VAD",
+          "description": "Lightweight voice activity detection for silence filtering",
+          "details": "v2t uses Silero VAD v4 for silence pre-filtering before transcription. Thanks to Silero Models team and contributors."
         }
       },
       "fork": {
-        "description": "Toto je Handy+, komunitní fork udržovaný @ccharname. Odkaz na upstream naleznete pro původní projekt.",
-        "forkLabel": "handy-plus od @ccharname",
+        "description": "v2t — built from lessons of cjpais/Handy fork, now standalone. Original credit: github.com/cjpais/Handy",
+        "forkLabel": "ccharname/handy-plus (fork history)",
         "title": "Fork",
         "viewFork": "Zobrazit fork na GitHubu",
         "viewUpstream": "Zobrazit upstream (cjpais/Handy)"
@@ -676,7 +686,7 @@
   },
   "accessibility": {
     "permissionsRequired": "Vyžadována oprávnění usnadnění přístupu",
-    "permissionsDescription": "Handy potřebuje oprávnění usnadnění přístupu, aby mohlo psát přepsaný text.",
+    "permissionsDescription": "v2t potřebuje oprávnění usnadnění přístupu, aby mohlo psát přepsaný text.",
     "openSettings": "Otevřít Nastavení systému",
     "dismiss": "Zavřít"
   },
@@ -699,7 +709,7 @@
   },
   "appLanguage": {
     "title": "Jazyk aplikace",
-    "description": "Změňte jazyk rozhraní Handy"
+    "description": "Změňte jazyk rozhraní v2t"
   },
   "overlay": {
     "transcribing": "Přepisuji",

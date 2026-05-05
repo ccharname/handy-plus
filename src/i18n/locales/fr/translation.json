@@ -106,7 +106,7 @@
     },
     "permissions": {
       "title": "Autorisations requises",
-      "description": "Handy a besoin de quelques autorisations pour fonctionner correctement.",
+      "description": "v2t a besoin de quelques autorisations pour fonctionner correctement.",
       "microphone": {
         "title": "Accès au microphone",
         "description": "Nécessaire pour entendre votre voix pour la transcription."
@@ -182,7 +182,7 @@
     "general": {
       "title": "Général",
       "shortcut": {
-        "title": "Raccourcis Handy",
+        "title": "Raccourcis v2t",
         "description": "Configurer les raccourcis clavier pour déclencher l'enregistrement de la reconnaissance vocale",
         "loading": "Chargement des raccourcis...",
         "none": "Aucun raccourci configuré",
@@ -273,11 +273,11 @@
       },
       "autostart": {
         "label": "Lancer au démarrage",
-        "description": "Démarrer automatiquement Handy lorsque vous vous connectez à votre ordinateur."
+        "description": "Démarrer automatiquement v2t lorsque vous vous connectez à votre ordinateur."
       },
       "showTrayIcon": {
         "label": "Afficher l'icône de la barre",
-        "description": "Afficher l'icône de Handy dans la barre système."
+        "description": "Afficher l'icône de v2t dans la barre système."
       },
       "overlay": {
         "title": "Position de la fenêtre d'enregistrement",
@@ -470,7 +470,7 @@
       },
       "updateChecks": {
         "label": "Vérifier les mises à jour",
-        "description": "Vérifier automatiquement les nouvelles versions de Handy"
+        "description": "Vérifier automatiquement les nouvelles versions de v2t"
       },
       "soundTheme": {
         "label": "Thème sonore",
@@ -529,11 +529,11 @@
       "title": "À propos",
       "version": {
         "title": "Version",
-        "description": "Version actuelle de Handy"
+        "description": "Version actuelle de v2t"
       },
       "appDataDirectory": {
         "title": "Emplacement des données de l'application",
-        "description": "Emplacement où Handy stocke ses données"
+        "description": "Emplacement où v2t stocke ses données"
       },
       "sourceCode": {
         "title": "Code source",
@@ -542,20 +542,30 @@
       },
       "supportDevelopment": {
         "title": "Soutenir le développement",
-        "description": "Aidez-nous à continuer à construire Handy",
+        "description": "Aidez-nous à continuer à construire v2t",
         "button": "Faire un don"
       },
       "acknowledgments": {
         "title": "Remerciements",
-        "whisper": {
-          "title": "Whisper.cpp",
-          "description": "Inférence haute performance du modèle de reconnaissance vocale automatique Whisper d'OpenAI",
-          "details": "Handy utilise Whisper.cpp pour un traitement rapide et local de la parole en texte. Merci au travail incroyable de Georgi Gerganov et des contributeurs."
+        "sensevoice": {
+          "title": "SenseVoice (FunAudioLLM)",
+          "description": "High-accuracy multilingual speech recognition and emotion detection model",
+          "details": "v2t uses SenseVoice-Small INT8 via transcribe-rs for fast, local speech-to-text. Thanks to FunAudioLLM / Alibaba DAMO Academy and the transcribe-rs contributors."
+        },
+        "qwen3mlx": {
+          "title": "Qwen3-ASR (mlx-audio-swift)",
+          "description": "LLM-decoder speech recognition model optimised for Apple Silicon via MLX",
+          "details": "v2t uses Qwen3-ASR-0.6B-8bit on Apple Silicon via the mlx-audio-swift bridge. Thanks to Alibaba Qwen Team, the MLX project, and mlx-audio-swift contributors."
+        },
+        "silero_vad": {
+          "title": "Silero VAD",
+          "description": "Lightweight voice activity detection for silence filtering",
+          "details": "v2t uses Silero VAD v4 for silence pre-filtering before transcription. Thanks to Silero Models team and contributors."
         }
       },
       "fork": {
-        "description": "Ceci est Handy+, un fork communautaire maintenu par @ccharname. Voir le lien upstream pour le projet original.",
-        "forkLabel": "handy-plus par @ccharname",
+        "description": "v2t — built from lessons of cjpais/Handy fork, now standalone. Original credit: github.com/cjpais/Handy",
+        "forkLabel": "ccharname/handy-plus (fork history)",
         "title": "Fork",
         "viewFork": "Voir le fork sur GitHub",
         "viewUpstream": "Voir l'upstream (cjpais/Handy)"
@@ -676,7 +686,7 @@
   },
   "accessibility": {
     "permissionsRequired": "Autorisations d'accessibilité requises",
-    "permissionsDescription": "Handy a besoin des autorisations d'accessibilité pour taper le texte transcrit.",
+    "permissionsDescription": "v2t a besoin des autorisations d'accessibilité pour taper le texte transcrit.",
     "openSettings": "Ouvrir les Préférences Système",
     "dismiss": "Ignorer"
   },
@@ -699,7 +709,7 @@
   },
   "appLanguage": {
     "title": "Langue de l'application",
-    "description": "Changer la langue de l'interface de Handy"
+    "description": "Changer la langue de l'interface de v2t"
   },
   "overlay": {
     "transcribing": "Transcription",

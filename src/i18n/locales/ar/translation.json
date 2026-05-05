@@ -106,7 +106,7 @@
     },
     "permissions": {
       "title": "الأذونات المطلوبة",
-      "description": ".يحتاج Handy إلى بعض الأذونات ليعمل بشكل صحيح",
+      "description": ".يحتاج v2t إلى بعض الأذونات ليعمل بشكل صحيح",
       "microphone": {
         "title": "الوصول إلى الميكروفون",
         "description": ".مطلوب لسماع صوتك من أجل التفريغ الصوتي"
@@ -160,7 +160,7 @@
     "general": {
       "title": "عام",
       "shortcut": {
-        "title": "اختصارات Handy",
+        "title": "اختصارات v2t",
         "description": "إعداد اختصارات لوحة المفاتيح لبدء تسجيل التفريغ الصوتي",
         "loading": "...جاري تحميل الاختصارات",
         "none": "لا توجد اختصارات مجهزة",
@@ -251,11 +251,11 @@
       },
       "autostart": {
         "label": "التشغيل عند بدء التشغيل",
-        "description": ".بدء تشغيل Handy تلقائياً عند تسجيل الدخول إلى جهاز الكمبيوتر الخاص بك"
+        "description": ".بدء تشغيل v2t تلقائياً عند تسجيل الدخول إلى جهاز الكمبيوتر الخاص بك"
       },
       "showTrayIcon": {
         "label": "إظهار أيقونة شريط النظام",
-        "description": ".عرض أيقونة Handy في شريط النظام"
+        "description": ".عرض أيقونة v2t في شريط النظام"
       },
       "overlay": {
         "title": "موقع التراكب",
@@ -448,7 +448,7 @@
       },
       "updateChecks": {
         "label": "التحقق من وجود تحديثات",
-        "description": "التحقق تلقائياً من وجود إصدارات جديدة من Handy"
+        "description": "التحقق تلقائياً من وجود إصدارات جديدة من v2t"
       },
       "soundTheme": {
         "label": "سمة الصوت",
@@ -507,11 +507,11 @@
       "title": "حول",
       "version": {
         "title": "الإصدار",
-        "description": "الإصدار الحالي من Handy"
+        "description": "الإصدار الحالي من v2t"
       },
       "appDataDirectory": {
         "title": "مجلد بيانات التطبيق",
-        "description": "الموقع الذي يخزن فيه Handy بياناته"
+        "description": "الموقع الذي يخزن فيه v2t بياناته"
       },
       "sourceCode": {
         "title": "كود المصدر",
@@ -520,20 +520,30 @@
       },
       "supportDevelopment": {
         "title": "دعم التطوير",
-        "description": "ساعدنا في مواصلة بناء Handy",
+        "description": "ساعدنا في مواصلة بناء v2t",
         "button": "تبرع"
       },
       "acknowledgments": {
         "title": "شكر وتقدير",
-        "whisper": {
-          "title": "Whisper.cpp",
-          "description": "استنتاج عالي الأداء لنموذج التعرف التلقائي على الكلام Whisper من OpenAI",
-          "details": ".يستخدم Handy برنامج Whisper.cpp لمعالجة سريعة ومحلية لتحويل الكلام إلى نص. شكراً للعمل الرائع الذي قام به Georgi Gerganov والمساهمون"
+        "sensevoice": {
+          "title": "SenseVoice (FunAudioLLM)",
+          "description": "High-accuracy multilingual speech recognition and emotion detection model",
+          "details": "v2t uses SenseVoice-Small INT8 via transcribe-rs for fast, local speech-to-text. Thanks to FunAudioLLM / Alibaba DAMO Academy and the transcribe-rs contributors."
+        },
+        "qwen3mlx": {
+          "title": "Qwen3-ASR (mlx-audio-swift)",
+          "description": "LLM-decoder speech recognition model optimised for Apple Silicon via MLX",
+          "details": "v2t uses Qwen3-ASR-0.6B-8bit on Apple Silicon via the mlx-audio-swift bridge. Thanks to Alibaba Qwen Team, the MLX project, and mlx-audio-swift contributors."
+        },
+        "silero_vad": {
+          "title": "Silero VAD",
+          "description": "Lightweight voice activity detection for silence filtering",
+          "details": "v2t uses Silero VAD v4 for silence pre-filtering before transcription. Thanks to Silero Models team and contributors."
         }
       },
       "fork": {
-        "description": "هذا هو Handy+، نسخة مجتمعية يصونها @ccharname. راجع رابط المصدر الأصلي للمشروع الأساسي.",
-        "forkLabel": "handy-plus بواسطة @ccharname",
+        "description": "v2t — built from lessons of cjpais/Handy fork, now standalone. Original credit: github.com/cjpais/Handy",
+        "forkLabel": "ccharname/handy-plus (fork history)",
         "title": "نسخة مشتقة",
         "viewFork": "عرض النسخة المشتقة على GitHub",
         "viewUpstream": "عرض المصدر الأصلي (cjpais/Handy)"
@@ -676,7 +686,7 @@
   },
   "accessibility": {
     "permissionsRequired": "أذونات إمكانية الوصول مطلوبة",
-    "permissionsDescription": ".يحتاج Handy إلى أذونات إمكانية الوصول لكتابة النص المفرغ",
+    "permissionsDescription": ".يحتاج v2t إلى أذونات إمكانية الوصول لكتابة النص المفرغ",
     "openSettings": "فتح إعدادات النظام",
     "dismiss": "تجاهل"
   },
@@ -699,7 +709,7 @@
   },
   "appLanguage": {
     "title": "لغة التطبيق",
-    "description": "تغيير لغة واجهة Handy"
+    "description": "تغيير لغة واجهة v2t"
   },
   "overlay": {
     "transcribing": "جاري التفريغ",

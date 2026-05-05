@@ -106,7 +106,7 @@
     },
     "permissions": {
       "title": "Permissions Required",
-      "description": "Handy needs a couple of permissions to work properly.",
+      "description": "v2t needs a couple of permissions to work properly.",
       "microphone": {
         "title": "Microphone Access",
         "description": "Required to hear your voice for transcription."
@@ -164,7 +164,7 @@
     "general": {
       "title": "General",
       "shortcut": {
-        "title": "Handy Shortcuts",
+        "title": "v2t Shortcuts",
         "description": "Configure keyboard shortcuts to trigger speech-to-text recording",
         "loading": "Loading shortcuts...",
         "none": "No shortcuts configured",
@@ -273,11 +273,11 @@
       },
       "autostart": {
         "label": "Launch on Startup",
-        "description": "Automatically start Handy when you log in to your computer."
+        "description": "Automatically start v2t when you log in to your computer."
       },
       "showTrayIcon": {
         "label": "Show Tray Icon",
-        "description": "Display the Handy icon in the system tray."
+        "description": "Display the v2t icon in the system tray."
       },
       "overlay": {
         "title": "Overlay Position",
@@ -470,7 +470,7 @@
       },
       "updateChecks": {
         "label": "Check for Updates",
-        "description": "Automatically check for new versions of Handy"
+        "description": "Automatically check for new versions of v2t"
       },
       "soundTheme": {
         "label": "Sound Theme",
@@ -584,18 +584,18 @@
       "title": "About",
       "version": {
         "title": "Version",
-        "description": "Current version of Handy+ (this fork)"
+        "description": "Current version of v2t"
       },
       "fork": {
-        "title": "Fork",
-        "description": "This is Handy+, a community fork maintained by @ccharname. See the upstream link for the original project.",
-        "forkLabel": "handy-plus by @ccharname",
-        "viewFork": "View fork on GitHub",
+        "title": "Origin",
+        "description": "v2t — built from lessons of cjpais/Handy fork, now standalone. Original credit: github.com/cjpais/Handy",
+        "forkLabel": "ccharname/handy-plus (fork history)",
+        "viewFork": "View on GitHub",
         "viewUpstream": "View upstream (cjpais/Handy)"
       },
       "appDataDirectory": {
         "title": "App Data Directory",
-        "description": "Location where Handy stores its data"
+        "description": "Location where v2t stores its data"
       },
       "sourceCode": {
         "title": "Source Code",
@@ -604,7 +604,7 @@
       },
       "supportDevelopment": {
         "title": "Support Development",
-        "description": "Help us continue building Handy",
+        "description": "Help support v2t development",
         "button": "Donate"
       },
       "acknowledgments": {
@@ -612,17 +612,17 @@
         "sensevoice": {
           "title": "SenseVoice (FunAudioLLM)",
           "description": "High-accuracy multilingual speech recognition and emotion detection model",
-          "details": "Handy uses SenseVoice-Small INT8 via transcribe-rs for fast, local speech-to-text. Thanks to FunAudioLLM / Alibaba DAMO Academy and the transcribe-rs contributors."
+          "details": "v2t uses SenseVoice-Small INT8 via transcribe-rs for fast, local speech-to-text. Thanks to FunAudioLLM / Alibaba DAMO Academy and the transcribe-rs contributors."
         },
         "qwen3mlx": {
           "title": "Qwen3-ASR (mlx-audio-swift)",
           "description": "LLM-decoder speech recognition model optimised for Apple Silicon via MLX",
-          "details": "Handy uses Qwen3-ASR-0.6B-8bit on Apple Silicon via the mlx-audio-swift bridge. Thanks to Alibaba Qwen Team, the MLX project, and mlx-audio-swift contributors."
+          "details": "v2t uses Qwen3-ASR-0.6B-8bit on Apple Silicon via the mlx-audio-swift bridge. Thanks to Alibaba Qwen Team, the MLX project, and mlx-audio-swift contributors."
         },
         "silero_vad": {
           "title": "Silero VAD",
           "description": "Lightweight voice activity detection for silence filtering",
-          "details": "Handy uses Silero VAD v4 for silence pre-filtering before transcription. Thanks to Silero Models team and contributors."
+          "details": "v2t uses Silero VAD v4 for silence pre-filtering before transcription. Thanks to Silero Models team and contributors."
         }
       }
     },
@@ -686,7 +686,7 @@
   },
   "accessibility": {
     "permissionsRequired": "Accessibility Permissions Required",
-    "permissionsDescription": "Handy needs accessibility permissions to type transcribed text.",
+    "permissionsDescription": "v2t needs accessibility permissions to type transcribed text.",
     "openSettings": "Open System Settings",
     "dismiss": "Dismiss"
   },
@@ -709,7 +709,7 @@
   },
   "appLanguage": {
     "title": "Application Language",
-    "description": "Change the language of the Handy interface"
+    "description": "Change the language of the v2t interface"
   },
   "overlay": {
     "transcribing": "Transcribing",

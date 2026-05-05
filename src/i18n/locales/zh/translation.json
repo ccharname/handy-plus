@@ -106,7 +106,7 @@
     },
     "permissions": {
       "title": "需要权限",
-      "description": "Handy 需要一些权限才能正常工作。",
+      "description": "v2t 需要一些权限才能正常工作。",
       "microphone": {
         "title": "麦克风访问",
         "description": "需要听取您的语音进行转录。"
@@ -182,7 +182,7 @@
     "general": {
       "title": "通用",
       "shortcut": {
-        "title": "Handy 快捷键",
+        "title": "v2t 快捷键",
         "description": "配置启动语音转文字录制的键盘快捷键",
         "loading": "加载快捷键中...",
         "none": "未配置快捷键",
@@ -273,11 +273,11 @@
       },
       "autostart": {
         "label": "开机启动",
-        "description": "登录计算机时自动启动 Handy。"
+        "description": "登录计算机时自动启动 v2t。"
       },
       "showTrayIcon": {
         "label": "显示托盘图标",
-        "description": "在系统托盘中显示 Handy 图标。"
+        "description": "在系统托盘中显示 v2t 图标。"
       },
       "overlay": {
         "title": "悬浮窗位置",
@@ -470,7 +470,7 @@
       },
       "updateChecks": {
         "label": "检查更新",
-        "description": "自动检查 Handy 的新版本"
+        "description": "自动检查 v2t 的新版本"
       },
       "soundTheme": {
         "label": "声音主题",
@@ -584,11 +584,11 @@
       "title": "关于",
       "version": {
         "title": "版本",
-        "description": "Handy 的当前版本"
+        "description": "v2t 的当前版本"
       },
       "appDataDirectory": {
         "title": "应用数据目录",
-        "description": "Handy 存储数据的位置"
+        "description": "v2t 存储数据的位置"
       },
       "sourceCode": {
         "title": "源代码",
@@ -597,22 +597,32 @@
       },
       "supportDevelopment": {
         "title": "支持开发",
-        "description": "帮助我们继续开发 Handy",
+        "description": "支持 v2t 的持续开发",
         "button": "捐赠"
       },
       "acknowledgments": {
         "title": "致谢",
-        "whisper": {
-          "title": "Whisper.cpp",
-          "description": "OpenAI Whisper 自动语音识别模型的高性能推理",
-          "details": "Handy 使用 Whisper.cpp 进行快速的本地语音转文字处理。感谢 Georgi Gerganov 和贡献者们的出色工作。"
+        "sensevoice": {
+          "title": "SenseVoice (FunAudioLLM)",
+          "description": "高精度多语言语音识别与情绪检测模型",
+          "details": "v2t 通过 transcribe-rs 使用 SenseVoice-Small INT8 实现快速本地语音转文字。感谢 FunAudioLLM / 阿里巴巴达摩院及 transcribe-rs 贡献者们。"
+        },
+        "qwen3mlx": {
+          "title": "Qwen3-ASR (mlx-audio-swift)",
+          "description": "经 MLX 优化的 LLM 解码器语音识别模型，专为 Apple Silicon 设计",
+          "details": "v2t 通过 mlx-audio-swift 桥接，在 Apple Silicon 上运行 Qwen3-ASR-0.6B-8bit。感谢阿里巴巴通义团队、MLX 项目及 mlx-audio-swift 贡献者们。"
+        },
+        "silero_vad": {
+          "title": "Silero VAD",
+          "description": "轻量级语音活动检测，用于静音过滤",
+          "details": "v2t 在转录前使用 Silero VAD v4 进行静音预过滤。感谢 Silero Models 团队及贡献者们。"
         }
       },
       "fork": {
-        "description": "这是 Handy+，由 @ccharname 维护的社区分支。原始项目请见上游链接。",
-        "forkLabel": "@ccharname 的 handy-plus",
-        "title": "Fork",
-        "viewFork": "在 GitHub 查看 Fork",
+        "description": "v2t — 从 cjpais/Handy fork 的经验中独立而来。原始致谢：github.com/cjpais/Handy",
+        "forkLabel": "ccharname/handy-plus（历史 fork）",
+        "title": "来源",
+        "viewFork": "在 GitHub 查看",
         "viewUpstream": "查看上游（cjpais/Handy）"
       }
     },
@@ -676,7 +686,7 @@
   },
   "accessibility": {
     "permissionsRequired": "需要辅助功能权限",
-    "permissionsDescription": "Handy 需要辅助功能权限才能输入转录的文字。",
+    "permissionsDescription": "v2t 需要辅助功能权限才能输入转录的文字。",
     "openSettings": "打开系统设置",
     "dismiss": "关闭"
   },
@@ -699,7 +709,7 @@
   },
   "appLanguage": {
     "title": "应用语言",
-    "description": "更改 Handy 界面的语言"
+    "description": "更改 v2t 界面的语言"
   },
   "overlay": {
     "transcribing": "正在转录",

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Handy",
+  "productName": "v2t",
   "version": "1.0.0",
-  "identifier": "com.pais.handy",
+  "identifier": "dev.zheng.v2t",
   "build": {
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",

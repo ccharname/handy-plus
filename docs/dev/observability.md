@@ -1,6 +1,6 @@
-# Handy Observability
+# v2t Observability
 
-Full-pipeline instrumentation for the handy-plus STT pipeline.  Every hotkey→output cycle is tagged with a ULID request id and emits one JSON event per stage into `~/Library/Logs/Handy/handy.jsonl` (daily rotation).
+Full-pipeline instrumentation for the handy-plus STT pipeline.  Every hotkey→output cycle is tagged with a ULID request id and emits one JSON event per stage into `~/Library/Logs/v2t/v2t.jsonl` (daily rotation).
 
 ## Pipeline diagram
 
@@ -132,7 +132,7 @@ Run `handy-logs breakdown --since 1h` after 50 consecutive recordings and look f
 3. After paste completes:
    ```bash
    # Confirm 9 stage events were written for the run
-   tail -n 50 ~/Library/Logs/Handy/handy.jsonl | python3 -c "
+   tail -n 50 ~/Library/Logs/v2t/v2t.jsonl | python3 -c "
    import sys, json
    lines = [json.loads(l) for l in sys.stdin if l.strip()]
    stages = [l.get('fields', l).get('stage') for l in lines if l.get('fields', l).get('stage')]
@@ -142,7 +142,7 @@ Run `handy-logs breakdown --since 1h` after 50 consecutive recordings and look f
    # Get the last request_id
    REQ=$(python3 -c "
    import json, pathlib
-   lines = pathlib.Path.home().joinpath('Library/Logs/Handy/handy.jsonl').read_text().strip().splitlines()
+   lines = pathlib.Path.home().joinpath('Library/Logs/v2t/v2t.jsonl').read_text().strip().splitlines()
    for line in reversed(lines):
        try:
            obj = json.loads(line)
