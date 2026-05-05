@@ -143,8 +143,7 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
     // check-marks the currently active one.
     //
     // Use `filtered_asr_presets` (single source of truth) so hidden presets
-    // — apple_native on macOS 26+, experimental presets when
-    // experimental_enabled=false — never surface in the tray either.
+    // (e.g. apple_native on macOS 26+) never surface in the tray either.
     let active_preset_id = settings.active_preset_id.as_deref();
     let presets: Vec<_> = crate::commands::asr_presets::filtered_asr_presets(app);
 

@@ -4,9 +4,7 @@ use crate::audio_toolkit::{
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, MlxModelKind, ModelManager, SherpaModelKind};
 use crate::observability::{self, Outcome, Stage, Stopwatch};
-use crate::settings::{
-    get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, WhisperAcceleratorSetting,
-};
+use crate::settings::{get_settings, ModelUnloadTimeout, OrtAcceleratorSetting};
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::Serialize;
@@ -2075,23 +2073,6 @@ pub fn apply_accelerator_settings(app: &tauri::AppHandle) {
     use transcribe_rs::accel;
 
     let settings = get_settings(app);
-
-    let whisper_pref = match settings.whisper_accelerator {
-        WhisperAcceleratorSetting::Auto => accel::WhisperAccelerator::Auto,
-        WhisperAcceleratorSetting::Cpu => accel::WhisperAccelerator::CpuOnly,
-        WhisperAcceleratorSetting::Gpu => accel::WhisperAccelerator::Gpu,
-    };
-    accel::set_whisper_accelerator(whisper_pref);
-    accel::set_whisper_gpu_device(settings.whisper_gpu_device);
-    info!(
-        "Whisper accelerator set to: {}, gpu_device: {}",
-        whisper_pref,
-        if settings.whisper_gpu_device == accel::GPU_DEVICE_AUTO {
-            "auto".to_string()
-        } else {
-            settings.whisper_gpu_device.to_string()
-        }
-    );
 
     let ort_pref = match settings.ort_accelerator {
         OrtAcceleratorSetting::Auto => accel::OrtAccelerator::Auto,

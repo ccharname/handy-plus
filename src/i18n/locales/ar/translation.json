@@ -241,30 +241,12 @@
         "app": "التطبيق",
         "output": "الإخراج",
         "transcription": "التفريغ الصوتي",
-        "history": "السجل",
-        "experimental": "تجريبي"
-      },
-      "experimentalToggle": {
-        "label": "الميزات التجريبية",
-        "description": ".تمكين الميزات التجريبية التي لا تزال قيد التطوير"
-      },
-      "lazyStreamClose": {
-        "label": "إبقاء الميكروفون مفتوحًا بين عمليات النسخ",
-        "description": "يبقي بث الميكروفون مفتوحًا لمدة 30 ثانية بعد توقف التسجيل، مما يقلل التأخير عند النسخ المتتالي. قد يؤثر على جودة صوت البلوتوث أثناء التفعيل."
+        "history": "السجل"
       },
       "acceleration": {
-        "whisper": {
-          "title": "تسريع Whisper",
-          "description": "تسريع الأجهزة لنماذج Whisper. الوضع التلقائي يستخدم GPU إن توفر (Metal على macOS، Vulkan على Windows/Linux)."
-        },
         "ort": {
           "title": "تسريع ONNX",
           "description": "تسريع الأجهزة لنماذج ONNX (Parakeet، Canary، Moonshine، إلخ). DirectML على Windows تجريبي. قد تفشل النماذج في النسخ."
-        },
-        "gpuDevice": {
-          "title": "جهاز GPU",
-          "description": "حدد وحدة معالجة الرسومات المستخدمة لاستدلال Whisper. يختار تلقائي وحدة GPU المخصصة.",
-          "auto": "تلقائي"
         }
       },
       "startHidden": {
@@ -517,11 +499,6 @@
       "appendTrailingSpace": {
         "label": "إضافة مسافة تابعة",
         "description": "إضافة مسافة بعد التفريغ الملصق"
-      },
-      "keyboardImplementation": {
-        "title": "تنفيذ لوحة المفاتيح",
-        "description": ".اختر الواجهة الخلفية لاختصارات لوحة المفاتيح",
-        "bindingsReset": "كانت اختصارات لوحة المفاتيح غير متوافقة وتمت إعادة تعيينها إلى القيم الافتراضية"
       },
       "paths": {
         "appData": "بيانات التطبيق:",

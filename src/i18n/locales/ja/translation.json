@@ -263,30 +263,12 @@
         "app": "アプリ",
         "output": "出力",
         "transcription": "文字起こし",
-        "history": "履歴",
-        "experimental": "実験的"
-      },
-      "experimentalToggle": {
-        "label": "実験的機能",
-        "description": "まだ開発中の実験的機能を有効にします。"
-      },
-      "lazyStreamClose": {
-        "label": "文字起こし間でマイクを開いたままにする",
-        "description": "録音停止後30秒間マイクストリームを開いたままにし、連続した文字起こしの遅延を軽減します。Bluetooth音声品質に影響する場合があります。"
+        "history": "履歴"
       },
       "acceleration": {
-        "whisper": {
-          "title": "Whisper アクセラレーション",
-          "description": "Whisper モデルのハードウェアアクセラレーション。自動モードでは利用可能な場合 GPU を使用します（macOS では Metal、Windows/Linux では Vulkan）。"
-        },
         "ort": {
           "title": "ONNX アクセラレーション",
           "description": "ONNX モデルのハードウェアアクセラレーション（Parakeet、Canary、Moonshine など）。Windows の DirectML は実験的です。モデルの文字起こしに失敗する場合があります。"
-        },
-        "gpuDevice": {
-          "title": "GPUデバイス",
-          "description": "Whisper推論に使用するGPUを選択します。自動は専用GPUを選択します。",
-          "auto": "自動"
         }
       },
       "startHidden": {
@@ -539,11 +521,6 @@
       "appendTrailingSpace": {
         "label": "末尾にスペースを追加",
         "description": "貼り付けた文字起こしの後にスペースを追加"
-      },
-      "keyboardImplementation": {
-        "title": "キーボード実装",
-        "description": "キーボードショートカットのバックエンドを選択してください。",
-        "bindingsReset": "キーボードショートカットに互換性がなかったため、デフォルトにリセットされました"
       },
       "paths": {
         "appData": "アプリデータ:",

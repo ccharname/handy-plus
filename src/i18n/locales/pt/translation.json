@@ -263,30 +263,12 @@
         "app": "Aplicativo",
         "output": "Saída",
         "transcription": "Transcrição",
-        "history": "Histórico",
-        "experimental": "Experimental"
-      },
-      "experimentalToggle": {
-        "label": "Recursos Experimentais",
-        "description": "Ativar recursos experimentais que ainda estão em desenvolvimento."
-      },
-      "lazyStreamClose": {
-        "label": "Manter microfone aberto entre transcrições",
-        "description": "Mantém o fluxo do microfone aberto por 30 segundos após parar a gravação, reduzindo a latência em transcrições consecutivas. Pode degradar a qualidade do áudio Bluetooth enquanto ativo."
+        "history": "Histórico"
       },
       "acceleration": {
-        "whisper": {
-          "title": "Aceleração Whisper",
-          "description": "Aceleração por hardware para modelos Whisper. Auto usa GPU se disponível (Metal no macOS, Vulkan no Windows/Linux)."
-        },
         "ort": {
           "title": "Aceleração ONNX",
           "description": "Aceleração por hardware para modelos ONNX (Parakeet, Canary, Moonshine, etc.). DirectML no Windows é experimental. Os modelos podem falhar na transcrição."
-        },
-        "gpuDevice": {
-          "title": "Dispositivo GPU",
-          "description": "Selecione qual GPU usar para inferência do Whisper. Auto escolhe a GPU dedicada.",
-          "auto": "Auto"
         }
       },
       "startHidden": {
@@ -539,11 +521,6 @@
       "appendTrailingSpace": {
         "label": "Adicionar Espaço Final",
         "description": "Adicionar um espaço após a transcrição colada"
-      },
-      "keyboardImplementation": {
-        "title": "Implementação do Teclado",
-        "description": "Escolha o sistema responsável pelos atalhos de teclado.",
-        "bindingsReset": "Os atalhos de teclado eram incompatíveis e foram redefinidos para os padrões"
       },
       "paths": {
         "appData": "Dados do App:",

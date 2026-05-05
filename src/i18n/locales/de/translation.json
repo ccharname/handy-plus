@@ -263,30 +263,12 @@
         "app": "App",
         "output": "Ausgabe",
         "transcription": "Transkription",
-        "history": "Verlauf",
-        "experimental": "Experimentell"
-      },
-      "experimentalToggle": {
-        "label": "Experimentelle Funktionen",
-        "description": "Experimentelle Funktionen aktivieren, die sich noch in Entwicklung befinden."
-      },
-      "lazyStreamClose": {
-        "label": "Mikrofon zwischen Transkriptionen offen halten",
-        "description": "Hält den Mikrofon-Stream nach dem Aufnahmestopp 30 Sekunden lang offen, um die Latenz bei aufeinanderfolgenden Transkriptionen zu verringern. Kann die Bluetooth-Audioqualität beeinträchtigen."
+        "history": "Verlauf"
       },
       "acceleration": {
-        "whisper": {
-          "title": "Whisper-Beschleunigung",
-          "description": "Hardwarebeschleunigung für Whisper-Modelle. Automatisch nutzt GPU falls verfügbar (Metal auf macOS, Vulkan auf Windows/Linux)."
-        },
         "ort": {
           "title": "ONNX-Beschleunigung",
           "description": "Hardwarebeschleunigung für ONNX-Modelle (Parakeet, Canary, Moonshine usw.). DirectML unter Windows ist experimentell. Modelle können bei der Transkription fehlschlagen."
-        },
-        "gpuDevice": {
-          "title": "GPU-Gerät",
-          "description": "Wähle die GPU für die Whisper-Inferenz. Auto wählt die dedizierte GPU.",
-          "auto": "Auto"
         }
       },
       "startHidden": {
@@ -539,11 +521,6 @@
       "appendTrailingSpace": {
         "label": "Leerzeichen anhängen",
         "description": "Leerzeichen nach eingefügter Transkription hinzufügen"
-      },
-      "keyboardImplementation": {
-        "title": "Tastatur-Implementierung",
-        "description": "Wähle das Backend für Tastaturkürzel.",
-        "bindingsReset": "Tastaturkürzel waren inkompatibel und wurden auf die Standardwerte zurückgesetzt"
       },
       "paths": {
         "appData": "App-Daten:",

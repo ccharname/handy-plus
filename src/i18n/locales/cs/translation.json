@@ -263,30 +263,12 @@
         "app": "Aplikace",
         "output": "Výstup",
         "transcription": "Přepis",
-        "history": "Historie",
-        "experimental": "Experimentální"
-      },
-      "experimentalToggle": {
-        "label": "Experimentální funkce",
-        "description": "Povolit experimentální funkce, které jsou stále ve vývoji."
-      },
-      "lazyStreamClose": {
-        "label": "Ponechat mikrofon zapnutý mezi přepisy",
-        "description": "Ponechá stream mikrofonu otevřený po dobu 30 sekund po zastavení nahrávání, čímž se sníží latence při opakovaném přepisu. Může zhoršit kvalitu zvuku Bluetooth."
+        "history": "Historie"
       },
       "acceleration": {
-        "whisper": {
-          "title": "Akcelerace Whisper",
-          "description": "Hardwarová akcelerace pro modely Whisper. Automatický režim používá GPU, pokud je k dispozici (Metal na macOS, Vulkan na Windows/Linux)."
-        },
         "ort": {
           "title": "Akcelerace ONNX",
           "description": "Hardwarová akcelerace pro modely ONNX (Parakeet, Canary, Moonshine atd.). DirectML na Windows je experimentální. Modely nemusí správně přepisovat."
-        },
-        "gpuDevice": {
-          "title": "GPU zařízení",
-          "description": "Vyberte, který GPU použít pro Whisper. Automaticky vybere dedikovaný GPU.",
-          "auto": "Automaticky"
         }
       },
       "startHidden": {
@@ -539,11 +521,6 @@
       "appendTrailingSpace": {
         "label": "Přidat koncovou mezeru",
         "description": "Přidat mezeru po vloženém přepisu"
-      },
-      "keyboardImplementation": {
-        "title": "Implementace klávesnice",
-        "description": "Zvolte backend pro klávesové zkratky.",
-        "bindingsReset": "Klávesové zkratky byly nekompatibilní a byly obnoveny na výchozí hodnoty"
       },
       "paths": {
         "appData": "Data aplikace:",

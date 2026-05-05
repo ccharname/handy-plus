@@ -263,30 +263,12 @@
         "app": "应用",
         "output": "输出",
         "transcription": "转录",
-        "history": "历史",
-        "experimental": "实验性"
-      },
-      "experimentalToggle": {
-        "label": "实验性功能",
-        "description": "启用仍在开发中的实验性功能。"
-      },
-      "lazyStreamClose": {
-        "label": "在转录之间保持麦克风开启",
-        "description": "录音停止后保持麦克风流开启30秒，减少连续转录时的延迟。激活时可能会降低蓝牙音频质量。"
+        "history": "历史"
       },
       "acceleration": {
-        "whisper": {
-          "title": "Whisper 加速",
-          "description": "Whisper 模型的硬件加速。自动模式在可用时使用 GPU（macOS 上使用 Metal，Windows/Linux 上使用 Vulkan）。"
-        },
         "ort": {
           "title": "ONNX 加速",
           "description": "ONNX 模型的硬件加速（Parakeet、Canary、Moonshine 等）。Windows 上的 DirectML 为实验性功能。模型可能无法正常转录。"
-        },
-        "gpuDevice": {
-          "title": "GPU 设备",
-          "description": "选择用于 Whisper 推理的 GPU。自动选择独立 GPU。",
-          "auto": "自动"
         }
       },
       "startHidden": {
@@ -539,11 +521,6 @@
       "appendTrailingSpace": {
         "label": "追加尾部空格",
         "description": "在粘贴的转录后添加空格"
-      },
-      "keyboardImplementation": {
-        "title": "键盘实现",
-        "description": "选择键盘快捷键的后端。",
-        "bindingsReset": "键盘快捷键不兼容，已重置为默认值"
       },
       "paths": {
         "appData": "应用数据:",

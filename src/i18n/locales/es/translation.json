@@ -263,30 +263,12 @@
         "app": "Aplicación",
         "output": "Salida",
         "transcription": "Transcripción",
-        "history": "Historial",
-        "experimental": "Experimental"
-      },
-      "experimentalToggle": {
-        "label": "Funciones Experimentales",
-        "description": "Habilitar funciones experimentales que aún están en desarrollo."
-      },
-      "lazyStreamClose": {
-        "label": "Mantener micrófono abierto entre transcripciones",
-        "description": "Mantiene el flujo del micrófono abierto durante 30 segundos después de detener la grabación, reduciendo la latencia en transcripciones consecutivas. Puede degradar la calidad del audio Bluetooth mientras está activo."
+        "history": "Historial"
       },
       "acceleration": {
-        "whisper": {
-          "title": "Aceleración de Whisper",
-          "description": "Aceleración por hardware para modelos Whisper. Auto usa GPU si está disponible (Metal en macOS, Vulkan en Windows/Linux)."
-        },
         "ort": {
           "title": "Aceleración de ONNX",
           "description": "Aceleración por hardware para modelos ONNX (Parakeet, Canary, Moonshine, etc.). DirectML en Windows es experimental. Los modelos pueden fallar al transcribir."
-        },
-        "gpuDevice": {
-          "title": "Dispositivo GPU",
-          "description": "Seleccione qué GPU usar para la inferencia de Whisper. Auto elige la GPU dedicada.",
-          "auto": "Auto"
         }
       },
       "startHidden": {
@@ -539,11 +521,6 @@
       "appendTrailingSpace": {
         "label": "Agregar Espacio Final",
         "description": "Agregar un espacio después de la transcripción pegada"
-      },
-      "keyboardImplementation": {
-        "title": "Implementación del teclado",
-        "description": "Elige el sistema que gestiona los atajos de teclado.",
-        "bindingsReset": "Los atajos de teclado eran incompatibles y se restablecieron a los valores predeterminados"
       },
       "paths": {
         "appData": "Datos de la Aplicación:",

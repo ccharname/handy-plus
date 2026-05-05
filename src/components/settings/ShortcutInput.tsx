@@ -1,5 +1,5 @@
 import React from "react";
-import { useSettings } from "../../hooks/useSettings";
+import { platform } from "@tauri-apps/plugin-os";
 import { GlobalShortcutInput } from "./GlobalShortcutInput";
 import { HandyKeysShortcutInput } from "./HandyKeysShortcutInput";
 
@@ -11,20 +11,16 @@ interface ShortcutInputProps {
 }
 
 /**
- * Wrapper component that selects the appropriate shortcut input implementation
- * based on the keyboard_implementation setting.
- *
- * - "tauri" (default): Uses GlobalShortcutInput with JS keyboard events
- * - "handy_keys": Uses HandyKeysShortcutInput with backend key events
+ * Selects the appropriate shortcut input implementation based on platform:
+ * - Linux: GlobalShortcutInput (Tauri built-in global-shortcut)
+ * - macOS / Windows: HandyKeysShortcutInput
  */
 export const ShortcutInput: React.FC<ShortcutInputProps> = (props) => {
-  const { getSetting } = useSettings();
-  const keyboardImplementation = getSetting("keyboard_implementation");
+  const isLinux = platform() === "linux";
 
-  // Default to Tauri implementation if not set
-  if (keyboardImplementation === "handy_keys") {
-    return <HandyKeysShortcutInput {...props} />;
+  if (isLinux) {
+    return <GlobalShortcutInput {...props} />;
   }
 
-  return <GlobalShortcutInput {...props} />;
+  return <HandyKeysShortcutInput {...props} />;
 };

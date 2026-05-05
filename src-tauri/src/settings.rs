@@ -166,22 +166,6 @@ pub enum RecordingRetentionPeriod {
     Months3,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum KeyboardImplementation {
-    Tauri,
-    HandyKeys,
-}
-
-impl Default for KeyboardImplementation {
-    fn default() -> Self {
-        #[cfg(target_os = "linux")]
-        return KeyboardImplementation::Tauri;
-        #[cfg(not(target_os = "linux"))]
-        return KeyboardImplementation::HandyKeys;
-    }
-}
-
 impl Default for PasteMethod {
     fn default() -> Self {
         // Default to CtrlV for macOS and Windows, Direct for Linux
@@ -252,15 +236,6 @@ pub enum TypingTool {
     Dotool,
     Ydotool,
     Xdotool,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum WhisperAcceleratorSetting {
-    #[default]
-    Auto,
-    Cpu,
-    Gpu,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq, Eq, Type)]
@@ -556,12 +531,6 @@ pub struct AppSettings {
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
     pub app_language: String,
-    #[serde(default)]
-    pub experimental_enabled: bool,
-    #[serde(default)]
-    pub lazy_stream_close: bool,
-    #[serde(default)]
-    pub keyboard_implementation: KeyboardImplementation,
     #[serde(default = "default_show_tray_icon")]
     pub show_tray_icon: bool,
     #[serde(default = "default_paste_delay_ms")]
@@ -572,11 +541,7 @@ pub struct AppSettings {
     #[serde(default)]
     pub custom_filler_words: Option<Vec<String>>,
     #[serde(default)]
-    pub whisper_accelerator: WhisperAcceleratorSetting,
-    #[serde(default)]
     pub ort_accelerator: OrtAcceleratorSetting,
-    #[serde(default = "default_whisper_gpu_device")]
-    pub whisper_gpu_device: i32,
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
     #[serde(default = "default_power_mode_enabled")]
@@ -926,10 +891,6 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
         name: "Improve Transcriptions".to_string(),
         prompt: "Clean this transcript:\n1. Fix spelling, capitalization, and punctuation errors\n2. Convert number words to digits (twenty-five → 25, ten percent → 10%, five dollars → $5)\n3. Replace spoken punctuation with symbols (period → ., comma → ,, question mark → ?)\n4. Remove filler words (um, uh, like as filler)\n5. Keep the language in the original version (if it was french, keep it in french for example)\n\nPreserve exact meaning and word order. Do not paraphrase or reorder content.\n\nReturn only the cleaned transcript.\n\nTranscript:\n${output}".to_string(),
     }]
-}
-
-fn default_whisper_gpu_device() -> i32 {
-    -1 // auto
 }
 
 fn default_diary_keywords() -> Vec<String> {
@@ -1333,6 +1294,39 @@ pub fn ensure_v_0_8_18_drop_punc_zh_migration(settings: &mut AppSettings) -> boo
     true
 }
 
+/// v_0_8_19 — Experimental settings group removal.
+///
+/// Removes `experimental_enabled`, `keyboard_implementation`,
+/// `whisper_accelerator`, and `whisper_gpu_device` fields.  No data mutation
+/// required: serde's `#[serde(default)]` on `AppSettings` ignores these
+/// removed fields if present in stored JSON.  This migration exists solely as
+/// a version marker so the removal is visible in the `migration_applied` audit
+/// log.
+const MIGRATION_V_0_8_19_DROP_EXPERIMENTAL: &str = "v_0_8_19_drop_experimental_fields";
+
+pub fn ensure_v_0_8_19_drop_experimental_migration(settings: &mut AppSettings) -> bool {
+    if settings
+        .migration_applied
+        .get(MIGRATION_V_0_8_19_DROP_EXPERIMENTAL)
+        .copied()
+        .unwrap_or(false)
+    {
+        return false; // already applied
+    }
+
+    log::info!(
+        "Migration {}: experimental settings group removed; \
+         experimental_enabled, keyboard_implementation, whisper_accelerator, \
+         whisper_gpu_device fields (if present in stored JSON) silently ignored by serde",
+        MIGRATION_V_0_8_19_DROP_EXPERIMENTAL
+    );
+
+    settings
+        .migration_applied
+        .insert(MIGRATION_V_0_8_19_DROP_EXPERIMENTAL.to_string(), true);
+    true
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -1438,17 +1432,12 @@ pub fn get_default_settings() -> AppSettings {
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
-        experimental_enabled: false,
-        lazy_stream_close: false,
-        keyboard_implementation: KeyboardImplementation::default(),
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
         external_script_path: None,
         custom_filler_words: None,
-        whisper_accelerator: WhisperAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
-        whisper_gpu_device: default_whisper_gpu_device(),
         extra_recording_buffer_ms: 0,
         power_mode_enabled: default_power_mode_enabled(),
         app_profiles: default_app_profiles(),
@@ -1544,6 +1533,7 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
     }
     changed |= ensure_v_0_8_17_collapse_migration(&mut settings);
     changed |= ensure_v_0_8_18_drop_punc_zh_migration(&mut settings);
+    changed |= ensure_v_0_8_19_drop_experimental_migration(&mut settings);
     if changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
@@ -1579,6 +1569,7 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
     }
     changed |= ensure_v_0_8_17_collapse_migration(&mut settings);
     changed |= ensure_v_0_8_18_drop_punc_zh_migration(&mut settings);
+    changed |= ensure_v_0_8_19_drop_experimental_migration(&mut settings);
     if changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
@@ -1896,6 +1887,64 @@ mod migration_tests {
         assert!(
             result.is_ok(),
             "old JSON with punc_zh_enabled must deserialise without error: {:?}",
+            result.err()
+        );
+    }
+
+    // ── v0.8.19 drop-experimental-fields migration tests ─────────────────────
+
+    #[test]
+    fn v19_marks_migration_applied_and_returns_true() {
+        let mut s = get_default_settings();
+        s.migration_applied = HashMap::new();
+        let changed = ensure_v_0_8_19_drop_experimental_migration(&mut s);
+        assert!(changed, "first run must return true");
+        assert_eq!(
+            s.migration_applied
+                .get(MIGRATION_V_0_8_19_DROP_EXPERIMENTAL),
+            Some(&true),
+            "migration flag must be set"
+        );
+    }
+
+    #[test]
+    fn v19_idempotent_when_already_applied() {
+        let mut s = get_default_settings();
+        s.migration_applied
+            .insert(MIGRATION_V_0_8_19_DROP_EXPERIMENTAL.to_string(), true);
+        let changed = ensure_v_0_8_19_drop_experimental_migration(&mut s);
+        assert!(!changed, "second run must return false");
+    }
+
+    #[test]
+    fn v19_old_json_with_experimental_fields_deserialises_ok() {
+        // Simulate a stored settings JSON that still has the removed fields.
+        let defaults = get_default_settings();
+        let mut as_value = serde_json::to_value(&defaults).expect("serialise defaults");
+        let obj = as_value.as_object_mut().unwrap();
+        obj.insert(
+            "experimental_enabled".to_string(),
+            serde_json::Value::Bool(true),
+        );
+        obj.insert(
+            "keyboard_implementation".to_string(),
+            serde_json::Value::String("handy_keys".to_string()),
+        );
+        obj.insert(
+            "whisper_accelerator".to_string(),
+            serde_json::Value::String("auto".to_string()),
+        );
+        obj.insert(
+            "whisper_gpu_device".to_string(),
+            serde_json::Value::Number((-1i64).into()),
+        );
+        let old_json = serde_json::to_string(&as_value).expect("re-serialise");
+
+        // serde must ignore the unknown fields and produce a valid AppSettings.
+        let result: Result<AppSettings, _> = serde_json::from_str(&old_json);
+        assert!(
+            result.is_ok(),
+            "old JSON with experimental fields must deserialise without error: {:?}",
             result.err()
         );
     }
