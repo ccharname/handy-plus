@@ -11,6 +11,8 @@
 //! oldest (partial continuity) and the newest (realtime feel).
 
 pub mod orchestrator;
+#[cfg(test)]
+mod stress_tests;
 
 pub use orchestrator::{ChunkPartial, OrchestratorConfig, StreamingOrchestrator};
 
