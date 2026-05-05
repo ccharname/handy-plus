@@ -23,6 +23,7 @@ mod profile_resolver;
 mod settings;
 mod shortcut;
 mod signal_handle;
+pub mod streaming_pipeline;
 mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
