@@ -39,8 +39,8 @@
     "macOS": {
       "files": {},
       "hardenedRuntime": true,
-      "minimumSystemVersion": "10.15",
-      "signingIdentity": "Handy+ Local Dev",
+      "minimumSystemVersion": "13.0",
+      "signingIdentity": "v2t Local Dev",
       "entitlements": "Entitlements.plist"
     },
     "linux": {
