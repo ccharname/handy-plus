@@ -79,17 +79,22 @@ pub struct TranscriptionManager {
     /// Cancel flag for the MlxAudio inference path.
     ///
     /// Set to `true` by `mark_cancelled()` when the user presses the cancel
-    /// shortcut.  The MlxAudio path checks this flag after the blocking Swift
-    /// bridge call returns and records `outcome=cancelled` in the T5 span if
-    /// it was set, then discards the transcript so it is never pasted.
+    /// shortcut.  Since M2.6 the MlxAudio path is streaming (per-token callback
+    /// from Swift), so cancel checks happen at three points:
+    ///   1. Pre-call: `is_cancelled()` before invoking the bridge → return early.
+    ///   2. Intra-call: each token callback re-checks the flag → reset
+    ///      DeltaComputer + sink.cancel() and stop appending to the screen
+    ///      (already-pasted text is left as-is; cancel = stop, not undo).
+    ///   3. Post-call: bridge returns → flag is recorded in the T5 span
+    ///      (`cancelled_post_bridge: true`).
     ///
-    /// The check is intentionally post-call rather than intra-call: the current
-    /// MlxAudio path is non-streaming (batch WAV → Swift → result), so there is
-    /// no token loop to interrupt mid-way.  The cancel window is therefore:
-    ///   1. Pre-call: cancel_recording() returns None → transcribe() never called.
-    ///   2. Post-call: flag set during bridge blocking → result discarded.
+    /// Note: cancel does NOT abort the underlying Swift `Task` — the
+    /// `generateStream` loop continues to completion in the background, but the
+    /// Rust callback is a no-op once the flag is set, so the user sees no more
+    /// output. This is a Swift-side API limitation (`AsyncThrowingStream` has
+    /// no Rust-callable interrupt hook), accepted as a UX tradeoff.
     ///
-    /// Cost: one `Ordering::Relaxed` load per inference call (≤ 1 ns).
+    /// Cost: one `Ordering::Relaxed` load per token callback (≤ 1 ns).
     mlx_cancel_flag: Arc<AtomicBool>,
 }
 
@@ -482,9 +487,11 @@ impl TranscriptionManager {
     /// Signal that a cancel occurred while MlxAudio inference may be in-flight.
     ///
     /// Called from `cancel_current_operation()` in addition to the audio-layer
-    /// cancel.  The MlxAudio `do_transcribe` path checks this flag post-call and
-    /// records `outcome=cancelled` + returns `Err("cancelled")` so the result is
-    /// never written to the clipboard.
+    /// cancel.  Since M2.6 the streaming token callback re-checks this flag
+    /// every partial: on first true value it calls `sink.cancel()` and stops
+    /// appending to the screen.  Already-pasted text is left in place
+    /// (cancel = stop, not undo).  The post-call `outcome=cancelled` recording
+    /// in T5 is preserved so analytics see the cancellation.
     ///
     /// The flag is automatically cleared at the start of each `transcribe()` call
     /// so stale cancels from a previous session don't bleed through.
