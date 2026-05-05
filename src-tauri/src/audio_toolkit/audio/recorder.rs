@@ -281,6 +281,10 @@ impl AudioRecorder {
         )
     }
 
+    // cpal::SupportedStreamConfigRange used to be Copy; current cpal makes it
+    // non-Copy (holds buffer-size enum). clippy still fires `clone_on_copy`
+    // on .clone() calls — false positive. Allow at fn scope.
+    #[allow(clippy::clone_on_copy)]
     fn get_preferred_config(
         device: &cpal::Device,
     ) -> Result<cpal::SupportedStreamConfig, Box<dyn std::error::Error>> {

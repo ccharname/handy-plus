@@ -36,6 +36,12 @@
 pub mod accessibility;
 pub mod clipboard;
 pub mod delta;
+// `ime` is retained as dead code: TIS API on macOS 26 SIGTRAPs (PAC trap)
+// when accessed from worker threads. KeystrokeOutput now relies on
+// `enigo.text()` (CGEvent Unicode payload) which bypasses IME compose
+// buffers without needing input-source switching. Module kept for future
+// reference if main-thread-only TIS access becomes necessary.
+#[allow(dead_code)]
 pub mod ime;
 pub mod keystroke;
 pub mod routing;
