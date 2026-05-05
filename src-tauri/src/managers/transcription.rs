@@ -26,6 +26,11 @@ pub struct ModelStateEvent {
     pub error: Option<String>,
 }
 
+// SenseVoice variant holds a transcribe-rs model (~312 B); MlxAudio is a thin
+// String marker (~24 B) since the Swift bridge owns the actual model state.
+// The size disparity is structural — boxing SenseVoice would just trade one
+// indirection cost for another. allow the lint.
+#[allow(clippy::large_enum_variant)]
 enum LoadedEngine {
     SenseVoice(SenseVoiceModel),
     /// mlx-audio-swift bridge (Apple Silicon macOS only).
