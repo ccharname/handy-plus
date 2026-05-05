@@ -173,13 +173,14 @@ public func mlxAudioTranscribeFile(
 
             // Generation parameters — use greedy decode (temperature=0) for determinism.
             // maxTokens=4096 covers ~3000 Chinese characters (30 min of speech).
-            // language="" passes empty string which both Voxtral and Qwen3-ASR treat as
-            // auto-detect (the models inspect the audio spectrogram for language cues).
+            // FD-003 M3.5 #5: language="Chinese" skips Qwen3-ASR auto-detection,
+            // saving ~20-50ms first_token_ms. "Chinese" maps via support_languages
+            // config (case-insensitive). Single-language (zh) users: no precision loss.
             let params = STTGenerateParameters(
                 maxTokens: 4096,
                 temperature: 0.0,
                 verbose: false,
-                language: ""    // auto-detect; empty string → model-level language inference
+                language: "Chinese"
             )
 
             // Non-streaming inference: collect the final Result event.
@@ -285,11 +286,12 @@ public func mlxAudioTranscribeStreaming(
             // Load model (from HF cache).
             let model = try await loadSTTModel(repo: repoId)
 
+            // FD-003 M3.5 #5: language hint — same as batch path above.
             let params = STTGenerateParameters(
                 maxTokens: 4096,
                 temperature: 0.0,
                 verbose: false,
-                language: ""    // auto-detect
+                language: "Chinese"
             )
 
             // Accumulate tokens into cumulative partial; emit callback on every token.
