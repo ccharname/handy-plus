@@ -281,14 +281,14 @@ impl AudioRecorder {
     fn get_preferred_config(
         device: &cpal::Device,
     ) -> Result<cpal::SupportedStreamConfig, Box<dyn std::error::Error>> {
-        // Use the device's native/default sample rate and let the FrameResampler
-        // in run_consumer() downsample to 16kHz. This avoids forcing hardware into
-        // a non-native rate which can cause issues on some devices (Bluetooth
-        // codecs, certain ALSA drivers, etc.).
         let default_config = device.default_input_config()?;
-        let target_rate = default_config.sample_rate();
 
-        // Try to find the best sample format at the device's default rate
+        // FD-003 M3.5 #7: try to capture natively at 16 kHz (the ASR target
+        // rate) to skip the FrameResampler entirely (t4_resample = 0).
+        // This is only possible when the hardware supports 16 kHz; most
+        // macOS built-in mics are 48 kHz native so the fallback fires there.
+        const TARGET_16K: cpal::SampleRate = cpal::SampleRate(16_000);
+
         let supported_configs = match device.supported_input_configs() {
             Ok(configs) => configs,
             Err(e) => {
@@ -296,39 +296,69 @@ impl AudioRecorder {
                 return Ok(default_config);
             }
         };
-        let mut best_config: Option<cpal::SupportedStreamConfigRange> = None;
+
+        // Prioritize F32 > I16 > I32 > others (same as before).
+        let format_score = |fmt: cpal::SampleFormat| match fmt {
+            cpal::SampleFormat::F32 => 4,
+            cpal::SampleFormat::I16 => 3,
+            cpal::SampleFormat::I32 => 2,
+            _ => 1,
+        };
+
+        let mut best_16k: Option<cpal::SupportedStreamConfigRange> = None;
+        let mut best_native: Option<cpal::SupportedStreamConfigRange> = None;
+        let native_rate = default_config.sample_rate();
 
         for config_range in supported_configs {
-            if config_range.min_sample_rate() <= target_rate
-                && config_range.max_sample_rate() >= target_rate
+            // Check 16 kHz support
+            if config_range.min_sample_rate() <= TARGET_16K
+                && config_range.max_sample_rate() >= TARGET_16K
             {
-                match best_config {
-                    None => best_config = Some(config_range),
-                    Some(ref current) => {
-                        // Prioritize F32 > I16 > I32 > others
-                        let score = |fmt: cpal::SampleFormat| match fmt {
-                            cpal::SampleFormat::F32 => 4,
-                            cpal::SampleFormat::I16 => 3,
-                            cpal::SampleFormat::I32 => 2,
-                            _ => 1,
-                        };
-
-                        if score(config_range.sample_format()) > score(current.sample_format()) {
-                            best_config = Some(config_range);
+                match best_16k {
+                    None => best_16k = Some(config_range.clone()),
+                    Some(ref cur) => {
+                        if format_score(config_range.sample_format())
+                            > format_score(cur.sample_format())
+                        {
+                            best_16k = Some(config_range.clone());
+                        }
+                    }
+                }
+            }
+            // Also track best config at native rate (fallback)
+            if config_range.min_sample_rate() <= native_rate
+                && config_range.max_sample_rate() >= native_rate
+            {
+                match best_native {
+                    None => best_native = Some(config_range),
+                    Some(ref cur) => {
+                        if format_score(config_range.sample_format())
+                            > format_score(cur.sample_format())
+                        {
+                            best_native = Some(config_range);
                         }
                     }
                 }
             }
         }
 
-        if let Some(config) = best_config {
-            return Ok(config.with_sample_rate(target_rate));
+        // Prefer 16 kHz native capture to skip t4_resample.
+        if let Some(cfg) = best_16k {
+            log::info!(
+                "cpal: device supports 16 kHz native — skipping FrameResampler (t4_resample=0)"
+            );
+            return Ok(cfg.with_sample_rate(TARGET_16K));
         }
 
-        // Fall back to device default if no config matched (exotic/virtual devices)
+        // Fall back to device native rate + FrameResampler downsampling.
+        if let Some(cfg) = best_native {
+            return Ok(cfg.with_sample_rate(native_rate));
+        }
+
+        // Last resort: device default as-is
         log::warn!(
-            "No supported config matched device default rate {:?}, using default config",
-            target_rate
+            "No supported config matched; using device default {:?}",
+            native_rate
         );
         Ok(default_config)
     }
