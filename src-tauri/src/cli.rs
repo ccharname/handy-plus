@@ -22,7 +22,7 @@ pub enum BenchMode {
 }
 
 #[derive(Parser, Debug, Clone, Default)]
-#[command(name = "handy", about = "Handy - Speech to Text")]
+#[command(name = "v2t", about = "v2t - Voice to Text")]
 pub struct CliArgs {
     /// Start with the main window hidden
     #[arg(long)]

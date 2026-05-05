@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-handy-logs — CLI tool for analysing Handy observability JSONL logs.
+v2t-logs — CLI tool for analysing v2t observability JSONL logs.
 
 Usage:
-  handy-logs tail [--last N] [--field K]
-  handy-logs trace <req_id>
-  handy-logs slowest [--stage S] [--top N] [--since Xd]
-  handy-logs percentiles --stage S [--preset P] [--metric M] [--since Xd]
-  handy-logs breakdown [--since Xd]
-  handy-logs compare --baseline FILE --current FILE [--stage S]
-  handy-logs assert --stage S [--metric M] [--preset P] --p50-max N --p99-max M
+  v2t-logs tail [--last N] [--field K]
+  v2t-logs trace <req_id>
+  v2t-logs slowest [--stage S] [--top N] [--since Xd]
+  v2t-logs percentiles --stage S [--preset P] [--metric M] [--since Xd]
+  v2t-logs breakdown [--since Xd]
+  v2t-logs compare --baseline FILE --current FILE [--stage S]
+  v2t-logs assert --stage S [--metric M] [--preset P] --p50-max N --p99-max M
 
 Exit codes: 0 = pass/ok, 1 = assert failure / error
 """
@@ -25,14 +25,14 @@ from datetime import datetime, timedelta, timezone
 
 # ── Log file discovery ────────────────────────────────────────────────────────
 
-DEFAULT_LOG_DIR = pathlib.Path.home() / "Library" / "Logs" / "Handy"
+DEFAULT_LOG_DIR = pathlib.Path.home() / "Library" / "Logs" / "v2t"
 
 
 def find_log_files(log_dir: pathlib.Path = DEFAULT_LOG_DIR):
     """Return all .jsonl files sorted oldest→newest."""
     if not log_dir.exists():
         return []
-    files = sorted(log_dir.glob("handy.jsonl*"))
+    files = sorted(log_dir.glob("v2t.jsonl*"))
     return files
 
 
@@ -79,7 +79,7 @@ def parse_since(since_str: str | None) -> datetime | None:
 
 
 def extract_stage_events(events):
-    """Filter to Handy stage events only."""
+    """Filter to v2t stage events only."""
     for e in events:
         fields = e.get("fields", e)  # tracing-subscriber json wraps in "fields"
         if not isinstance(fields, dict):
@@ -352,7 +352,7 @@ def cmd_export_baseline(args):
     """Export a percentile snapshot for all stages as a baseline JSON file.
 
     Usage:
-        handy-logs export-baseline --preset P --version V --since 7d
+        v2t-logs export-baseline --preset P --version V --since 7d
     Output JSON format:
         {
           "preset": "...",
@@ -472,8 +472,8 @@ def cmd_assert(args):
 
 def build_parser():
     parser = argparse.ArgumentParser(
-        prog="handy-logs",
-        description="Handy observability log analyser",
+        prog="v2t-logs",
+        description="v2t observability log analyser",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 

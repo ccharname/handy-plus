@@ -358,20 +358,20 @@ pub fn run(cli_args: CliArgs) {
     portable::init();
 
     // ── Observability: initialise JSON JSONL logger ───────────────────────────
-    // Resolve log dir: ~/Library/Logs/Handy (or portable equivalent).
+    // Resolve log dir: ~/Library/Logs/v2t (or portable equivalent).
     // We must initialise before the tauri builder so the guard outlives everything.
     let obs_log_dir = {
         #[cfg(target_os = "macos")]
         {
             dirs_next::home_dir()
-                .map(|h| h.join("Library/Logs/Handy"))
-                .unwrap_or_else(|| std::path::PathBuf::from("/tmp/handy-logs"))
+                .map(|h| h.join("Library/Logs/v2t"))
+                .unwrap_or_else(|| std::path::PathBuf::from("/tmp/v2t-logs"))
         }
         #[cfg(not(target_os = "macos"))]
         {
             dirs_next::data_local_dir()
-                .map(|d| d.join("Handy/logs"))
-                .unwrap_or_else(|| std::path::PathBuf::from("/tmp/handy-logs"))
+                .map(|d| d.join("v2t/logs"))
+                .unwrap_or_else(|| std::path::PathBuf::from("/tmp/v2t-logs"))
         }
     };
     if let Err(e) = std::fs::create_dir_all(&obs_log_dir) {
@@ -531,11 +531,11 @@ pub fn run(cli_args: CliArgs) {
                     Target::new(if let Some(data_dir) = portable::data_dir() {
                         TargetKind::Folder {
                             path: data_dir.join("logs"),
-                            file_name: Some("handy".into()),
+                            file_name: Some("v2t".into()),
                         }
                     } else {
                         TargetKind::LogDir {
-                            file_name: Some("handy".into()),
+                            file_name: Some("v2t".into()),
                         }
                     })
                     .filter(|metadata| {
@@ -629,7 +629,7 @@ pub fn run(cli_args: CliArgs) {
             // for portable mode (redirects WebView2 cache to portable Data dir)
             let mut win_builder =
                 tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
-                    .title("Handy")
+                    .title("v2t")
                     .inner_size(680.0, 570.0)
                     .min_inner_size(680.0, 570.0)
                     .resizable(true)

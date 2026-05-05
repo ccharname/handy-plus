@@ -884,7 +884,7 @@ impl ShortcutAction for TranscribeAction {
                     );
 
                     // Save WAV concurrently with transcription
-                    let file_name = format!("handy-{}.wav", chrono::Utc::now().timestamp());
+                    let file_name = format!("v2t-{}.wav", chrono::Utc::now().timestamp());
                     let wav_path = hm.recordings_dir().join(&file_name);
                     let wav_path_for_verify = wav_path.clone();
                     let samples_for_wav = samples.clone();

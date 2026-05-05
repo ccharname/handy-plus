@@ -1,8 +1,8 @@
-//! Full-pipeline observability for Handy.
+//! Full-pipeline observability for v2t.
 //!
 //! Provides 8-stage instrumentation across the hotkey→output pipeline with
 //! structured JSONL logging, ULID-based request correlation, and per-stage
-//! timing.  All writes go to `~/Library/Logs/Handy/handy.jsonl` (daily
+//! timing.  All writes go to `~/Library/Logs/v2t/v2t.jsonl` (daily
 //! rotation via `tracing-appender`).
 //!
 //! # Usage
@@ -131,13 +131,13 @@ static LOG_TRANSCRIPTS: OnceCell<bool> = OnceCell::new();
 
 /// Call once at startup (in `lib.rs` before any logging).
 ///
-/// * `log_dir` — directory where `handy.jsonl` will be written (daily rotation)
+/// * `log_dir` — directory where `v2t.jsonl` will be written (daily rotation)
 /// * `log_transcripts` — if `true`, full transcript text is included in t6/t7
 ///   stage records; defaults to `false` (only char-count is emitted)
 pub fn init(log_dir: std::path::PathBuf, log_transcripts: bool) -> ObservabilityGuard {
     LOG_TRANSCRIPTS.set(log_transcripts).unwrap_or_default();
 
-    let file_appender = tracing_appender::rolling::daily(log_dir, "handy.jsonl");
+    let file_appender = tracing_appender::rolling::daily(log_dir, "v2t.jsonl");
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 
     use tracing_subscriber::layer::SubscriberExt;

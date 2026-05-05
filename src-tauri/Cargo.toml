@@ -1,11 +1,11 @@
 [package]
-name = "handy"
+name = "v2t"
 version = "1.0.0"
-description = "Handy"
-authors = ["cjpais"]
+description = "v2t — voice to text, two engines: SenseVoice + Qwen3-MLX"
+authors = ["zheng"]
 edition = "2021"
 license = "MIT"
-default-run = "handy"
+default-run = "v2t"
 
 [profile.dev]
 incremental = true # Compile your binary in smaller steps.
