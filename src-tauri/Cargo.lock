@@ -7271,6 +7271,7 @@ dependencies = [
  "gtk-layer-shell",
  "handy-keys",
  "hound",
+ "libc",
  "log",
  "natural",
  "once_cell",

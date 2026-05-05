@@ -604,6 +604,13 @@ pub struct AppSettings {
     /// original batch-paste-after-completion behaviour.
     #[serde(default = "default_apple_speech_incremental_paste")]
     pub apple_speech_incremental_paste: bool,
+    /// FD-006 M2: When true (default), qwen3_mlx preset uses chunked streaming
+    /// inference — audio is sliced into ~1.5-2s windows during recording and
+    /// transcribed concurrently, so text appears at the cursor while the user
+    /// is still speaking.  Set to false to revert to the FD-003 M2.6 batch
+    /// pseudo-streaming path (wait-until-stop → full-audio inference).
+    #[serde(default = "default_qwen3_mlx_streaming_chunked")]
+    pub qwen3_mlx_streaming_chunked: bool,
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -922,6 +929,10 @@ fn default_ort_accelerator() -> OrtAcceleratorSetting {
 }
 
 fn default_apple_speech_incremental_paste() -> bool {
+    true
+}
+
+fn default_qwen3_mlx_streaming_chunked() -> bool {
     true
 }
 
@@ -1486,6 +1497,7 @@ pub fn get_default_settings() -> AppSettings {
         migration_applied: HashMap::new(),
         custom_word_aliases: HashMap::new(),
         apple_speech_incremental_paste: default_apple_speech_incremental_paste(),
+        qwen3_mlx_streaming_chunked: default_qwen3_mlx_streaming_chunked(),
     }
 }
 

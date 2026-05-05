@@ -515,7 +515,10 @@ impl TranscriptionManager {
     /// so that `take_incremental_paste_cursor()` in actions.rs T7Output
     /// returns the cumulative pasted text, letting the batch sink path
     /// compute residual = "" and skip duplicating the transcript on screen.
-    fn append_incremental_paste(&self, delta: &str) {
+    ///
+    /// Made `pub` for FD-006 M2 so the streaming drainer (in audio.rs) can
+    /// update the cursor without a direct dep on TranscriptionManager.
+    pub fn append_incremental_paste(&self, delta: &str) {
         let mut cursor = self
             .incremental_paste_cursor
             .lock()
@@ -728,7 +731,7 @@ impl TranscriptionManager {
         engine: &mut LoadedEngine,
         audio: &[f32],
         validated_language: &str,
-        _settings: &crate::settings::AppSettings,
+        settings: &crate::settings::AppSettings,
         partial_emit_handle: AppHandle,
     ) -> Result<transcribe_rs::TranscriptionResult> {
         match engine {
@@ -839,6 +842,63 @@ impl TranscriptionManager {
             // DeltaComputer → StreamingSink so text appears at the cursor in
             // real-time during inference.
             LoadedEngine::MlxAudio { model_id_str } => {
+                // ── FD-006 M2: chunked streaming fast-path ─────────────────
+                // When qwen3_mlx_streaming_chunked is enabled, the orchestrator
+                // has already transcribed all chunks during recording.  The
+                // drainer thread has been pushing partial text to the sink via
+                // DeltaComputer, so by the time we arrive here the text is
+                // already on screen.
+                //
+                // For M2: return the cumulative incremental_paste_cursor as the
+                // transcription result so actions.rs can skip the batch paste
+                // (residual = final_text - cursor = "").
+                //
+                // TODO M3: replace with a final-pass batch inference and
+                //          divergence reconcile.
+                let is_chunked_mode = settings.qwen3_mlx_streaming_chunked
+                    && settings
+                        .active_preset_id
+                        .as_deref()
+                        .map(|id| id == "qwen3_mlx")
+                        .unwrap_or(false);
+
+                if is_chunked_mode {
+                    // Check if AudioRecordingManager has an active streaming session.
+                    // If not, the session was already stopped/cancelled — return cursor.
+                    let req = partial_emit_handle
+                        .try_state::<crate::observability::ActiveRequestId>()
+                        .map(|s| s.get())
+                        .unwrap_or_default();
+
+                    let streamed_text = self.take_incremental_paste_cursor();
+                    let char_count = streamed_text.chars().count();
+
+                    info!(
+                        "[mlx_audio] chunked=true: returning {} streamed chars; \
+                         TODO M3: final-pass batch inference",
+                        char_count
+                    );
+
+                    observability::ok_with(
+                        req,
+                        crate::observability::Stage::T5Inference,
+                        0.0,
+                        serde_json::json!({
+                            "preset": "qwen3_mlx",
+                            "chunked": true,
+                            "streaming": true,
+                            "transcript_char_count": char_count,
+                            "note": "M2 placeholder — M3 adds final-pass batch inference"
+                        }),
+                    );
+
+                    return Ok(transcribe_rs::TranscriptionResult {
+                        text: streamed_text,
+                        segments: None,
+                    });
+                }
+                // ── End FD-006 M2 fast-path ────────────────────────────────
+
                 // Resolve active request id for T5 observability.
                 let req = partial_emit_handle
                     .try_state::<crate::observability::ActiveRequestId>()

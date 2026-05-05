@@ -95,12 +95,16 @@ impl InboundQueue {
 // ── StreamingOrchestrator ─────────────────────────────────────────────────────
 
 /// Manages the single-worker inference loop.
+///
+/// `partial_rx` is wrapped in a `Mutex` to make `StreamingOrchestrator` `Sync`
+/// so it can be held inside `Arc<StreamingOrchestrator>` in `AudioRecordingManager`.
+/// The Mutex is only ever locked by one thread at a time (the drainer thread).
 pub struct StreamingOrchestrator {
     config: OrchestratorConfig,
     queue: Arc<InboundQueue>,
     /// Receiver end of the partial-output channel.
-    partial_rx: std::sync::mpsc::Receiver<ChunkPartial>,
-    worker_handle: Option<std::thread::JoinHandle<()>>,
+    partial_rx: Mutex<std::sync::mpsc::Receiver<ChunkPartial>>,
+    worker_handle: Mutex<Option<std::thread::JoinHandle<()>>>,
 }
 
 impl StreamingOrchestrator {
@@ -120,8 +124,8 @@ impl StreamingOrchestrator {
         Self {
             config,
             queue,
-            partial_rx,
-            worker_handle: Some(handle),
+            partial_rx: Mutex::new(partial_rx),
+            worker_handle: Mutex::new(Some(handle)),
         }
     }
 
@@ -172,12 +176,12 @@ impl StreamingOrchestrator {
     ///
     /// Returns `None` immediately if no partial is available.
     pub fn try_recv_partial(&self) -> Option<ChunkPartial> {
-        self.partial_rx.try_recv().ok()
+        self.partial_rx.lock().unwrap().try_recv().ok()
     }
 
     /// Block until a [`ChunkPartial`] is available or `timeout` elapses.
     pub fn recv_partial_timeout(&self, timeout: Duration) -> Option<ChunkPartial> {
-        self.partial_rx.recv_timeout(timeout).ok()
+        self.partial_rx.lock().unwrap().recv_timeout(timeout).ok()
     }
 
     /// Signal all in-flight and pending inference to stop emitting partials.
@@ -195,19 +199,20 @@ impl StreamingOrchestrator {
     ///
     /// Blocks until the worker thread finishes, then collects all remaining
     /// [`ChunkPartial`]s from the output channel.
-    pub fn shutdown(mut self) -> Vec<ChunkPartial> {
+    pub fn shutdown(self) -> Vec<ChunkPartial> {
         // Tell the worker to drain and exit.
         self.queue.shutdown.store(true, Ordering::SeqCst);
         self.queue.condvar.notify_all();
 
         // Wait for the worker to finish.
-        if let Some(handle) = self.worker_handle.take() {
+        if let Some(handle) = self.worker_handle.lock().unwrap().take() {
             let _ = handle.join();
         }
 
         // Drain remaining partials.
+        let rx = self.partial_rx.lock().unwrap();
         let mut out = Vec::new();
-        while let Ok(p) = self.partial_rx.try_recv() {
+        while let Ok(p) = rx.try_recv() {
             out.push(p);
         }
         out

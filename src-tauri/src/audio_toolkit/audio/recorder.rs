@@ -25,6 +25,9 @@ enum Cmd {
     Shutdown,
 }
 
+// FD-006 M2: per-frame streaming callback type alias.
+type StreamingFrameCb = Arc<dyn Fn(&[f32], bool) + Send + Sync + 'static>;
+
 enum AudioChunk {
     Samples(Vec<f32>),
     EndOfStream,
@@ -36,6 +39,10 @@ pub struct AudioRecorder {
     worker_handle: Option<std::thread::JoinHandle<()>>,
     vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    /// FD-006 M2: optional per-resampled-frame callback for streaming chunker.
+    /// Called with `(frame_samples: &[f32], is_speech: bool)` after VAD decision,
+    /// on every 16 kHz resampled frame while recording is active.
+    streaming_frame_cb: Option<StreamingFrameCb>,
 }
 
 impl AudioRecorder {
@@ -46,6 +53,7 @@ impl AudioRecorder {
             worker_handle: None,
             vad: None,
             level_cb: None,
+            streaming_frame_cb: None,
         })
     }
 
@@ -60,6 +68,25 @@ impl AudioRecorder {
     {
         self.level_cb = Some(Arc::new(cb));
         self
+    }
+
+    /// FD-006 M2: Install a per-frame callback used by the streaming chunker.
+    ///
+    /// The callback receives each 16 kHz resampled frame and the VAD decision
+    /// for that frame.  It is only called while recording is active.
+    pub fn with_streaming_frame_callback<F>(mut self, cb: F) -> Self
+    where
+        F: Fn(&[f32], bool) + Send + Sync + 'static,
+    {
+        self.streaming_frame_cb = Some(Arc::new(cb));
+        self
+    }
+
+    /// Replace (or clear) the streaming frame callback without recreating the
+    /// recorder.  Used by `AudioRecordingManager::start_chunked_streaming` and
+    /// `stop_chunked_streaming` to swap callbacks between sessions.
+    pub fn set_streaming_frame_callback(&mut self, cb: Option<StreamingFrameCb>) {
+        self.streaming_frame_cb = cb;
     }
 
     pub fn open(&mut self, device: Option<Device>) -> Result<(), Box<dyn std::error::Error>> {
@@ -83,6 +110,8 @@ impl AudioRecorder {
         let vad = self.vad.clone();
         // Move the optional level callback into the worker thread
         let level_cb = self.level_cb.clone();
+        // FD-006 M2: per-frame streaming callback (for AudioChunker integration)
+        let streaming_frame_cb = self.streaming_frame_cb.clone();
 
         let worker = std::thread::spawn(move || {
             // FD-003 M3.5 #8: elevate VAD/audio-consumer thread to P-core QoS.
@@ -162,7 +191,15 @@ impl AudioRecorder {
                 Ok((stream, sample_rate)) => {
                     let _ = init_tx.send(Ok(()));
                     // Keep the stream alive while we process samples.
-                    run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb, stop_flag);
+                    run_consumer(
+                        sample_rate,
+                        vad,
+                        sample_rx,
+                        cmd_rx,
+                        level_cb,
+                        streaming_frame_cb,
+                        stop_flag,
+                    );
                     drop(stream);
                 }
                 Err(error_message) => {
@@ -434,6 +471,7 @@ fn run_consumer(
     sample_rx: mpsc::Receiver<AudioChunk>,
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    streaming_frame_cb: Option<StreamingFrameCb>,
     stop_flag: Arc<AtomicBool>,
 ) {
     let mut frame_resampler = FrameResampler::new(
@@ -456,12 +494,13 @@ fn run_consumer(
         4000.0, // vocal_max_hz
     );
 
-    fn handle_frame(
-        samples: &[f32],
-        recording: bool,
-        vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
-        out_buf: &mut Vec<f32>,
-    ) {
+    // handle_frame: run VAD + accumulate samples; also invoke the optional
+    // streaming_frame_cb with (resampled_frame, is_speech) for the chunker.
+    let handle_frame = |samples: &[f32],
+                        recording: bool,
+                        vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
+                        out_buf: &mut Vec<f32>,
+                        streaming_cb: &Option<StreamingFrameCb>| {
         if !recording {
             return;
         }
@@ -469,13 +508,25 @@ fn run_consumer(
         if let Some(vad_arc) = vad {
             let mut det = vad_arc.lock().unwrap();
             match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
-                VadFrame::Speech(buf) => out_buf.extend_from_slice(buf),
-                VadFrame::Noise => {}
+                VadFrame::Speech(buf) => {
+                    out_buf.extend_from_slice(buf);
+                    if let Some(cb) = streaming_cb {
+                        cb(buf, true);
+                    }
+                }
+                VadFrame::Noise => {
+                    if let Some(cb) = streaming_cb {
+                        cb(samples, false);
+                    }
+                }
             }
         } else {
             out_buf.extend_from_slice(samples);
+            if let Some(cb) = streaming_cb {
+                cb(samples, true);
+            }
         }
-    }
+    };
 
     while let Ok(chunk) = sample_rx.recv() {
         let raw = match chunk {
@@ -492,7 +543,7 @@ fn run_consumer(
 
         // ---------- existing pipeline ------------------------------------ //
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(frame, recording, &vad, &mut processed_samples)
+            handle_frame(frame, recording, &vad, &mut processed_samples, &streaming_frame_cb)
         });
 
         // non-blocking check for a command
@@ -519,7 +570,13 @@ fn run_consumer(
                         match sample_rx.recv_timeout(Duration::from_secs(2)) {
                             Ok(AudioChunk::Samples(remaining)) => {
                                 frame_resampler.push(&remaining, &mut |frame: &[f32]| {
-                                    handle_frame(frame, true, &vad, &mut processed_samples)
+                                    handle_frame(
+                                        frame,
+                                        true,
+                                        &vad,
+                                        &mut processed_samples,
+                                        &streaming_frame_cb,
+                                    )
                                 });
                             }
                             Ok(AudioChunk::EndOfStream) => break,
@@ -531,7 +588,7 @@ fn run_consumer(
                     }
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
-                        handle_frame(frame, true, &vad, &mut processed_samples)
+                        handle_frame(frame, true, &vad, &mut processed_samples, &streaming_frame_cb)
                     });
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));
