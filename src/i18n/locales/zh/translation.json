@@ -196,10 +196,6 @@
           "cancel": {
             "name": "取消快捷键",
             "description": "用于取消当前录制的键盘快捷键。"
-          },
-          "transcribe_with_post_process": {
-            "name": "后处理快捷键",
-            "description": "可选：一个专用快捷键，始终对您的转录应用 AI 后处理。"
           }
         },
         "errors": {
@@ -374,9 +370,6 @@
     },
     "postProcessing": {
       "title": "后处理",
-      "hotkey": {
-        "title": "快捷键"
-      },
       "api": {
         "title": "API（兼容 OpenAI）",
         "provider": {
@@ -509,10 +502,6 @@
       "clamshellMicrophone": {
         "title": "合盖麦克风",
         "description": "笔记本电脑盖子关闭时使用的麦克风"
-      },
-      "postProcessingToggle": {
-        "label": "后处理",
-        "description": "启用转录后的 AI 文本优化"
       },
       "muteWhileRecording": {
         "label": "录制时静音",

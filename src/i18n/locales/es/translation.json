@@ -196,10 +196,6 @@
           "cancel": {
             "name": "Atajo de Cancelar",
             "description": "El atajo de teclado para cancelar la grabación actual."
-          },
-          "transcribe_with_post_process": {
-            "name": "Tecla de Post Procesamiento",
-            "description": "Opcional: Una tecla de acceso rápido dedicada que siempre aplica post procesamiento con IA a tu transcripción."
           }
         },
         "errors": {
@@ -374,9 +370,6 @@
     },
     "postProcessing": {
       "title": "Post Proceso",
-      "hotkey": {
-        "title": "Tecla de acceso rápido"
-      },
       "api": {
         "title": "API (Compatible con OpenAI)",
         "provider": {
@@ -509,10 +502,6 @@
       "clamshellMicrophone": {
         "title": "Micrófono en Modo Clamshell",
         "description": "Micrófono a usar cuando la tapa del portátil está cerrada"
-      },
-      "postProcessingToggle": {
-        "label": "Post Procesamiento",
-        "description": "Habilitar refinamiento de texto impulsado por IA después de la transcripción"
       },
       "muteWhileRecording": {
         "label": "Silenciar Durante la Grabación",

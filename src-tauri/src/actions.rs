@@ -1228,17 +1228,9 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     let mut map = HashMap::new();
     map.insert(
         "transcribe".to_string(),
-        // Handy+: turn on post-processing for the default shortcut so Chinese
-        // transcripts (which SFSpeechRecognizer outputs without punctuation)
-        // get cleaned up by the on-device LLM out of the box.  Power Mode
-        // profiles for code-style apps are expected to opt out via
-        // post_process_selected_prompt_id = None.  Users who explicitly want
-        // raw transcription can flip post_process_enabled off in settings or
-        // pick the shorter "raw" prompt from the dropdown.
-        Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
-    );
-    map.insert(
-        "transcribe_with_post_process".to_string(),
+        // Handy+: post-processing is always-on when a prompt is selected
+        // (post_process_selected_prompt_id != None).  Power Mode profiles for
+        // code-style apps opt out by setting post_process_selected_prompt_id = None.
         Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
     );
     map.insert(

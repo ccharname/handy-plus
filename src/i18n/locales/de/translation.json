@@ -196,10 +196,6 @@
           "cancel": {
             "name": "Abbrechen-Tastenkürzel",
             "description": "Das Tastenkürzel zum Abbrechen der aktuellen Aufnahme."
-          },
-          "transcribe_with_post_process": {
-            "name": "Nachbearbeitungs-Tastenkürzel",
-            "description": "Optional: Ein dediziertes Tastenkürzel, das immer die KI-Nachbearbeitung auf deine Transkription anwendet."
           }
         },
         "errors": {
@@ -374,9 +370,6 @@
     },
     "postProcessing": {
       "title": "Nachbearbeitung",
-      "hotkey": {
-        "title": "Tastenkürzel"
-      },
       "api": {
         "title": "API (OpenAI-kompatibel)",
         "provider": {
@@ -509,10 +502,6 @@
       "clamshellMicrophone": {
         "title": "Clamshell-Mikrofon",
         "description": "Mikrofon bei geschlossenem Laptop-Deckel"
-      },
-      "postProcessingToggle": {
-        "label": "Nachbearbeitung",
-        "description": "KI-gestützte Textverfeinerung nach der Transkription aktivieren"
       },
       "muteWhileRecording": {
         "label": "Während Aufnahme stummschalten",

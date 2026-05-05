@@ -511,8 +511,6 @@ pub struct AppSettings {
     pub auto_submit: bool,
     #[serde(default)]
     pub auto_submit_key: AutoSubmitKey,
-    #[serde(default = "default_post_process_enabled")]
-    pub post_process_enabled: bool,
     #[serde(default = "default_post_process_provider_id")]
     pub post_process_provider_id: String,
     #[serde(default = "default_post_process_providers")]
@@ -735,13 +733,6 @@ fn default_audio_feedback_volume() -> f32 {
 
 fn default_sound_theme() -> SoundTheme {
     SoundTheme::Marimba
-}
-
-fn default_post_process_enabled() -> bool {
-    // Handy+ default: on macOS, Apple Intelligence post-processing is on-device,
-    // free, and ships with the OS — enable by default. Other platforms keep it off
-    // until the user adds an API key.
-    cfg!(target_os = "macos")
 }
 
 fn default_app_language() -> String {
@@ -1327,6 +1318,48 @@ pub fn ensure_v_0_8_19_drop_experimental_migration(settings: &mut AppSettings) -
     true
 }
 
+/// v_0_8_20 — Post-processing toggle and dedicated hotkey removal.
+///
+/// Removes `post_process_enabled` field (toggle was redundant — "prompt selected
+/// = enabled" is the implicit switch).  Also removes the
+/// `transcribe_with_post_process` binding (dedicated hotkey was redundant since
+/// post-processing is now always-on when a prompt is selected).
+///
+/// Serde ignores `post_process_enabled` when loading stored JSON.  We actively
+/// delete the `transcribe_with_post_process` entry from the stored bindings map
+/// so leftover user-customized shortcuts are cleaned up.
+const MIGRATION_V_0_8_20_DROP_PP_TOGGLE: &str =
+    "v_0_8_20_drop_post_process_enabled_and_binding";
+
+pub fn ensure_v_0_8_20_drop_pp_toggle_migration(settings: &mut AppSettings) -> bool {
+    if settings
+        .migration_applied
+        .get(MIGRATION_V_0_8_20_DROP_PP_TOGGLE)
+        .copied()
+        .unwrap_or(false)
+    {
+        return false; // already applied
+    }
+
+    // Remove the dedicated post-process hotkey binding if it was stored.
+    let removed = settings
+        .bindings
+        .remove("transcribe_with_post_process")
+        .is_some();
+
+    log::info!(
+        "Migration {}: post_process_enabled field and transcribe_with_post_process binding \
+         removed (binding was present in stored settings: {})",
+        MIGRATION_V_0_8_20_DROP_PP_TOGGLE,
+        removed
+    );
+
+    settings
+        .migration_applied
+        .insert(MIGRATION_V_0_8_20_DROP_PP_TOGGLE.to_string(), true);
+    true
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -1348,26 +1381,6 @@ pub fn get_default_settings() -> AppSettings {
             description: "Converts your speech into text.".to_string(),
             default_binding: default_shortcut.to_string(),
             current_binding: default_shortcut.to_string(),
-        },
-    );
-    #[cfg(target_os = "windows")]
-    let default_post_process_shortcut = "ctrl+shift+space";
-    #[cfg(target_os = "macos")]
-    let default_post_process_shortcut = "option+shift+space";
-    #[cfg(target_os = "linux")]
-    let default_post_process_shortcut = "ctrl+shift+space";
-    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
-    let default_post_process_shortcut = "alt+shift+space";
-
-    bindings.insert(
-        "transcribe_with_post_process".to_string(),
-        ShortcutBinding {
-            id: "transcribe_with_post_process".to_string(),
-            name: "Transcribe with Post-Processing".to_string(),
-            description: "Converts your speech into text and applies AI post-processing."
-                .to_string(),
-            default_binding: default_post_process_shortcut.to_string(),
-            current_binding: default_post_process_shortcut.to_string(),
         },
     );
     bindings.insert(
@@ -1419,7 +1432,6 @@ pub fn get_default_settings() -> AppSettings {
         clipboard_handling: ClipboardHandling::default(),
         auto_submit: default_auto_submit(),
         auto_submit_key: AutoSubmitKey::default(),
-        post_process_enabled: default_post_process_enabled(),
         post_process_provider_id: default_post_process_provider_id(),
         post_process_providers: default_post_process_providers(),
         post_process_api_keys: default_post_process_api_keys(),
@@ -1534,6 +1546,7 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
     changed |= ensure_v_0_8_17_collapse_migration(&mut settings);
     changed |= ensure_v_0_8_18_drop_punc_zh_migration(&mut settings);
     changed |= ensure_v_0_8_19_drop_experimental_migration(&mut settings);
+    changed |= ensure_v_0_8_20_drop_pp_toggle_migration(&mut settings);
     if changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
@@ -1570,6 +1583,7 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
     changed |= ensure_v_0_8_17_collapse_migration(&mut settings);
     changed |= ensure_v_0_8_18_drop_punc_zh_migration(&mut settings);
     changed |= ensure_v_0_8_19_drop_experimental_migration(&mut settings);
+    changed |= ensure_v_0_8_20_drop_pp_toggle_migration(&mut settings);
     if changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
@@ -1946,6 +1960,58 @@ mod migration_tests {
             result.is_ok(),
             "old JSON with experimental fields must deserialise without error: {:?}",
             result.err()
+        );
+    }
+
+    // ── v0.8.20 drop-pp-toggle migration tests ────────────────────────────────
+
+    #[test]
+    fn v20_marks_migration_applied_and_returns_true() {
+        let mut s = get_default_settings();
+        s.migration_applied = HashMap::new();
+        let changed = ensure_v_0_8_20_drop_pp_toggle_migration(&mut s);
+        assert!(changed, "first run must return true");
+        assert_eq!(
+            s.migration_applied.get(MIGRATION_V_0_8_20_DROP_PP_TOGGLE),
+            Some(&true),
+            "migration flag must be set"
+        );
+    }
+
+    #[test]
+    fn v20_idempotent_when_already_applied() {
+        let mut s = get_default_settings();
+        s.migration_applied
+            .insert(MIGRATION_V_0_8_20_DROP_PP_TOGGLE.to_string(), true);
+        let changed = ensure_v_0_8_20_drop_pp_toggle_migration(&mut s);
+        assert!(!changed, "second run must return false");
+    }
+
+    #[test]
+    fn v20_removes_stored_transcribe_with_post_process_binding() {
+        let mut s = get_default_settings();
+        s.migration_applied = HashMap::new();
+        // Simulate a user who had the old binding stored.
+        s.bindings.insert(
+            "transcribe_with_post_process".to_string(),
+            ShortcutBinding {
+                id: "transcribe_with_post_process".to_string(),
+                name: "Transcribe with Post-Processing".to_string(),
+                description: "Old binding".to_string(),
+                default_binding: "option+shift+space".to_string(),
+                current_binding: "option+shift+space".to_string(),
+            },
+        );
+        assert!(
+            s.bindings.contains_key("transcribe_with_post_process"),
+            "setup: binding must exist before migration"
+        );
+
+        let changed = ensure_v_0_8_20_drop_pp_toggle_migration(&mut s);
+        assert!(changed, "migration must return true (binding was present)");
+        assert!(
+            !s.bindings.contains_key("transcribe_with_post_process"),
+            "migration must remove the binding"
         );
     }
 }

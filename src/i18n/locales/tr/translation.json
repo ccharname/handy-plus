@@ -196,10 +196,6 @@
           "cancel": {
             "name": "İptal Kısayolu",
             "description": "Mevcut kaydı iptal etmek için klavye kısayolu."
-          },
-          "transcribe_with_post_process": {
-            "name": "Son İşlem Kısayolu",
-            "description": "İsteğe bağlı: Transkripsiyonunuza her zaman AI son işleme uygulayan özel bir kısayol tuşu."
           }
         },
         "errors": {
@@ -374,9 +370,6 @@
     },
     "postProcessing": {
       "title": "Son İşlem",
-      "hotkey": {
-        "title": "Kısayol Tuşu"
-      },
       "api": {
         "title": "API (OpenAI Uyumlu)",
         "provider": {
@@ -509,10 +502,6 @@
       "clamshellMicrophone": {
         "title": "Kapalı Kapak Mikrofonu",
         "description": "Dizüstü bilgisayar kapağı kapalıyken kullanılacak mikrofon"
-      },
-      "postProcessingToggle": {
-        "label": "Son İşlem",
-        "description": "Transkripsiyon sonrası yapay zekâ destekli metin iyileştirmeyi etkinleştirir"
       },
       "muteWhileRecording": {
         "label": "Kayıt Sırasında Sessize Al",

@@ -196,10 +196,6 @@
           "cancel": {
             "name": "キャンセルショートカット",
             "description": "現在の録音をキャンセルするためのキーボードショートカット。"
-          },
-          "transcribe_with_post_process": {
-            "name": "後処理ホットキー",
-            "description": "オプション：文字起こしに常にAI後処理を適用する専用ホットキー。"
           }
         },
         "errors": {
@@ -374,9 +370,6 @@
     },
     "postProcessing": {
       "title": "後処理",
-      "hotkey": {
-        "title": "ホットキー"
-      },
       "api": {
         "title": "API（OpenAI互換）",
         "provider": {
@@ -509,10 +502,6 @@
       "clamshellMicrophone": {
         "title": "クラムシェルマイク",
         "description": "ノートパソコンの蓋を閉じたときに使用するマイク"
-      },
-      "postProcessingToggle": {
-        "label": "後処理",
-        "description": "文字起こし後のAIによるテキスト改善を有効化"
       },
       "muteWhileRecording": {
         "label": "録音中にミュート",

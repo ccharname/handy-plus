@@ -178,10 +178,6 @@
           "cancel": {
             "name": "取消快捷鍵",
             "description": "用於取消目前錄製的鍵盤快捷鍵"
-          },
-          "transcribe_with_post_process": {
-            "name": "後處理快捷鍵",
-            "description": "可選：專用快捷鍵，使用時一律對轉錄結果套用 AI 後處理"
           }
         },
         "errors": {
@@ -374,9 +370,6 @@
     },
     "postProcessing": {
       "title": "後處理",
-      "hotkey": {
-        "title": "快捷鍵"
-      },
       "api": {
         "title": "API（相容 OpenAI）",
         "provider": {
@@ -509,10 +502,6 @@
       "clamshellMicrophone": {
         "title": "闔蓋麥克風",
         "description": "筆記型電腦闔蓋時使用的麥克風"
-      },
-      "postProcessingToggle": {
-        "label": "後處理",
-        "description": "啟用轉錄後的 AI 文字最佳化"
       },
       "muteWhileRecording": {
         "label": "錄製時靜音",
