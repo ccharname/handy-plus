@@ -6,6 +6,7 @@ use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::observability::{self, Outcome, RequestId, Stage, Stopwatch};
+use crate::output;
 use crate::profile_resolver::{resolve_effective_settings, EffectiveSettings};
 use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
@@ -1082,28 +1083,161 @@ impl ShortcutAction for TranscribeAction {
                                 let req_for_paste = req_async;
                                 let total_sw_for_paste = total_sw_async;
                                 ah.run_on_main_thread(move || {
-                                    // If the residual is empty the incremental paste
-                                    // already delivered all text; we still need to fire
-                                    // trailing-space / auto-submit if configured.
-                                    // paste_with_overrides("", ...) handles that
-                                    // correctly (it appends space / submits on "").
+                                    // M2.5: Route output through the streaming sink.
+                                    //
+                                    // For the current C2 batch path (both SenseVoice and
+                                    // qwen3_mlx) `text_to_paste` arrives as a complete
+                                    // string.  We call `sink.finalize()` which performs a
+                                    // one-shot paste — same end result as `paste_with_overrides`
+                                    // but routed through the appropriate mechanism
+                                    // (Accessibility / Keystroke / Clipboard) based on the
+                                    // frontmost app.
+                                    //
+                                    // When C3 streaming (token-by-token qwen3_mlx) is wired,
+                                    // `do_transcribe` will call `sink.append(delta)` per token
+                                    // and `text_to_paste` arriving here will be empty (or just
+                                    // the post-processed suffix), handled by the same finalize().
                                     let t7_sw = Stopwatch::start();
-                                    let paste_outcome = crate::clipboard::paste_with_overrides(
-                                        text_to_paste,
-                                        ah_clone.clone(),
-                                        eff_paste_method,
-                                        eff_trailing_space,
-                                        eff_auto_submit,
-                                    );
+
+                                    // Append trailing space if configured (mirrors
+                                    // paste_with_overrides behaviour).
+                                    let text_with_space = match eff_trailing_space {
+                                        Some(true) => format!("{} ", text_to_paste),
+                                        _ => {
+                                            let settings = crate::settings::get_settings(&ah_clone);
+                                            if settings.append_trailing_space {
+                                                format!("{} ", text_to_paste)
+                                            } else {
+                                                text_to_paste.clone()
+                                            }
+                                        }
+                                    };
+
+                                    // When Power Mode has a paste_method override that is
+                                    // None (suppress paste), skip the sink entirely.
+                                    use crate::settings::PasteMethod;
+                                    let suppress_paste = eff_paste_method == Some(PasteMethod::None);
+
+                                    let paste_outcome: Result<(), String> = if suppress_paste {
+                                        debug!("[T7] PasteMethod::None — suppressing output sink");
+                                        Ok(())
+                                    } else if text_with_space.is_empty() {
+                                        // Nothing to paste (e.g. incremental path already
+                                        // delivered all text); still fire auto-submit below.
+                                        Ok(())
+                                    } else {
+                                        // Select the best sink for the frontmost app.
+                                        let mut sink = output::select_sink_auto();
+                                        let sink_kind = sink.kind_str();
+
+                                        // For the batch path, append the full text then finalize.
+                                        sink.append(&text_with_space)
+                                            .and_then(|()| sink.finalize())
+                                            .map_err(|e| {
+                                                // If the preferred sink failed, fall back to
+                                                // paste_with_overrides (legacy clipboard path).
+                                                warn!(
+                                                    "[T7] sink {:?} failed ({}); falling back to clipboard paste",
+                                                    sink_kind, e
+                                                );
+                                                e
+                                            })
+                                            // On sink failure, fall through to legacy path.
+                                            .or_else(|_| {
+                                                crate::clipboard::paste_with_overrides(
+                                                    text_with_space.clone(),
+                                                    ah_clone.clone(),
+                                                    eff_paste_method,
+                                                    // trailing space already applied above
+                                                    Some(false),
+                                                    Some(false),
+                                                )
+                                            })
+                                    };
+
                                     let t7_ms = t7_sw.elapsed_ms();
+
+                                    // Fire auto-submit if configured (after paste).
+                                    // Use paste_with_overrides with empty text + auto_submit=true
+                                    // so that the Return key fires without re-pasting.
+                                    if paste_outcome.is_ok() {
+                                        let should_auto_submit = match eff_auto_submit {
+                                            Some(v) => v,
+                                            None => {
+                                                let settings =
+                                                    crate::settings::get_settings(&ah_clone);
+                                                settings.auto_submit
+                                            }
+                                        };
+                                        let auto_submit_method = eff_paste_method.unwrap_or_else(
+                                            || crate::settings::get_settings(&ah_clone).paste_method,
+                                        );
+                                        if should_auto_submit
+                                            && auto_submit_method != PasteMethod::None
+                                        {
+                                            // Send Return key via enigo directly.
+                                            if let Some(enigo_state) =
+                                                ah_clone.try_state::<crate::input::EnigoState>()
+                                            {
+                                                if let Ok(mut enigo) = enigo_state.0.lock() {
+                                                    use enigo::{Direction, Keyboard, Key};
+                                                    let settings = crate::settings::get_settings(
+                                                        &ah_clone,
+                                                    );
+                                                    match settings.auto_submit_key {
+                                                        crate::settings::AutoSubmitKey::Enter => {
+                                                            let _ = enigo.key(
+                                                                Key::Return,
+                                                                Direction::Click,
+                                                            );
+                                                        }
+                                                        crate::settings::AutoSubmitKey::CtrlEnter => {
+                                                            let _ = enigo.key(
+                                                                Key::Control,
+                                                                Direction::Press,
+                                                            );
+                                                            let _ = enigo.key(
+                                                                Key::Return,
+                                                                Direction::Click,
+                                                            );
+                                                            let _ = enigo.key(
+                                                                Key::Control,
+                                                                Direction::Release,
+                                                            );
+                                                        }
+                                                        crate::settings::AutoSubmitKey::CmdEnter => {
+                                                            let _ = enigo
+                                                                .key(Key::Meta, Direction::Press);
+                                                            let _ = enigo.key(
+                                                                Key::Return,
+                                                                Direction::Click,
+                                                            );
+                                                            let _ = enigo.key(
+                                                                Key::Meta,
+                                                                Direction::Release,
+                                                            );
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
                                     match paste_outcome {
                                         Ok(()) => {
                                             debug!(
                                                 "Text pasted successfully in {:?}",
                                                 paste_time.elapsed()
                                             );
-                                            observability::ok_with(req_for_paste, Stage::T7Output, t7_ms,
-                                                serde_json::json!({ "clipboard_set_ms": t7_ms as u64 }));
+                                            observability::ok_with(
+                                                req_for_paste,
+                                                Stage::T7Output,
+                                                t7_ms,
+                                                serde_json::json!({
+                                                    "sink_kind": output::OBS_FIELD_SINK_KIND,
+                                                    "paste_lag_ms": t7_ms as u64
+                                                }),
+                                            );
                                             observability::ok_with(req_for_paste, Stage::Total,
                                                 total_sw_for_paste.elapsed_ms(),
                                                 serde_json::json!({ "end_to_end_ms": total_sw_for_paste.elapsed_ms() as u64 }));

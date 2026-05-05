@@ -16,6 +16,7 @@ mod managers;
 pub mod mlx_audio;
 pub mod observability;
 mod overlay;
+pub mod output;
 pub mod portable;
 mod profile_resolver;
 mod settings;
