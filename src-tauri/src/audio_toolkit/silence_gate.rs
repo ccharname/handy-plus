@@ -14,12 +14,14 @@ use std::path::Path;
 /// 30 ms @ 16 kHz — Silero v4 frame size.
 pub const FRAME_SAMPLES: usize = 480;
 
-/// Default threshold in voiced frames (240 ms cumulative) below which the input
+/// Default threshold in voiced frames (180 ms cumulative) below which the input
 /// is treated as silence/noise and the caller should skip ASR.
-pub const DEFAULT_MIN_VOICE_FRAMES: usize = 8;
+/// FD-003 M3.5 #3: lowered from 8 → 6 to allow short commands through.
+pub const DEFAULT_MIN_VOICE_FRAMES: usize = 6;
 
 /// Default Silero confidence threshold per frame.
-pub const DEFAULT_VAD_THRESHOLD: f32 = 0.3;
+/// FD-003 M3.5 #3: raised from 0.3 → 0.6 to reduce noise mis-triggers.
+pub const DEFAULT_VAD_THRESHOLD: f32 = 0.6;
 
 // Keep the old names as aliases so existing callers don't break.
 pub const MIN_VOICE_FRAMES: usize = DEFAULT_MIN_VOICE_FRAMES;
@@ -181,12 +183,13 @@ mod tests {
     fn frame_constants_match_silero_v4() {
         // Silero v4 expects 30 ms frames @ 16 kHz: 480 samples.
         assert_eq!(FRAME_SAMPLES, 480);
-        // 240 ms = 8 × 30 ms — short enough to allow legitimate one-word
-        // commands (~300 ms) through, long enough to reject pure silence.
-        assert_eq!(DEFAULT_MIN_VOICE_FRAMES, 8);
+        // FD-003 M3.5 #3: DEFAULT_MIN_VOICE_FRAMES lowered from 8 → 6
+        // (180 ms cumulative voiced audio).  6 × 30 ms = 180 ms, which
+        // still rejects pure noise while admitting short one-word commands.
+        assert_eq!(DEFAULT_MIN_VOICE_FRAMES, 6);
         assert_eq!(
             (DEFAULT_MIN_VOICE_FRAMES * FRAME_SAMPLES * 1000) / 16000,
-            240
+            180
         );
     }
 
@@ -199,10 +202,10 @@ mod tests {
 
     // ── Decision logic tests (no model required) ──────────────────────────────
 
-    /// Short audio < 0.3 s: < 10 frames total, 0 voice → Silence
+    /// Short audio < 0.3 s: 0 voice frames → Silence regardless of threshold
     #[test]
     fn short_audio_under_300ms_gated() {
-        // 0.2 s @ 16 kHz = 3200 samples = 6 frames (< 8 threshold)
+        // 0.2 s @ 16 kHz = 3200 samples = 6 frames, 0 voiced → Silence
         let total_frames = 6usize;
         let voice_frames = 0usize; // all silent
         let result = decide_from_frame_counts(voice_frames, total_frames, DEFAULT_MIN_VOICE_FRAMES);
@@ -244,9 +247,9 @@ mod tests {
     /// High noise floor with signal below threshold: voice_frames < min → Silence
     #[test]
     fn high_noise_floor_below_threshold_gated() {
-        // 7 voiced frames out of 100 total — just under the threshold of 8
+        // 5 voiced frames out of 100 total — just under the threshold of 6
         let total_frames = 100usize;
-        let voice_frames = 7usize;
+        let voice_frames = 5usize;
         let result = decide_from_frame_counts(voice_frames, total_frames, DEFAULT_MIN_VOICE_FRAMES);
         assert_eq!(
             result,
@@ -277,7 +280,7 @@ mod tests {
     #[test]
     fn exactly_at_threshold_passes_gate() {
         let total_frames = 20usize;
-        let voice_frames = DEFAULT_MIN_VOICE_FRAMES; // exactly 8
+        let voice_frames = DEFAULT_MIN_VOICE_FRAMES; // exactly 6 (FD-003 M3.5)
         let result = decide_from_frame_counts(voice_frames, total_frames, DEFAULT_MIN_VOICE_FRAMES);
         assert_eq!(
             result,
@@ -293,7 +296,7 @@ mod tests {
     #[test]
     fn one_below_threshold_gated() {
         let total_frames = 20usize;
-        let voice_frames = DEFAULT_MIN_VOICE_FRAMES - 1; // exactly 7
+        let voice_frames = DEFAULT_MIN_VOICE_FRAMES - 1; // exactly 5 (FD-003 M3.5)
         let result = decide_from_frame_counts(voice_frames, total_frames, DEFAULT_MIN_VOICE_FRAMES);
         assert_eq!(
             result,

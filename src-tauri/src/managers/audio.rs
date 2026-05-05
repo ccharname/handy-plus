@@ -119,9 +119,13 @@ fn create_audio_recorder(
     vad_path: &str,
     app_handle: &tauri::AppHandle,
 ) -> Result<AudioRecorder, anyhow::Error> {
-    let silero = SileroVad::new(vad_path, 0.3)
+    // FD-003 M3.5 #3: threshold 0.3→0.6 (reduce noise mis-triggers),
+    // prefill 15→8 frames (reduce first-word truncation; 240ms pre-roll is
+    // enough for SenseVoice), hangover 15→4 frames (reduce tail-silence wait
+    // from 450ms to ~120ms; audit target min_silence_duration_ms 250→100).
+    let silero = SileroVad::new(vad_path, 0.6)
         .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
-    let smoothed_vad = SmoothedVad::new(Box::new(silero), 15, 15, 2);
+    let smoothed_vad = SmoothedVad::new(Box::new(silero), 8, 4, 2);
 
     // Recorder with VAD plus a spectrum-level callback that forwards updates to
     // the frontend.
