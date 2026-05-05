@@ -1,0 +1,15 @@
+{
+  "fd": "FD-006",
+  "version": "v2t-1.0-streaming",
+  "captured_at": "TBD by M6",
+  "stages": {
+    "t5a_chunk_inference": { "p50_ms": null, "p99_ms": null, "p50_target": 600, "p99_target": 1000 },
+    "t5b_final_pass": { "p50_ms": null, "p99_ms": null, "p50_target": 900, "p99_target": 1500 }
+  },
+  "metrics": {
+    "chunk_emit_interval_ms": { "p50": null, "p99": null, "p50_target": 1500, "p99_target": 2000 },
+    "total_ux_lag_ms": { "p50": null, "p99": null, "p50_target": 1200, "p99_target": 2000 },
+    "divergence_chars": { "p50": null, "p99": null, "p50_target": 5, "p99_target": 20 }
+  },
+  "notes": "Baseline values to be populated by M6 zheng's manual testing across 7 apps. Current null values intentional — schema only."
+}

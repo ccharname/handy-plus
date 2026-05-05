@@ -608,16 +608,20 @@ impl AudioRecordingManager {
             let mut delta_computer = DeltaComputer::new();
             let mut sink: Box<dyn StreamingSink + Send> = select_sink_auto();
             let timeout = Duration::from_millis(50);
+            // Track when the last partial arrived to compute chunk_emit_interval_ms.
+            let mut last_partial_at: Option<Instant> = None;
 
             loop {
                 if drainer_stop_clone.load(AOrdering::Relaxed) {
                     // Drain all remaining partials before exit.
                     while let Some(partial) = orch_for_drainer.try_recv_partial() {
+                        let interval_ms = emit_interval_ms(&mut last_partial_at);
                         process_chunk_partial(
                             &partial,
                             &mut delta_computer,
                             sink.as_mut(),
                             &append_paste_arc,
+                            interval_ms,
                         );
                     }
                     // Finalize sink.
@@ -628,11 +632,13 @@ impl AudioRecordingManager {
                 }
 
                 if let Some(partial) = orch_for_drainer.recv_partial_timeout(timeout) {
+                    let interval_ms = emit_interval_ms(&mut last_partial_at);
                     process_chunk_partial(
                         &partial,
                         &mut delta_computer,
                         sink.as_mut(),
                         &append_paste_arc,
+                        interval_ms,
                     );
                 }
             }
@@ -694,13 +700,26 @@ impl AudioRecordingManager {
 
 // ── FD-006 M2: drainer helper ─────────────────────────────────────────────────
 
+/// Compute the elapsed milliseconds since the last partial arrived, updating
+/// `last_at`.  Returns `None` for the very first partial (no prior baseline).
+fn emit_interval_ms(last_at: &mut Option<Instant>) -> Option<f64> {
+    let now = Instant::now();
+    let interval = last_at.map(|prev| now.duration_since(prev).as_secs_f64() * 1000.0);
+    *last_at = Some(now);
+    interval
+}
+
 /// Process one `ChunkPartial` from the orchestrator:
 ///   partial_text → DeltaComputer → Action::Append(delta) → sink.append → callback.
+///
+/// `chunk_emit_interval_ms`: elapsed since the previous partial was processed
+/// (None for the first partial in a session).  Emitted to observability.
 fn process_chunk_partial(
     partial: &ChunkPartial,
     delta_computer: &mut DeltaComputer,
     sink: &mut (dyn StreamingSink + Send),
     append_paste: &AppendPasteCb,
+    chunk_emit_interval_ms: Option<f64>,
 ) {
     if partial.partial_text.is_empty() {
         return;
@@ -711,6 +730,22 @@ fn process_chunk_partial(
             partial.chunk_idx, err
         );
         return;
+    }
+
+    // Emit T5aChunkInference span with chunk_emit_interval_ms so the SLA
+    // assert on "speech → partial on screen" latency has data.
+    if let Some(interval) = chunk_emit_interval_ms {
+        let req = crate::observability::RequestId::new();
+        crate::observability::ok_with(
+            req,
+            crate::observability::Stage::T5aChunkInference,
+            partial.inference_ms,
+            serde_json::json!({
+                crate::observability::OBS_FIELD_CHUNK_IDX: partial.chunk_idx,
+                crate::observability::OBS_FIELD_CHUNK_EMIT_INTERVAL_MS: interval,
+                "inference_ms": partial.inference_ms,
+            }),
+        );
     }
 
     match delta_computer.compute(&partial.partial_text) {

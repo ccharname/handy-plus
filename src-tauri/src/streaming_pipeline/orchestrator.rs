@@ -27,6 +27,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use crate::audio_toolkit::audio::chunker::ChunkedAudio;
+use crate::observability::{self, Stage};
 use crate::streaming_pipeline::InferenceBackend;
 
 // ── Public output type ────────────────────────────────────────────────────────
@@ -270,12 +271,10 @@ fn worker_loop(
         let is_cold = is_first_chunk_this_session;
         is_first_chunk_this_session = false;
 
-        tracing::info!(
-            "[t5a_chunk_inference] chunk_idx={} chunk_audio_ms={:.0} cold={}",
-            chunk_idx,
-            chunk_audio_ms,
-            is_cold,
-        );
+        // Use a synthetic RequestId per chunk so each span has a distinct id.
+        // The session-level req_id is not available here; the drainer-side
+        // T7Output spans carry the true session req_id.
+        let chunk_req = observability::RequestId::new();
 
         let infer_start = Instant::now();
         let mut last_partial = String::new();
@@ -328,15 +327,19 @@ fn worker_loop(
             }
         };
 
-        tracing::info!(
-            "[t5a_chunk_inference] chunk_idx={} chunk_audio_ms={:.0} inference_ms={:.0} \
-             partial_text_len={} first_token_ms={:?} cold={}",
-            chunk_idx,
-            chunk_audio_ms,
+        // Emit structured observability span for this chunk inference.
+        observability::ok_with(
+            chunk_req,
+            Stage::T5aChunkInference,
             inference_ms,
-            partial_text_len,
-            first_token_ms,
-            is_cold,
+            serde_json::json!({
+                observability::OBS_FIELD_CHUNK_IDX: chunk_idx,
+                observability::OBS_FIELD_CHUNK_AUDIO_MS: chunk_audio_ms,
+                "inference_ms": inference_ms,
+                "partial_text_len": partial_text_len,
+                "first_token_ms": first_token_ms,
+                "cold": is_cold,
+            }),
         );
 
         let cp = ChunkPartial {

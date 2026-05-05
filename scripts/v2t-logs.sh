@@ -151,6 +151,7 @@ def cmd_trace(args):
     stage_order = [
         "t0_hotkey", "t1_audio_capture", "t2_recording",
         "t3_vad", "t4_resample", "t5_inference",
+        "t5a_chunk_inference", "t5b_final_pass",
         "t6_postprocess", "t7_output", "total",
     ]
     found: dict[str, dict] = {}
@@ -257,6 +258,7 @@ def cmd_breakdown(args):
     stage_order = [
         "t0_hotkey", "t1_audio_capture", "t2_recording",
         "t3_vad", "t4_resample", "t5_inference",
+        "t5a_chunk_inference", "t5b_final_pass",
         "t6_postprocess", "t7_output",
     ]
     print(f"\nStage Breakdown  (n_total={stage_counts.get('total', 0)})\n{'─'*60}")

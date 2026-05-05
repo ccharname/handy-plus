@@ -71,8 +71,12 @@ pub enum Stage {
     T3Vad,
     /// rubato 16kHz resample
     T4Resample,
-    /// Model inference (SenseVoice or Qwen3-MLX)
+    /// Model inference (SenseVoice or Qwen3-MLX batch)
     T5Inference,
+    /// FD-006: per-chunk streaming inference span (one per ~1.5-2s window)
+    T5aChunkInference,
+    /// FD-006: full-audio final-pass inference + divergence reconcile span
+    T5bFinalPass,
     /// ITN / dedup / hotword injection
     T6Postprocess,
     /// Clipboard set + paste dispatch
@@ -90,12 +94,37 @@ impl Stage {
             Stage::T3Vad => "t3_vad",
             Stage::T4Resample => "t4_resample",
             Stage::T5Inference => "t5_inference",
+            Stage::T5aChunkInference => "t5a_chunk_inference",
+            Stage::T5bFinalPass => "t5b_final_pass",
             Stage::T6Postprocess => "t6_postprocess",
             Stage::T7Output => "t7_output",
             Stage::Total => "total",
         }
     }
 }
+
+// ── Observability field name constants ───────────────────────────────────────
+//
+// Use these when building `serde_json::json!({ OBS_FIELD_CHUNK_IDX: ... })`
+// to avoid typos in string keys across callers.
+
+/// Zero-based chunk index within a streaming session.
+pub const OBS_FIELD_CHUNK_IDX: &str = "chunk_idx";
+/// Audio window covered by this chunk, in milliseconds.
+pub const OBS_FIELD_CHUNK_AUDIO_MS: &str = "chunk_audio_ms";
+/// Wall-clock time between successive chunk emits from the chunker, ms.
+/// Measures "speech → partial on screen" latency.
+pub const OBS_FIELD_CHUNK_EMIT_INTERVAL_MS: &str = "chunk_emit_interval_ms";
+/// Char-level divergence between streamed partials and final-pass text.
+pub const OBS_FIELD_DIVERGENCE_CHARS: &str = "divergence_chars";
+/// Number of backspace keypresses needed to correct streaming divergence.
+pub const OBS_FIELD_BACKSPACE_CHARS: &str = "backspace_chars";
+/// Number of chars retyped after backspacing during reconcile.
+pub const OBS_FIELD_RETYPE_CHARS: &str = "retype_chars";
+/// Wall-clock time for the full-audio final-pass inference, ms.
+pub const OBS_FIELD_FINAL_PASS_MS: &str = "final_pass_ms";
+/// Total latency from hotkey press to final paste completion, ms.
+pub const OBS_FIELD_TOTAL_UX_LAG_MS: &str = "total_ux_lag_ms";
 
 /// Per-stage outcome.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

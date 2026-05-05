@@ -1049,17 +1049,17 @@ impl TranscriptionManager {
 
                     observability::ok_with(
                         req,
-                        crate::observability::Stage::T5Inference,
+                        crate::observability::Stage::T5bFinalPass,
                         final_pass_ms,
                         serde_json::json!({
                             "preset": "qwen3_mlx",
                             "chunked": true,
                             "streaming": true,
-                            "final_pass_ms": final_pass_ms as u64,
+                            crate::observability::OBS_FIELD_FINAL_PASS_MS: final_pass_ms as u64,
                             "audio_duration_ms": audio_duration_ms as u64,
-                            "divergence_chars": divergence_chars,
-                            "backspace_chars": backspace_chars,
-                            "retype_chars": retype_chars,
+                            crate::observability::OBS_FIELD_DIVERGENCE_CHARS: divergence_chars,
+                            crate::observability::OBS_FIELD_BACKSPACE_CHARS: backspace_chars,
+                            crate::observability::OBS_FIELD_RETYPE_CHARS: retype_chars,
                             "transcript_char_count": final_char_count,
                         }),
                     );
