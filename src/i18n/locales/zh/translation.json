@@ -157,6 +157,17 @@
     "cancelDownload": "取消下载"
   },
   "settings": {
+    "permissions": {
+      "title": "权限",
+      "accessibility": "辅助功能",
+      "microphone": "麦克风",
+      "statusGranted": "已授权",
+      "statusDenied": "未授权",
+      "authorize": "授权",
+      "refresh": "刷新",
+      "relaunch": "退出并重启",
+      "staleCacheWarning": "辅助功能已授权，但键盘输入初始化失败。通常是因为 macOS 缓存了旧应用身份，请退出并重启 v2t 以恢复正常。"
+    },
     "modelSettings": {
       "title": "{{model}} 设置",
       "noSettingsNeeded": "此模型自动运行，无需配置。"

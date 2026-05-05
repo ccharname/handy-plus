@@ -157,6 +157,17 @@
     "cancelDownload": "Cancelar download"
   },
   "settings": {
+    "permissions": {
+      "title": "Permissions",
+      "accessibility": "Accessibility",
+      "microphone": "Microphone",
+      "statusGranted": "Granted",
+      "statusDenied": "Not granted",
+      "authorize": "Authorize",
+      "refresh": "Refresh",
+      "relaunch": "Quit & Relaunch",
+      "staleCacheWarning": "Accessibility is granted but input simulation failed. This usually means macOS cached the old app identity. Please quit and relaunch v2t to restore keyboard input."
+    },
     "modelSettings": {
       "title": "Configurações de {{model}}",
       "noSettingsNeeded": "Este modelo funciona automaticamente sem necessidade de configuração."

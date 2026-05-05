@@ -157,6 +157,17 @@
     }
   },
   "settings": {
+    "permissions": {
+      "title": "Permissions",
+      "accessibility": "Accessibility",
+      "microphone": "Microphone",
+      "statusGranted": "Granted",
+      "statusDenied": "Not granted",
+      "authorize": "Authorize",
+      "refresh": "Refresh",
+      "relaunch": "Quit & Relaunch",
+      "staleCacheWarning": "Accessibility is granted but input simulation failed. This usually means macOS cached the old app identity. Please quit and relaunch v2t to restore keyboard input."
+    },
     "modelSettings": {
       "title": "{{model}} 설정",
       "noSettingsNeeded": "이 모델은 별도의 설정 없이 자동으로 작동합니다."

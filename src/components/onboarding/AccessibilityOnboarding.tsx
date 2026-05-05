@@ -1,3 +1,8 @@
+/**
+ * @deprecated This component is no longer used as a startup modal.
+ * Permission management has moved to Settings → General (PermissionsPanel).
+ * Kept in history for reference only.
+ */
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { platform } from "@tauri-apps/plugin-os";
