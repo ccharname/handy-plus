@@ -95,13 +95,33 @@ export const AboutSettings: React.FC = () => {
 
       <SettingsGroup title={t("settings.about.acknowledgments.title")}>
         <SettingContainer
-          title={t("settings.about.acknowledgments.whisper.title")}
-          description={t("settings.about.acknowledgments.whisper.description")}
+          title={t("settings.about.acknowledgments.sensevoice.title")}
+          description={t("settings.about.acknowledgments.sensevoice.description")}
           grouped={true}
           layout="stacked"
         >
           <div className="text-sm text-mid-gray">
-            {t("settings.about.acknowledgments.whisper.details")}
+            {t("settings.about.acknowledgments.sensevoice.details")}
+          </div>
+        </SettingContainer>
+        <SettingContainer
+          title={t("settings.about.acknowledgments.qwen3mlx.title")}
+          description={t("settings.about.acknowledgments.qwen3mlx.description")}
+          grouped={true}
+          layout="stacked"
+        >
+          <div className="text-sm text-mid-gray">
+            {t("settings.about.acknowledgments.qwen3mlx.details")}
+          </div>
+        </SettingContainer>
+        <SettingContainer
+          title={t("settings.about.acknowledgments.silero_vad.title")}
+          description={t("settings.about.acknowledgments.silero_vad.description")}
+          grouped={true}
+          layout="stacked"
+        >
+          <div className="text-sm text-mid-gray">
+            {t("settings.about.acknowledgments.silero_vad.details")}
           </div>
         </SettingContainer>
       </SettingsGroup>

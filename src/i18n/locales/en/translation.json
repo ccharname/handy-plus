@@ -609,10 +609,20 @@
       },
       "acknowledgments": {
         "title": "Acknowledgments",
-        "whisper": {
-          "title": "Whisper.cpp",
-          "description": "High-performance inference of OpenAI's Whisper automatic speech recognition model",
-          "details": "Handy uses Whisper.cpp for fast, local speech-to-text processing. Thanks to the amazing work by Georgi Gerganov and contributors."
+        "sensevoice": {
+          "title": "SenseVoice (FunAudioLLM)",
+          "description": "High-accuracy multilingual speech recognition and emotion detection model",
+          "details": "Handy uses SenseVoice-Small INT8 via transcribe-rs for fast, local speech-to-text. Thanks to FunAudioLLM / Alibaba DAMO Academy and the transcribe-rs contributors."
+        },
+        "qwen3mlx": {
+          "title": "Qwen3-ASR (mlx-audio-swift)",
+          "description": "LLM-decoder speech recognition model optimised for Apple Silicon via MLX",
+          "details": "Handy uses Qwen3-ASR-0.6B-8bit on Apple Silicon via the mlx-audio-swift bridge. Thanks to Alibaba Qwen Team, the MLX project, and mlx-audio-swift contributors."
+        },
+        "silero_vad": {
+          "title": "Silero VAD",
+          "description": "Lightweight voice activity detection for silence filtering",
+          "details": "Handy uses Silero VAD v4 for silence pre-filtering before transcription. Thanks to Silero Models team and contributors."
         }
       }
     },
