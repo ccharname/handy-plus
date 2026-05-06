@@ -5,7 +5,7 @@ use crate::audio_toolkit::audio::chunker::{AudioChunker, ChunkerConfig};
 type AppendPasteCb = Arc<Mutex<Box<dyn Fn(&str) + Send + 'static>>>;
 use crate::helpers::clamshell;
 use crate::observability::{self, Outcome, Stage, Stopwatch};
-use crate::output::{select_sink_auto, Action, DeltaComputer, StreamingSink};
+use crate::output::{select_sink_auto, DeltaComputer, StreamingSink};
 use crate::settings::{get_settings, AppSettings};
 use crate::streaming_pipeline::{ChunkPartial, OrchestratorConfig, StreamingOrchestrator};
 use crate::utils;
@@ -716,7 +716,7 @@ fn emit_interval_ms(last_at: &mut Option<Instant>) -> Option<f64> {
 /// (None for the first partial in a session).  Emitted to observability.
 fn process_chunk_partial(
     partial: &ChunkPartial,
-    delta_computer: &mut DeltaComputer,
+    _delta_computer: &mut DeltaComputer,
     sink: &mut (dyn StreamingSink + Send),
     append_paste: &AppendPasteCb,
     chunk_emit_interval_ms: Option<f64>,
@@ -748,35 +748,34 @@ fn process_chunk_partial(
         );
     }
 
-    match delta_computer.compute(&partial.partial_text) {
-        Action::Append(delta) => {
-            let chars_appended = delta.chars().count();
-            match sink.append(&delta) {
-                Ok(()) => {
-                    delta_computer.ack(chars_appended);
-                    // Notify TranscriptionManager via callback so
-                    // incremental_paste_cursor stays accurate for M3 reconcile.
-                    if let Ok(cb) = append_paste.lock() {
-                        cb(&delta);
-                    }
-                    info!(
-                        "[t7_output] streaming=true chunked=true chunk_idx={} delta_chars={}",
-                        partial.chunk_idx, chars_appended
-                    );
-                }
-                Err(e) => {
-                    warn!("[streaming-drainer] sink.append failed: {}", e);
-                }
+    // FD-006 M2 follow-up #2: each chunk's partial is the transcription of a
+    // ~1s audio window — NOT a cumulative growing partial like FD-003 M2.6's
+    // pseudo-streaming Qwen3 token callback. Adjacent chunk partials therefore
+    // do not have a prefix relationship (chunk N = "切换一下", chunk N+1 =
+    // "一下我们"). The conservative DeltaComputer.compute would Skip every
+    // non-first chunk because starts_with(prev) is false — symptom user
+    // reported: only first sentence appears, rest "stuck".
+    //
+    // In chunked mode we bypass DeltaComputer and append each chunk's text
+    // directly to the sink + incremental_paste_cursor. The 300 ms overlap +
+    // model boundary errors are tolerated during streaming; M3 final pass
+    // batch-inferences the full audio and reconciles via backspace + retype
+    // when it ships, replacing the streamed approximation with the
+    // authoritative transcript.
+    let delta = partial.partial_text.as_str();
+    let chars_appended = delta.chars().count();
+    match sink.append(delta) {
+        Ok(()) => {
+            if let Ok(cb) = append_paste.lock() {
+                cb(delta);
             }
-        }
-        Action::Skip => {
-            debug!(
-                "[streaming-drainer] chunk_idx={} delta skipped (retroactive or no change)",
-                partial.chunk_idx
+            info!(
+                "[t7_output] streaming=true chunked=true chunk_idx={} delta_chars={}",
+                partial.chunk_idx, chars_appended
             );
         }
-        Action::Finalize { .. } => {
-            // DeltaComputer.compute() never returns Finalize; only finalize() does.
+        Err(e) => {
+            warn!("[streaming-drainer] sink.append failed: {}", e);
         }
     }
 }
