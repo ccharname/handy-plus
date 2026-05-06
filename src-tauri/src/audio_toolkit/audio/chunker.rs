@@ -93,6 +93,12 @@ pub struct AudioChunker {
     /// last speech frame.
     vad_silence_run_ms: u64,
 
+    /// FD-006 follow-up #5: did we ingest at least one speech frame since the
+    /// last emit?  Used to suppress repeated silence-only chunks (which the
+    /// model hallucinates as "嗯。" filler tokens) when the user finishes
+    /// speaking but keeps holding the push-to-talk key.
+    had_speech_since_last_emit: bool,
+
     /// Total number of chunks emitted in this session.
     chunk_idx: u64,
 
@@ -119,6 +125,7 @@ impl AudioChunker {
             session_start: None,
             last_emit_at: now,
             vad_silence_run_ms: 0,
+            had_speech_since_last_emit: false,
             chunk_idx: 0,
             total_samples_ingested: 0,
             ringbuffer_start_sample: 0,
@@ -172,6 +179,7 @@ impl AudioChunker {
         self.chunk_idx += 1;
         self.last_emit_at = Instant::now();
         self.vad_silence_run_ms = 0;
+        self.had_speech_since_last_emit = false;
 
         ChunkedAudio {
             samples,
@@ -208,6 +216,7 @@ impl AudioChunker {
         let frame_ms = self.samples_to_ms(samples.len());
         if is_speech {
             self.vad_silence_run_ms = 0;
+            self.had_speech_since_last_emit = true;
         } else {
             self.vad_silence_run_ms += frame_ms;
         }
@@ -216,6 +225,15 @@ impl AudioChunker {
 
         let buf_ms = self.samples_to_ms(self.ringbuffer.len());
         let half_window_ms = self.config.window_ms / 2;
+
+        // FD-006 follow-up #5: suppress chunks where no speech occurred since
+        // the last emit. Without this, a user holding push-to-talk silently
+        // keeps emitting silent chunks every hop_ms, which the ASR model
+        // hallucinates as "嗯。" filler — visible to the user as endless
+        // "嗯。嗯。嗯。" being typed after they stopped speaking.
+        if !self.had_speech_since_last_emit {
+            return None;
+        }
 
         // VAD path: silence ≥ threshold AND we have meaningful audio.
         if self.vad_silence_run_ms >= self.config.vad_silence_ms && buf_ms >= half_window_ms {
@@ -254,6 +272,14 @@ impl AudioChunker {
             // We approximate: if vad_silence_run_ms covers the whole buffer,
             // the buffer is effectively silent.
             if self.vad_silence_run_ms >= buf_ms {
+                self.ringbuffer.clear();
+                break;
+            }
+
+            // FD-006 follow-up #5: if no speech was ingested since the last
+            // emit, the residual is silence-only padding (model would
+            // hallucinate "嗯。"). Skip.
+            if !self.had_speech_since_last_emit {
                 self.ringbuffer.clear();
                 break;
             }
@@ -302,6 +328,7 @@ impl AudioChunker {
         self.session_start = None;
         self.last_emit_at = Instant::now();
         self.vad_silence_run_ms = 0;
+        self.had_speech_since_last_emit = false;
         self.chunk_idx = 0;
         self.total_samples_ingested = 0;
         self.ringbuffer_start_sample = 0;
