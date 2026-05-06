@@ -731,7 +731,7 @@ impl TranscriptionManager {
         engine: &mut LoadedEngine,
         audio: &[f32],
         validated_language: &str,
-        _settings: &crate::settings::AppSettings,
+        settings: &crate::settings::AppSettings,
         partial_emit_handle: AppHandle,
     ) -> Result<transcribe_rs::TranscriptionResult> {
         match engine {
@@ -914,9 +914,26 @@ impl TranscriptionManager {
                     return Err(anyhow::anyhow!("mlx_audio: cancelled"));
                 }
 
-                let stream_result = crate::mlx_audio::transcribe_streaming(
+                // FD-009 M3: build lexical biasing context from custom_words +
+                // custom_word_aliases keys.  Pass None when the word list is empty
+                // to avoid injecting a vacuous system message.
+                let lexical_context = crate::mlx_audio::build_lexical_bias_context(
+                    &settings.custom_words,
+                    &settings.custom_word_aliases,
+                    1500,
+                );
+                if let Some(ref ctx) = lexical_context {
+                    debug!(
+                        "[mlx_audio] lexical biasing context ({} chars): {}",
+                        ctx.chars().count(),
+                        &ctx[..ctx.len().min(120)]
+                    );
+                }
+
+                let stream_result = crate::mlx_audio::transcribe_streaming_with_context(
                     &tmp_path,
                     model_id_str,
+                    lexical_context.as_deref(),
                     |partial: &str| {
                         // Record first-token latency on the very first callback.
                         if !first_token_seen {

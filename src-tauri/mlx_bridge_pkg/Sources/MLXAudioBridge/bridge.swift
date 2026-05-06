@@ -32,6 +32,15 @@ private final class SyncBox<T>: @unchecked Sendable {
     var error: Error?
 }
 
+/// Lightweight @unchecked Sendable value box for crossing Task concurrency boundaries.
+///
+/// Used in place of the identically-named type defined inside MLXAudioSTT (which is
+/// not exported from the mlx-audio-swift module into this bridge target).
+private struct BridgeSendableBox<T>: @unchecked Sendable {
+    let value: T
+    init(_ value: T) { self.value = value }
+}
+
 /// Runs an async closure synchronously by blocking a DispatchSemaphore.
 ///
 /// The async-to-sync dance is non-trivial when this bridge is loaded into a
@@ -313,6 +322,336 @@ public func mlxAudioTranscribeStreaming(
                     }
                 default:
                     break
+                }
+            }
+        }
+        return 0
+    } catch {
+        let msg = "\(error)"
+        errorOut?.pointee = strdup(msg)
+        return 1
+    }
+}
+
+// MARK: - Qwen3-ASR lexical biasing helpers (FD-009 M3)
+
+/// Build a Qwen3-ASR prompt with an optional lexical biasing context injected into
+/// the system message.
+///
+/// The Qwen3-ASR paper (arxiv 2601.21337 §3.1) demonstrates 30-60% relative entity-WER
+/// improvement by providing entity lists in the system turn.  This function produces the
+/// same token sequence as `Qwen3ASRModel.buildPrompt` when `context` is nil/empty, and
+/// inserts the context string as system-message content otherwise.
+///
+/// Format when context is non-empty:
+///   <|im_start|>system
+///   <context>
+///   <|im_end|>
+///
+/// - Parameters:
+///   - model: A loaded `Qwen3ASRModel` with tokenizer set.
+///   - numAudioTokens: Number of `<|audio_pad|>` placeholder tokens.
+///   - language: Human-readable language name (e.g. "Chinese").
+///   - context: Optional system-message context for biasing.  When nil or empty,
+///              behaviour is identical to `Qwen3ASRModel.buildPrompt`.
+/// - Returns: 2-D input-ids tensor `[1, seqLen]`.
+private func buildQwen3PromptWithContext(
+    model: Qwen3ASRModel,
+    numAudioTokens: Int,
+    language: String,
+    context: String?
+) -> MLXArray {
+    guard let tokenizer = model.tokenizer else {
+        fatalError("Qwen3ASRModel tokenizer not loaded")
+    }
+
+    // Resolve canonical language name (mirrors Qwen3ASRModel.buildPrompt).
+    let supported = model.config.supportLanguages
+    let supportedLower = Dictionary(uniqueKeysWithValues: supported.map { ($0.lowercased(), $0) })
+    let langName = supportedLower[language.lowercased()] ?? language
+
+    // Build system turn: empty when no context, otherwise inject context text.
+    let systemContent: String
+    if let ctx = context, !ctx.isEmpty {
+        systemContent = ctx + "\n"
+    } else {
+        systemContent = ""
+    }
+
+    let prompt = "<|im_start|>system\n\(systemContent)<|im_end|>\n"
+        + "<|im_start|>user\n<|audio_start|>"
+        + String(repeating: "<|audio_pad|>", count: numAudioTokens)
+        + "<|audio_end|><|im_end|>\n"
+        + "<|im_start|>assistant\nlanguage \(langName)<asr_text>"
+
+    let tokenIds = tokenizer.encode(text: prompt)
+    return MLXArray(tokenIds.map { Int32($0) }).expandedDimensions(axis: 0)
+}
+
+/// Run streaming generation on a `Qwen3ASRModel` with optional lexical biasing context.
+///
+/// Mirrors `Qwen3ASRModel.generateStream` but substitutes the `buildPrompt` call with
+/// `buildQwen3PromptWithContext`, allowing system-message injection without forking
+/// mlx-audio-swift.  When `context` is nil the output is identical to calling
+/// `model.generateStream(audio:generationParameters:)` directly.
+private func qwen3GenerateStreamWithContext(
+    model: Qwen3ASRModel,
+    audio: MLXArray,
+    generationParameters: STTGenerateParameters,
+    context: String?
+) -> AsyncThrowingStream<STTGeneration, Error> {
+    // Wrap all non-Sendable values into @unchecked Sendable boxes.
+    let sendableModel = BridgeSendableBox(model)
+    let sendableAudio = BridgeSendableBox(audio)
+    let sendableContext = BridgeSendableBox(context)
+    let sendableParams = BridgeSendableBox(generationParameters)
+
+    return AsyncThrowingStream { continuation in
+        Task.detached {
+            let m = sendableModel.value
+            let aud = sendableAudio.value
+            let ctx = sendableContext.value
+            let params = sendableParams.value
+            do {
+                guard let tokenizer = m.tokenizer else {
+                    throw STTError.modelNotInitialized("Tokenizer not loaded")
+                }
+
+                let startTime = Date()
+                let eosTokenIds = [151645, 151643]
+
+                let chunks = splitAudioIntoChunks(
+                    aud,
+                    sampleRate: m.sampleRate,
+                    chunkDuration: params.chunkDuration,
+                    minChunkDuration: params.minChunkDuration
+                )
+
+                var totalPromptTokens = 0
+                var totalGenerationTokens = 0
+                var remainingTokens = params.maxTokens
+                var allGeneratedTokens: [Int] = []
+
+                for (chunkAudio, _) in chunks {
+                    if remainingTokens <= 0 { break }
+                    try Task.checkCancellation()
+
+                    let (inputFeatures, featureAttentionMask, numAudioTokens) = m.preprocessAudio(chunkAudio)
+                    // Context-aware prompt: replaces m.buildPrompt(...).
+                    let inputIds = buildQwen3PromptWithContext(
+                        model: m,
+                        numAudioTokens: numAudioTokens,
+                        language: params.language,
+                        context: ctx
+                    )
+                    let promptTokenCount = inputIds.dim(1)
+                    totalPromptTokens += promptTokenCount
+
+                    // Use callAsFunction with inputFeatures on the first (prefill) pass.
+                    // Qwen3ASRModel.callAsFunction handles embedTokens + mergeAudioFeatures
+                    // internally when inputEmbeddings is nil and inputFeatures is non-nil,
+                    // avoiding the need to access the internal `model.embedTokens` property.
+                    let cache = m.makeCache()
+                    var logits = m.callAsFunction(
+                        inputIds: inputIds,
+                        inputFeatures: inputFeatures,
+                        featureAttentionMask: featureAttentionMask,
+                        cache: cache
+                    )
+                    MLX.eval(logits)
+
+                    var chunkTokens: [Int] = []
+
+                    for _ in 0..<remainingTokens {
+                        try Task.checkCancellation()
+
+                        var lastLogits = logits[0..., -1, 0...]
+                        if params.temperature > 0 {
+                            lastLogits = lastLogits / params.temperature
+                        }
+                        let nextToken = lastLogits.argMax(axis: -1).item(Int.self)
+
+                        if eosTokenIds.contains(nextToken) {
+                            break
+                        }
+
+                        chunkTokens.append(nextToken)
+                        allGeneratedTokens.append(nextToken)
+
+                        let tokenText = tokenizer.decode(tokens: [nextToken])
+                        continuation.yield(.token(tokenText))
+
+                        let nextTokenArray = MLXArray([Int32(nextToken)]).expandedDimensions(axis: 0)
+                        logits = m.callAsFunction(inputIds: nextTokenArray, cache: cache)
+                        MLX.eval(logits)
+                    }
+
+                    totalGenerationTokens += chunkTokens.count
+                    remainingTokens -= chunkTokens.count
+
+                    Memory.clearCache()
+                }
+
+                let endTime = Date()
+                let totalTime = endTime.timeIntervalSince(startTime)
+                let tokensPerSecond = totalTime > 0 ? Double(totalGenerationTokens) / totalTime : 0
+                let peakMemory = Double(Memory.peakMemory) / 1e9
+
+                let info = STTGenerationInfo(
+                    promptTokenCount: totalPromptTokens,
+                    generationTokenCount: totalGenerationTokens,
+                    prefillTime: 0,
+                    generateTime: totalTime,
+                    tokensPerSecond: tokensPerSecond,
+                    peakMemoryUsage: peakMemory
+                )
+                continuation.yield(.info(info))
+
+                let text = tokenizer.decode(tokens: allGeneratedTokens)
+                let output = STTOutput(
+                    text: text.trimmingCharacters(in: .whitespacesAndNewlines),
+                    promptTokens: totalPromptTokens,
+                    generationTokens: totalGenerationTokens,
+                    totalTokens: totalPromptTokens + totalGenerationTokens,
+                    promptTps: totalTime > 0 ? Double(totalPromptTokens) / totalTime : 0,
+                    generationTps: tokensPerSecond,
+                    totalTime: totalTime,
+                    peakMemoryUsage: peakMemory
+                )
+                continuation.yield(.result(output))
+                continuation.finish()
+            } catch is CancellationError {
+                continuation.finish()
+            } catch {
+                continuation.finish(throwing: error)
+            }
+        }
+    }
+}
+
+// MARK: - Streaming file transcription with lexical biasing context (FD-009 M3)
+
+/// Transcribe a WAV file using an mlx-community model with optional lexical biasing.
+///
+/// Identical to `mlx_audio_transcribe_streaming` except for the additional `context`
+/// parameter.  When `context` is non-NULL and non-empty, it is injected into the
+/// Qwen3-ASR system message to bias the decoder towards domain-specific vocabulary.
+/// For non-Qwen3-ASR models the context is silently ignored (falls back to standard
+/// `generateStream`).
+///
+/// Parameters:
+///   - wavPath:    UTF-8 NUL-terminated path to a 16 kHz mono WAV file.
+///   - modelId:    Logical model identifier (same as other streaming functions).
+///   - context:    NUL-terminated UTF-8 context string (may be NULL or empty string
+///                 to disable biasing).  Typically ~60-1500 chars of comma-separated
+///                 entity / word list.
+///   - tokenCb:    Callback called on every decoded token with cumulative text.
+///   - ctx:        Opaque context pointer forwarded to tokenCb.
+///   - errorOut:   On failure, set to a strdup'd error. Caller frees via
+///                 mlx_audio_bridge_free_string. nil on success.
+///
+/// Returns: 0 on success, non-zero on error.
+///
+/// Thread safety: blocks the calling thread (via DispatchSemaphore).
+@_cdecl("mlx_audio_transcribe_streaming_with_context")
+public func mlxAudioTranscribeStreamingWithContext(
+    _ wavPath: UnsafePointer<CChar>,
+    _ modelId: UnsafePointer<CChar>,
+    _ context: UnsafePointer<CChar>?,
+    _ tokenCb: @convention(c) (UnsafePointer<CChar>?, UnsafeMutableRawPointer?) -> Void,
+    _ ctx: UnsafeMutableRawPointer?,
+    _ errorOut: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32 {
+    errorOut?.pointee = nil
+
+    let wavPathStr = String(cString: wavPath)
+    let modelIdStr = String(cString: modelId)
+    let contextStr: String? = context.map { String(cString: $0) }
+        .flatMap { $0.isEmpty ? nil : $0 }
+
+    let repoId: String
+    switch modelIdStr {
+    case "voxtral-mini-4b-4bit":
+        repoId = "mlx-community/Voxtral-Mini-4B-Realtime-2602-4bit"
+    case "qwen3-asr-06b-8bit":
+        repoId = "mlx-community/Qwen3-ASR-0.6B-8bit"
+    default:
+        repoId = modelIdStr
+    }
+
+    let cbCtx = StreamingCallbackContext(tokenCb: tokenCb, ctx: ctx)
+    let sendableContext = BridgeSendableBox(contextStr)
+
+    do {
+        try runSync { () async throws -> Void in
+            let audioURL = URL(fileURLWithPath: wavPathStr)
+            guard FileManager.default.fileExists(atPath: wavPathStr) else {
+                throw BridgeError.fileNotFound(wavPathStr)
+            }
+
+            let (inputSampleRate, inputAudio) = try loadAudioArray(from: audioURL)
+            let audio: MLXArray
+            if inputSampleRate != 16000 {
+                audio = try resampleAudio(inputAudio, from: inputSampleRate, to: 16000)
+            } else {
+                audio = inputAudio.ndim > 1 ? inputAudio.mean(axis: -1) : inputAudio
+            }
+
+            let params = STTGenerateParameters(
+                maxTokens: 4096,
+                temperature: 0.0,
+                verbose: false,
+                language: "Chinese"
+            )
+
+            // Load the model; use context-aware path for Qwen3-ASR, fall through
+            // to standard generateStream for all other model types.
+            let resolvedContext = sendableContext.value
+
+            // Try Qwen3-ASR context path first (only model that supports biasing).
+            if repoId.lowercased().contains("qwen3-asr") || repoId.lowercased().contains("qwen3_asr") {
+                let qwen3Model = try await Qwen3ASRModel.fromPretrained(repoId)
+                var accumulated = ""
+                for try await event in qwen3GenerateStreamWithContext(
+                    model: qwen3Model,
+                    audio: audio,
+                    generationParameters: params,
+                    context: resolvedContext
+                ) {
+                    switch event {
+                    case .token(let tokenText):
+                        accumulated += tokenText
+                        accumulated.withCString { cstr in
+                            cbCtx.tokenCb(cstr, cbCtx.ctx)
+                        }
+                    case .result(let output):
+                        let finalText = output.text
+                        finalText.withCString { cstr in
+                            cbCtx.tokenCb(cstr, cbCtx.ctx)
+                        }
+                    default:
+                        break
+                    }
+                }
+            } else {
+                // Non-Qwen3-ASR models: ignore context, use standard path.
+                let model = try await loadSTTModel(repo: repoId)
+                var accumulated = ""
+                for try await event in model.generateStream(audio: audio, generationParameters: params) {
+                    switch event {
+                    case .token(let tokenText):
+                        accumulated += tokenText
+                        accumulated.withCString { cstr in
+                            cbCtx.tokenCb(cstr, cbCtx.ctx)
+                        }
+                    case .result(let output):
+                        let finalText = output.text
+                        finalText.withCString { cstr in
+                            cbCtx.tokenCb(cstr, cbCtx.ctx)
+                        }
+                    default:
+                        break
+                    }
                 }
             }
         }

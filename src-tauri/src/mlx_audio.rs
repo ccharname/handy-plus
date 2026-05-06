@@ -54,6 +54,21 @@ extern "C" {
         ctx: *mut std::os::raw::c_void,
         error_out: *mut *mut c_char,
     ) -> i32;
+
+    /// Streaming file transcription with optional lexical biasing context (FD-009 M3).
+    ///
+    /// Identical to `mlx_audio_transcribe_streaming` but accepts an additional
+    /// `context` C string that is injected into the Qwen3-ASR system message.
+    /// Pass NULL or empty string to disable biasing (identical to the non-context variant).
+    #[link_name = "mlx_audio_transcribe_streaming_with_context"]
+    fn ffi_mlx_audio_transcribe_streaming_with_context(
+        wav_path: *const c_char,
+        model_id: *const c_char,
+        context: *const c_char,
+        token_cb: extern "C" fn(*const c_char, *mut std::os::raw::c_void),
+        ctx: *mut std::os::raw::c_void,
+        error_out: *mut *mut c_char,
+    ) -> i32;
 }
 
 /// Return the bridge version string (e.g. "handy-mlx-bridge/0.1.0 mlx-audio-swift/0.1.2").
@@ -260,6 +275,173 @@ where
 pub fn transcribe_streaming<F: FnMut(&str)>(
     _wav_path: &Path,
     _model_id: &str,
+    _on_partial: F,
+) -> Result<(), String> {
+    Err("MLX audio bridge is only available on macOS Apple Silicon".to_string())
+}
+
+// ---------------------------------------------------------------------------
+// FD-009 M3 — Lexical biasing via Qwen3-ASR system-message context injection
+// ---------------------------------------------------------------------------
+
+/// Build a lexical biasing context string from custom words and alias keys.
+///
+/// The Qwen3-ASR paper (arxiv 2601.21337) recommends injecting domain entities
+/// into the system message as a comma-separated list.  This function:
+///
+/// 1. Collects `custom_words` + keys of `custom_word_aliases`.
+/// 2. Deduplicates (preserving insertion order: custom_words first).
+/// 3. Formats them as `"User often dictates terms: A, B, C, ..."`.
+/// 4. Hard-caps at `max_chars` characters (default 1500; CJK = 1 char each).
+///
+/// Returns `None` when the combined word list is empty (avoids passing an
+/// empty context string that could pollute the model's attention).
+pub fn build_lexical_bias_context(
+    custom_words: &[String],
+    custom_word_aliases: &std::collections::HashMap<String, Vec<String>>,
+    max_chars: usize,
+) -> Option<String> {
+    if custom_words.is_empty() && custom_word_aliases.is_empty() {
+        return None;
+    }
+
+    // Collect unique terms: custom_words first, then alias keys not already present.
+    let mut seen = std::collections::HashSet::new();
+    let mut terms: Vec<&str> = Vec::new();
+
+    for w in custom_words {
+        let trimmed = w.trim();
+        if !trimmed.is_empty() && seen.insert(trimmed) {
+            terms.push(trimmed);
+        }
+    }
+    for key in custom_word_aliases.keys() {
+        let trimmed = key.trim();
+        if !trimmed.is_empty() && seen.insert(trimmed) {
+            terms.push(trimmed);
+        }
+    }
+
+    if terms.is_empty() {
+        return None;
+    }
+
+    // Prefix counts toward the char cap.
+    let prefix = "User often dictates terms: ";
+    let mut result = prefix.to_string();
+    let mut first = true;
+
+    for term in terms {
+        let sep = if first { "" } else { ", " };
+        let candidate = format!("{}{}", sep, term);
+        // char_count treats every Unicode scalar as 1 (CJK included).
+        if result.chars().count() + candidate.chars().count() > max_chars {
+            break;
+        }
+        result.push_str(&candidate);
+        first = false;
+    }
+
+    // If nothing was appended after the prefix (all terms were too long), return None.
+    if result == prefix {
+        return None;
+    }
+
+    Some(result)
+}
+
+/// Streaming transcription with optional Qwen3-ASR lexical biasing context.
+///
+/// Calls the Swift bridge's `mlx_audio_transcribe_streaming_with_context` FFI.
+/// When `context` is `None` the behaviour is identical to `transcribe_streaming`.
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+pub fn transcribe_streaming_with_context<F>(
+    wav_path: &Path,
+    model_id: &str,
+    context: Option<&str>,
+    mut on_partial: F,
+) -> Result<(), String>
+where
+    F: FnMut(&str),
+{
+    // Pre-flight: same HF cache + metallib checks as base streaming path.
+    ensure_hf_cache_present(model_id)?;
+    if let Err(e) = ensure_metallib_installed() {
+        log::warn!("[mlx_audio] metallib install warning (best-effort): {}", e);
+    }
+
+    let c_path = CString::new(
+        wav_path
+            .to_str()
+            .ok_or_else(|| "WAV path contains non-UTF-8 characters".to_string())?,
+    )
+    .map_err(|e| format!("WAV path contains NUL byte: {}", e))?;
+
+    let c_model_id =
+        CString::new(model_id).map_err(|e| format!("model_id contains NUL byte: {}", e))?;
+
+    // Convert context to CString; use empty string when None so the Swift bridge
+    // treats it as "no biasing".
+    let context_str = context.unwrap_or("");
+    let c_context =
+        CString::new(context_str).map_err(|e| format!("context contains NUL byte: {}", e))?;
+
+    extern "C" fn trampoline(
+        token_cstr: *const c_char,
+        ctx: *mut std::os::raw::c_void,
+    ) {
+        if token_cstr.is_null() || ctx.is_null() {
+            return;
+        }
+        unsafe {
+            let s = CStr::from_ptr(token_cstr).to_string_lossy();
+            let cb = ctx as *mut Box<dyn FnMut(&str)>;
+            (**cb)(s.as_ref());
+        }
+    }
+
+    let mut on_partial_box: Box<dyn FnMut(&str)> = Box::new(&mut on_partial);
+    let ctx_ptr = &mut on_partial_box as *mut Box<dyn FnMut(&str)> as *mut std::os::raw::c_void;
+
+    let mut error_out: *mut c_char = std::ptr::null_mut();
+
+    let rc = unsafe {
+        ffi_mlx_audio_transcribe_streaming_with_context(
+            c_path.as_ptr(),
+            c_model_id.as_ptr(),
+            c_context.as_ptr(),
+            trampoline,
+            ctx_ptr,
+            &mut error_out,
+        )
+    };
+
+    drop(on_partial_box);
+
+    if rc == 0 {
+        Ok(())
+    } else {
+        let err_msg = if error_out.is_null() {
+            format!(
+                "mlx_audio_transcribe_streaming_with_context returned error code {}",
+                rc
+            )
+        } else {
+            let s = unsafe { CStr::from_ptr(error_out) }
+                .to_string_lossy()
+                .into_owned();
+            unsafe { ffi_mlx_audio_bridge_free_string(error_out) };
+            s
+        };
+        Err(err_msg)
+    }
+}
+
+#[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+pub fn transcribe_streaming_with_context<F: FnMut(&str)>(
+    _wav_path: &Path,
+    _model_id: &str,
+    _context: Option<&str>,
     _on_partial: F,
 ) -> Result<(), String> {
     Err("MLX audio bridge is only available on macOS Apple Silicon".to_string())
@@ -905,5 +1087,118 @@ mod tests {
         });
         assert!(result.is_err(), "non-aarch64 stub must return Err");
         assert!(received.is_empty(), "no partials should be emitted on error path");
+    }
+
+    // ── FD-009 M3: lexical biasing context string tests ───────────────────────
+
+    /// Empty word lists → None (avoids polluting the model with empty context).
+    #[test]
+    fn lexical_bias_empty_lists_returns_none() {
+        let result = build_lexical_bias_context(
+            &[],
+            &std::collections::HashMap::new(),
+            1500,
+        );
+        assert!(result.is_none(), "empty lists must return None");
+    }
+
+    /// Non-empty custom_words → Some with correct prefix and content.
+    #[test]
+    fn lexical_bias_custom_words_builds_context() {
+        let words = vec!["Anthropic".to_string(), "Claude".to_string()];
+        let result = build_lexical_bias_context(&words, &std::collections::HashMap::new(), 1500)
+            .expect("non-empty list must produce Some");
+        assert!(
+            result.starts_with("User often dictates terms: "),
+            "must start with prefix, got: {result:?}"
+        );
+        assert!(result.contains("Anthropic"), "must contain Anthropic");
+        assert!(result.contains("Claude"), "must contain Claude");
+    }
+
+    /// Alias keys are included after custom_words, deduped.
+    #[test]
+    fn lexical_bias_alias_keys_included_deduped() {
+        let words = vec!["Anthropic".to_string()];
+        let mut aliases = std::collections::HashMap::new();
+        aliases.insert("Claude".to_string(), vec!["claude".to_string()]);
+        aliases.insert("Anthropic".to_string(), vec!["antrophic".to_string()]); // dup
+        let result = build_lexical_bias_context(&words, &aliases, 1500)
+            .expect("must produce Some");
+        // Anthropic must appear once.
+        assert_eq!(
+            result.matches("Anthropic").count(),
+            1,
+            "Anthropic must be deduped: {result:?}"
+        );
+        assert!(result.contains("Claude"), "alias key Claude must be present");
+    }
+
+    /// Hard char cap at max_chars: output never exceeds the cap.
+    #[test]
+    fn lexical_bias_respects_max_chars_cap() {
+        // Build 100 words each ~20 chars long — total would exceed 1500 chars.
+        let words: Vec<String> = (0..100)
+            .map(|i| format!("SomeVeryLongWord{:03}", i))
+            .collect();
+        let result = build_lexical_bias_context(
+            &words,
+            &std::collections::HashMap::new(),
+            1500,
+        )
+        .expect("non-empty words must produce Some");
+        assert!(
+            result.chars().count() <= 1500,
+            "output must not exceed 1500 chars, got {}",
+            result.chars().count()
+        );
+    }
+
+    /// CJK characters count as 1 each (same as ASCII for the char cap).
+    #[test]
+    fn lexical_bias_cjk_chars_count_as_one() {
+        // 50 Chinese two-char words = 100 CJK chars content + prefix (~27 chars)
+        let words: Vec<String> = (0..50).map(|i| format!("词{:02}", i)).collect();
+        let result = build_lexical_bias_context(
+            &words,
+            &std::collections::HashMap::new(),
+            200,
+        )
+        .expect("must produce Some");
+        assert!(
+            result.chars().count() <= 200,
+            "CJK output must not exceed 200 chars, got {}",
+            result.chars().count()
+        );
+    }
+
+    /// Single word that alone exceeds max_chars → None (prefix + no terms appended).
+    #[test]
+    fn lexical_bias_single_oversized_word_returns_none() {
+        // Word is longer than the entire cap (15 chars cap, word = 20 chars).
+        let words = vec!["A".repeat(20)];
+        let result = build_lexical_bias_context(&words, &std::collections::HashMap::new(), 15);
+        assert!(
+            result.is_none(),
+            "prefix alone exceeds cap → must return None, got {result:?}"
+        );
+    }
+
+    /// Verify `transcribe_streaming_with_context` stub returns Err on non-aarch64.
+    #[test]
+    #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+    fn transcribe_streaming_with_context_non_apple_returns_err() {
+        let tmp = tempfile::tempdir().unwrap();
+        let wav = tmp.path().join("test.wav");
+        std::fs::write(&wav, b"RIFF").unwrap();
+        let mut received: Vec<String> = Vec::new();
+        let result = transcribe_streaming_with_context(
+            &wav,
+            "qwen3-asr-06b-8bit",
+            Some("User often dictates terms: Claude"),
+            |p| received.push(p.to_string()),
+        );
+        assert!(result.is_err(), "non-aarch64 stub must return Err");
+        assert!(received.is_empty());
     }
 }
