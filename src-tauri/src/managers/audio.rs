@@ -1,15 +1,9 @@
 use crate::audio_toolkit::{list_input_devices, vad::SmoothedVad, AudioRecorder, SileroVad};
-use crate::audio_toolkit::audio::chunker::{AudioChunker, ChunkerConfig};
-
-/// FD-006 M2: type alias for the incremental-paste callback passed to the drainer.
-type AppendPasteCb = Arc<Mutex<Box<dyn Fn(&str) + Send + 'static>>>;
 use crate::helpers::clamshell;
 use crate::observability::{self, Outcome, Stage, Stopwatch};
-use crate::output::{select_sink_auto, DeltaComputer, StreamingSink};
 use crate::settings::{get_settings, AppSettings};
-use crate::streaming_pipeline::{ChunkPartial, OrchestratorConfig, StreamingOrchestrator};
 use crate::utils;
-use log::{debug, error, info, warn};
+use log::{debug, error, info};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::Manager;
@@ -150,17 +144,6 @@ fn create_audio_recorder(
 
 /* ──────────────────────────────────────────────────────────────── */
 
-/// FD-006 M2: shared state for a single chunked-streaming session.
-///
-/// Created by `enable_streaming()` when a qwen3_mlx recording starts and torn
-/// down by `disable_streaming()` when the recording ends (or is cancelled).
-struct StreamingSession {
-    orchestrator: Arc<StreamingOrchestrator>,
-    drainer_handle: Option<std::thread::JoinHandle<()>>,
-    /// Signals the drainer thread to stop.
-    drainer_stop: Arc<std::sync::atomic::AtomicBool>,
-}
-
 #[derive(Clone)]
 pub struct AudioRecordingManager {
     state: Arc<Mutex<RecordingState>>,
@@ -171,10 +154,6 @@ pub struct AudioRecordingManager {
     is_open: Arc<Mutex<bool>>,
     is_recording: Arc<Mutex<bool>>,
     did_mute: Arc<Mutex<bool>>,
-
-    /// FD-006 M2: active chunked-streaming session (Some while recording with
-    /// qwen3_mlx_streaming_chunked = true, None otherwise).
-    streaming_session: Arc<Mutex<Option<StreamingSession>>>,
 }
 
 impl AudioRecordingManager {
@@ -197,8 +176,6 @@ impl AudioRecordingManager {
             is_open: Arc::new(Mutex::new(false)),
             is_recording: Arc::new(Mutex::new(false)),
             did_mute: Arc::new(Mutex::new(false)),
-
-            streaming_session: Arc::new(Mutex::new(None)),
         };
 
         // Always-on?  Open immediately.
@@ -525,9 +502,6 @@ impl AudioRecordingManager {
 
             *self.is_recording.lock().unwrap() = false;
 
-            // FD-006 M2: cancel any active streaming session.
-            self.cancel_streaming();
-
             // In on-demand mode, close the mic immediately after cancelling.
             if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
                 self.stop_microphone_stream();
@@ -535,258 +509,5 @@ impl AudioRecordingManager {
         }
     }
 
-    // ── FD-006 M2: chunked streaming helpers ──────────────────────────────────
-
-    /// Enable chunked streaming for the current recording session.
-    ///
-    /// Creates a `StreamingOrchestrator` worker and a drainer thread that
-    /// continuously pulls `ChunkPartial`s → `DeltaComputer` → `sink.append`.
-    ///
-    /// Must be called **before** `try_start_recording` so the chunker is wired
-    /// before the first audio frame arrives.
-    ///
-    /// `append_paste` is a closure supplied by `TranscriptionManager`; it calls
-    /// `self.append_incremental_paste(delta)` without creating a circular dep
-    /// from audio.rs → transcription.rs.
-    pub fn start_chunked_streaming<F>(&self, append_paste: F)
-    where
-        F: Fn(&str) + Send + 'static,
-    {
-        use crate::streaming_pipeline::orchestrator::MlxAudioBackend;
-        use std::sync::atomic::Ordering as AOrdering;
-
-        // Tear down any previous session.
-        self.stop_chunked_streaming(false);
-
-        // ── Orchestrator ──────────────────────────────────────────────────
-        let backend = Box::new(MlxAudioBackend);
-        let orch_config = OrchestratorConfig::default();
-        let orch = Arc::new(StreamingOrchestrator::start(orch_config, backend));
-
-        // ── Chunker + per-frame callback ──────────────────────────────────
-        let chunker_arc = Arc::new(Mutex::new(AudioChunker::new(ChunkerConfig::default())));
-        let orch_for_cb = Arc::clone(&orch);
-        let chunker_for_cb = Arc::clone(&chunker_arc);
-
-        {
-            let mut rec_guard = self.recorder.lock().unwrap();
-            if let Some(rec) = rec_guard.as_mut() {
-                rec.set_streaming_frame_callback(Some(Arc::new(
-                    move |frame: &[f32], is_speech: bool| {
-                        let maybe_chunk = {
-                            let mut ch = chunker_for_cb.lock().unwrap();
-                            ch.ingest(frame, is_speech)
-                        };
-                        if let Some(chunk) = maybe_chunk {
-                            if let Err(e) = orch_for_cb.submit(chunk) {
-                                // submit returns Err on cancel/shutdown — not
-                                // a bug, just a race at session end.
-                                debug!("[chunker] orchestrator submit: {}", e);
-                            }
-                        }
-                    },
-                )));
-            } else {
-                warn!("[streaming] Recorder not available; streaming disabled");
-                return;
-            }
-        }
-
-        // ── Drainer thread ────────────────────────────────────────────────
-        // Polls the partial channel at ~50 ms cadence.  On drainer_stop signal,
-        // drains remaining partials then finalizes the sink and exits.
-        let drainer_stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
-        let drainer_stop_clone = Arc::clone(&drainer_stop);
-        let orch_for_drainer = Arc::clone(&orch);
-
-        // Wrap the append callback behind a Mutex so it can cross thread boundary.
-        let append_paste_arc: AppendPasteCb =
-            Arc::new(Mutex::new(Box::new(append_paste)));
-
-        let drainer_handle = std::thread::spawn(move || {
-            crate::platform::elevate_thread_qos("streaming-drainer");
-            let mut delta_computer = DeltaComputer::new();
-            let mut sink: Box<dyn StreamingSink + Send> = select_sink_auto();
-            let timeout = Duration::from_millis(50);
-            // Track when the last partial arrived to compute chunk_emit_interval_ms.
-            let mut last_partial_at: Option<Instant> = None;
-
-            loop {
-                if drainer_stop_clone.load(AOrdering::Relaxed) {
-                    // FD-006 follow-up #3: do NOT drain the channel on stop.
-                    // The orchestrator has been cancelled and may still emit
-                    // a few in-flight partials (e.g. last chunk that was
-                    // already mid-inference + buffered silent-window chunks
-                    // producing model hallucinations like "嗯。"). Writing
-                    // those to the sink visibly types junk to the user's
-                    // screen for 3-6 s after key release.
-                    //
-                    // The transcription.rs M3 final pass runs a full-audio
-                    // batch inference and reconciles against the
-                    // incremental_paste_cursor — that is the authoritative
-                    // source for the rest of the transcript. Late partials
-                    // are pure noise; discard them.
-                    if let Err(e) = sink.finalize() {
-                        warn!("[streaming-drainer] sink.finalize failed: {}", e);
-                    }
-                    break;
-                }
-
-                if let Some(partial) = orch_for_drainer.recv_partial_timeout(timeout) {
-                    let interval_ms = emit_interval_ms(&mut last_partial_at);
-                    process_chunk_partial(
-                        &partial,
-                        &mut delta_computer,
-                        sink.as_mut(),
-                        &append_paste_arc,
-                        interval_ms,
-                    );
-                }
-            }
-        });
-
-        *self.streaming_session.lock().unwrap() = Some(StreamingSession {
-            orchestrator: orch,
-            drainer_handle: Some(drainer_handle),
-            drainer_stop,
-        });
-
-        info!("[streaming] Chunked streaming session started");
-    }
-
-    /// Gracefully stop the chunked streaming session after recording ends.
-    ///
-    /// `do_finalize = true` → drainer drains remaining partials + finalizes sink.
-    /// `do_finalize = false` → cancel orchestrator (skip pending) + stop drainer.
-    pub fn stop_chunked_streaming(&self, do_finalize: bool) {
-        // Remove the streaming frame callback so no more chunks are submitted.
-        {
-            let mut rec_guard = self.recorder.lock().unwrap();
-            if let Some(rec) = rec_guard.as_mut() {
-                rec.set_streaming_frame_callback(None);
-            }
-        }
-
-        let session_opt = self.streaming_session.lock().unwrap().take();
-        if let Some(mut session) = session_opt {
-            // FD-006 follow-up #3: ALWAYS cancel the orchestrator on stop,
-            // not just on do_finalize=false. Otherwise the worker keeps
-            // serially inferencing the queued chunks (~5-10 of them, each
-            // ~650 ms) for 3-6 s after the user releases the key. Each one
-            // emits a partial that the drainer then writes to the screen,
-            // producing the user-reported "嗯。嗯。嗯。" trailing artefact
-            // (silent chunks → model hallucinates filler tokens).
-            //
-            // do_finalize is now purely a sink.finalize() vs sink.cancel()
-            // gate inside the drainer; final pass batch inference in
-            // transcription.rs is the authoritative source for the full
-            // transcript, so dropping the in-flight chunks is exactly right.
-            session.orchestrator.cancel();
-            // Signal drainer to drain+exit.
-            session
-                .drainer_stop
-                .store(true, std::sync::atomic::Ordering::SeqCst);
-            if let Some(handle) = session.drainer_handle.take() {
-                // Give the drainer up to 3 s to finish then detach.
-                let _ = handle.join();
-            }
-            info!(
-                "[streaming] Chunked streaming session stopped (finalize={})",
-                do_finalize
-            );
-        }
-    }
-
-    /// Cancel the streaming session — orchestrator cancelled, drainer stops
-    /// without emitting remaining partials.
-    pub fn cancel_streaming(&self) {
-        self.stop_chunked_streaming(false);
-    }
-
-    /// Whether a chunked streaming session is currently active.
-    pub fn is_streaming_active(&self) -> bool {
-        self.streaming_session.lock().unwrap().is_some()
-    }
 }
 
-// ── FD-006 M2: drainer helper ─────────────────────────────────────────────────
-
-/// Compute the elapsed milliseconds since the last partial arrived, updating
-/// `last_at`.  Returns `None` for the very first partial (no prior baseline).
-fn emit_interval_ms(last_at: &mut Option<Instant>) -> Option<f64> {
-    let now = Instant::now();
-    let interval = last_at.map(|prev| now.duration_since(prev).as_secs_f64() * 1000.0);
-    *last_at = Some(now);
-    interval
-}
-
-/// Process one `ChunkPartial` from the orchestrator:
-///   partial_text → DeltaComputer → Action::Append(delta) → sink.append → callback.
-///
-/// `chunk_emit_interval_ms`: elapsed since the previous partial was processed
-/// (None for the first partial in a session).  Emitted to observability.
-fn process_chunk_partial(
-    partial: &ChunkPartial,
-    _delta_computer: &mut DeltaComputer,
-    sink: &mut (dyn StreamingSink + Send),
-    append_paste: &AppendPasteCb,
-    chunk_emit_interval_ms: Option<f64>,
-) {
-    if partial.partial_text.is_empty() {
-        return;
-    }
-    if let Some(ref err) = partial.error {
-        warn!(
-            "[streaming-drainer] chunk_idx={} inference error: {}",
-            partial.chunk_idx, err
-        );
-        return;
-    }
-
-    // Emit T5aChunkInference span with chunk_emit_interval_ms so the SLA
-    // assert on "speech → partial on screen" latency has data.
-    if let Some(interval) = chunk_emit_interval_ms {
-        let req = crate::observability::RequestId::new();
-        crate::observability::ok_with(
-            req,
-            crate::observability::Stage::T5aChunkInference,
-            partial.inference_ms,
-            serde_json::json!({
-                crate::observability::OBS_FIELD_CHUNK_IDX: partial.chunk_idx,
-                crate::observability::OBS_FIELD_CHUNK_EMIT_INTERVAL_MS: interval,
-                "inference_ms": partial.inference_ms,
-            }),
-        );
-    }
-
-    // FD-006 M2 follow-up #2: each chunk's partial is the transcription of a
-    // ~1s audio window — NOT a cumulative growing partial like FD-003 M2.6's
-    // pseudo-streaming Qwen3 token callback. Adjacent chunk partials therefore
-    // do not have a prefix relationship (chunk N = "切换一下", chunk N+1 =
-    // "一下我们"). The conservative DeltaComputer.compute would Skip every
-    // non-first chunk because starts_with(prev) is false — symptom user
-    // reported: only first sentence appears, rest "stuck".
-    //
-    // In chunked mode we bypass DeltaComputer and append each chunk's text
-    // directly to the sink + incremental_paste_cursor. The 300 ms overlap +
-    // model boundary errors are tolerated during streaming; M3 final pass
-    // batch-inferences the full audio and reconciles via backspace + retype
-    // when it ships, replacing the streamed approximation with the
-    // authoritative transcript.
-    let delta = partial.partial_text.as_str();
-    let chars_appended = delta.chars().count();
-    match sink.append(delta) {
-        Ok(()) => {
-            if let Ok(cb) = append_paste.lock() {
-                cb(delta);
-            }
-            info!(
-                "[t7_output] streaming=true chunked=true chunk_idx={} delta_chars={}",
-                partial.chunk_idx, chars_appended
-            );
-        }
-        Err(e) => {
-            warn!("[streaming-drainer] sink.append failed: {}", e);
-        }
-    }
-}

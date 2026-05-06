@@ -24,19 +24,19 @@
 }
 
 .recording-overlay {
-  height: 26px;
+  height: 32px;
   width: max-content;
-  min-width: 88px;
+  min-width: 96px;
   max-width: 80vw;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 14px;
+  padding: 0 16px;
   background: var(--overlay-bg);
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
   border: 1px solid var(--overlay-border);
-  border-radius: 13px;
+  border-radius: 16px;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
   opacity: 0;
   transition: opacity 220ms ease-out;
@@ -120,18 +120,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  height: 16px;
+  gap: 3px;
+  height: 26px;
   overflow: hidden;
 }
 
 .bar {
-  width: 3px;
-  background: var(--overlay-fg-soft);
-  max-height: 14px;
-  border-radius: 1.5px;
-  transition: height 80ms linear;
-  min-height: 3px;
+  width: 4px;
+  background: var(--color-logo-primary);
+  max-height: 24px;
+  border-radius: 2px;
+  transition: height 70ms linear, opacity 120ms ease-out;
+  min-height: 4px;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--color-logo-primary) 35%, transparent);
 }
 
 .recording-overlay.fade-in {

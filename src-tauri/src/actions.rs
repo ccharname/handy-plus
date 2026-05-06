@@ -641,27 +641,6 @@ impl ShortcutAction for TranscribeAction {
         let is_always_on = settings.always_on_microphone;
         debug!("Microphone mode - always_on: {}", is_always_on);
 
-        // ── FD-006 M2: enable chunked streaming for qwen3_mlx preset ─────────
-        // If the active preset is qwen3_mlx and chunked streaming is enabled,
-        // wire the AudioChunker + StreamingOrchestrator + drainer *before*
-        // try_start_recording so the first audio frame is caught.
-        let chunked_streaming_enabled = settings.qwen3_mlx_streaming_chunked
-            && settings
-                .active_preset_id
-                .as_deref()
-                .map(|id| id == "qwen3_mlx")
-                .unwrap_or(false);
-
-        if chunked_streaming_enabled {
-            let tm_for_cb = app.state::<Arc<TranscriptionManager>>();
-            let tm_clone = Arc::clone(&tm_for_cb);
-            rm.start_chunked_streaming(move |delta: &str| {
-                tm_clone.append_incremental_paste(delta);
-            });
-            debug!("[FD-006 M2] Chunked streaming enabled for qwen3_mlx");
-        }
-        // ── End FD-006 M2 wiring ───────────────────────────────────────────
-
         let mut recording_error: Option<String> = None;
         if is_always_on {
             // Always-on mode: Play audio feedback immediately, then apply mute after sound finishes
@@ -839,33 +818,14 @@ impl ShortcutAction for TranscribeAction {
             }
 
             // Clear any partial text from a previous session as soon as we enter
-            // the transcribing state.
+            // the transcribing state. The Apple Speech path needs a clean cursor
+            // baseline for its incremental paste; other engines also benefit
+            // from starting fresh.
             let _ = ah.emit("transcription-partial-clear", ());
-            // FD-006 follow-up #4: do NOT reset_incremental_paste here when
-            // chunked streaming was active. The cursor was just populated by
-            // the drainer thread with all the streaming text the user can see
-            // on screen; the M3 final pass needs that cursor for reconcile
-            // (streamed vs final → backspace+retype). Wiping here makes
-            // reconcile see streamed="" → AppendTail(final) → user sees the
-            // streamed text PLUS the final text appended, instead of the
-            // final text replacing/correcting the streamed text.
-            //
-            // The Apple Speech path (and other non-chunked paths) still need
-            // the reset for a clean per-session baseline.
-            let was_streaming = rm.is_streaming_active();
-            if !was_streaming {
-                tm.reset_incremental_paste();
-            }
+            tm.reset_incremental_paste();
 
             let stop_recording_time = Instant::now();
             let t2_sw = Stopwatch::start();
-            // FD-006 M2: signal the streaming session to drain + finalize.
-            // stop_chunked_streaming(true) waits for the drainer thread to
-            // process remaining partials before we proceed to transcription.
-            if was_streaming {
-                rm.stop_chunked_streaming(true);
-                debug!("[FD-006 M2] Chunked streaming session drained");
-            }
             if let Some(samples) = rm.stop_recording(&binding_id) {
                 let recording_ms = t2_sw.elapsed_ms();
                 debug!(

@@ -25,16 +25,6 @@ enum Cmd {
     Shutdown,
 }
 
-// FD-006 M2: per-frame streaming callback type alias.
-type StreamingFrameCb = Arc<dyn Fn(&[f32], bool) + Send + Sync + 'static>;
-
-// FD-006 M2 follow-up: shared mutable handle so the worker thread reads the
-// CURRENT callback each frame, instead of the (stale) clone captured at
-// AudioRecorder::open() time.  Without this, set_streaming_frame_callback()
-// after open() never reaches the consumer loop and streaming output is
-// silent — symptom: text only appears on key-release, not during speech.
-type StreamingFrameCbSlot = Arc<Mutex<Option<StreamingFrameCb>>>;
-
 enum AudioChunk {
     Samples(Vec<f32>),
     EndOfStream,
@@ -46,13 +36,6 @@ pub struct AudioRecorder {
     worker_handle: Option<std::thread::JoinHandle<()>>,
     vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
-    /// FD-006 M2: optional per-resampled-frame callback for streaming chunker.
-    /// Called with `(frame_samples: &[f32], is_speech: bool)` after VAD decision,
-    /// on every 16 kHz resampled frame while recording is active.
-    /// Wrapped in `Arc<Mutex<Option<_>>>` so the worker thread reads the live
-    /// callback each frame; setting it via `set_streaming_frame_callback` after
-    /// `open()` propagates to the consumer loop.
-    streaming_frame_cb: StreamingFrameCbSlot,
 }
 
 impl AudioRecorder {
@@ -63,7 +46,6 @@ impl AudioRecorder {
             worker_handle: None,
             vad: None,
             level_cb: None,
-            streaming_frame_cb: Arc::new(Mutex::new(None)),
         })
     }
 
@@ -78,26 +60,6 @@ impl AudioRecorder {
     {
         self.level_cb = Some(Arc::new(cb));
         self
-    }
-
-    /// FD-006 M2: Install a per-frame callback used by the streaming chunker.
-    ///
-    /// The callback receives each 16 kHz resampled frame and the VAD decision
-    /// for that frame.  It is only called while recording is active.
-    pub fn with_streaming_frame_callback<F>(self, cb: F) -> Self
-    where
-        F: Fn(&[f32], bool) + Send + Sync + 'static,
-    {
-        *self.streaming_frame_cb.lock().unwrap_or_else(|p| p.into_inner()) =
-            Some(Arc::new(cb));
-        self
-    }
-
-    /// Replace (or clear) the streaming frame callback without recreating the
-    /// recorder.  Used by `AudioRecordingManager::start_chunked_streaming` and
-    /// `stop_chunked_streaming` to swap callbacks between sessions.
-    pub fn set_streaming_frame_callback(&self, cb: Option<StreamingFrameCb>) {
-        *self.streaming_frame_cb.lock().unwrap_or_else(|p| p.into_inner()) = cb;
     }
 
     pub fn open(&mut self, device: Option<Device>) -> Result<(), Box<dyn std::error::Error>> {
@@ -121,8 +83,6 @@ impl AudioRecorder {
         let vad = self.vad.clone();
         // Move the optional level callback into the worker thread
         let level_cb = self.level_cb.clone();
-        // FD-006 M2: per-frame streaming callback (for AudioChunker integration)
-        let streaming_frame_cb = self.streaming_frame_cb.clone();
 
         let worker = std::thread::spawn(move || {
             // FD-003 M3.5 #8: elevate VAD/audio-consumer thread to P-core QoS.
@@ -208,7 +168,6 @@ impl AudioRecorder {
                         sample_rx,
                         cmd_rx,
                         level_cb,
-                        streaming_frame_cb,
                         stop_flag,
                     );
                     drop(stream);
@@ -482,7 +441,6 @@ fn run_consumer(
     sample_rx: mpsc::Receiver<AudioChunk>,
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
-    streaming_frame_cb: StreamingFrameCbSlot,
     stop_flag: Arc<AtomicBool>,
 ) {
     let mut frame_resampler = FrameResampler::new(
@@ -505,46 +463,25 @@ fn run_consumer(
         4000.0, // vocal_max_hz
     );
 
-    // handle_frame: run VAD + accumulate samples; also invoke the optional
-    // streaming_frame_cb with (resampled_frame, is_speech) for the chunker.
-    // The slot is locked per frame so live updates from
-    // AudioRecordingManager::start_chunked_streaming reach the consumer
-    // (FD-006 follow-up: was previously captured-by-clone, callbacks set
-    // after open() never fired).
+    // handle_frame: run VAD + accumulate samples for the batch transcription.
     let handle_frame = |samples: &[f32],
                         recording: bool,
                         vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
-                        out_buf: &mut Vec<f32>,
-                        streaming_slot: &StreamingFrameCbSlot| {
+                        out_buf: &mut Vec<f32>| {
         if !recording {
             return;
         }
-
-        let streaming_cb = streaming_slot
-            .lock()
-            .unwrap_or_else(|p| p.into_inner())
-            .clone();
 
         if let Some(vad_arc) = vad {
             let mut det = vad_arc.lock().unwrap();
             match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
                 VadFrame::Speech(buf) => {
                     out_buf.extend_from_slice(buf);
-                    if let Some(cb) = streaming_cb.as_ref() {
-                        cb(buf, true);
-                    }
                 }
-                VadFrame::Noise => {
-                    if let Some(cb) = streaming_cb.as_ref() {
-                        cb(samples, false);
-                    }
-                }
+                VadFrame::Noise => {}
             }
         } else {
             out_buf.extend_from_slice(samples);
-            if let Some(cb) = streaming_cb.as_ref() {
-                cb(samples, true);
-            }
         }
     };
 
@@ -563,7 +500,7 @@ fn run_consumer(
 
         // ---------- existing pipeline ------------------------------------ //
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(frame, recording, &vad, &mut processed_samples, &streaming_frame_cb)
+            handle_frame(frame, recording, &vad, &mut processed_samples)
         });
 
         // non-blocking check for a command
@@ -595,7 +532,6 @@ fn run_consumer(
                                         true,
                                         &vad,
                                         &mut processed_samples,
-                                        &streaming_frame_cb,
                                     )
                                 });
                             }
@@ -608,7 +544,7 @@ fn run_consumer(
                     }
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
-                        handle_frame(frame, true, &vad, &mut processed_samples, &streaming_frame_cb)
+                        handle_frame(frame, true, &vad, &mut processed_samples)
                     });
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));

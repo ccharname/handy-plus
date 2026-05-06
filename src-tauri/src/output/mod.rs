@@ -44,7 +44,6 @@ pub mod delta;
 #[allow(dead_code)]
 pub mod ime;
 pub mod keystroke;
-pub mod reconcile;
 pub mod routing;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -113,5 +112,4 @@ pub use accessibility::AccessibilityOutput;
 pub use clipboard::ClipboardPasteOutput;
 pub use delta::{Action, DeltaComputer};
 pub use keystroke::KeystrokeOutput;
-pub use reconcile::{longest_common_prefix_chars, reconcile_streamed_with_final, ReconcileAction};
 pub use routing::{active_frontmost_app_bundle_id, select_sink, select_sink_auto};

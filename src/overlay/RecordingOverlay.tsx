@@ -56,8 +56,12 @@ const RecordingOverlay: React.FC = () => {
 
       const unlistenLevel = await listen<number[]>("mic-level", (event) => {
         const newLevels = event.payload as number[];
+        // Asymmetric smoothing: rise fast (responsive attack), fall slow
+        // (prevents flicker at silent points). Net effect: amplitude swings
+        // are immediately visible while sustained levels stay readable.
         const smoothed = smoothedLevelsRef.current.map((prev, i) => {
           const target = newLevels[i] || 0;
+          if (target > prev) return prev * 0.35 + target * 0.65;
           return prev * 0.7 + target * 0.3;
         });
         smoothedLevelsRef.current = smoothed;
@@ -104,9 +108,8 @@ const RecordingOverlay: React.FC = () => {
               key={i}
               className="bar"
               style={{
-                height: `${Math.min(14, 3 + Math.pow(v, 0.7) * 11)}px`,
-                transition: "height 60ms ease-out, opacity 120ms ease-out",
-                opacity: Math.max(0.25, v * 1.7),
+                height: `${Math.min(24, 4 + Math.pow(v, 0.55) * 20)}px`,
+                opacity: Math.max(0.45, Math.min(1, v * 2.4)),
               }}
             />
           ))}

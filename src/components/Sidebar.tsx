@@ -10,7 +10,6 @@ import {
   Cpu,
   Layers,
 } from "lucide-react";
-import V2tTextLogo from "./icons/HandyTextLogo";
 import V2tHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
 import {
@@ -116,9 +115,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     .map(([id, config]) => ({ id: id as SidebarSection, ...config }));
 
   return (
-    <div className="flex flex-col w-40 h-full border-e border-mid-gray/20 items-center px-2">
-      <V2tTextLogo width={120} className="m-4" />
-      <div className="flex flex-col w-full items-center gap-1 pt-2 border-t border-mid-gray/20">
+    <div className="flex flex-col w-40 h-full border-e border-mid-gray/20 items-center px-2 pt-3">
+      <div className="flex flex-col w-full items-center gap-1">
         {availableSections.map((section) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
