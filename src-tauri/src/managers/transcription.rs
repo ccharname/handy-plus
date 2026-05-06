@@ -881,6 +881,36 @@ impl TranscriptionManager {
                         .map(|s| s.get())
                         .unwrap_or_default();
 
+                    // FD-006 follow-up #8: erase streaming garbage IMMEDIATELY on
+                    // release, before the ~700 ms batch inference. Without this
+                    // step the user sees the chunked-streaming partials (often
+                    // wrong/duplicated, e.g. "我我说最后一面...") sitting on
+                    // screen for ~1 s after they release the hotkey, which feels
+                    // like the recorder is "stuck still recording". With the
+                    // erase moved up, release → instant blank → ~700 ms later
+                    // the polished final text appears.
+                    //
+                    // We hold onto `streamed` so we can retype it as recovery
+                    // if batch inference fails.
+                    let streamed = self.take_incremental_paste_cursor();
+                    let streamed_chars = streamed.chars().count();
+                    if streamed_chars > 0 {
+                        if let Some(enigo_state) =
+                            partial_emit_handle.try_state::<crate::input::EnigoState>()
+                        {
+                            if let Ok(mut enigo) = enigo_state.0.lock() {
+                                if let Err(e) =
+                                    crate::input::send_backspaces(&mut enigo, streamed_chars)
+                                {
+                                    error!(
+                                        "[mlx_audio M3] early-erase backspace × {} failed: {}",
+                                        streamed_chars, e
+                                    );
+                                }
+                            }
+                        }
+                    }
+
                     // -- Step 1: batch inference on full audio ----------------------------
                     let final_pass_start = std::time::Instant::now();
 
@@ -917,10 +947,16 @@ impl TranscriptionManager {
 
                     if let Err(e) = wav_result {
                         warn!("[mlx_audio M3] failed to write WAV for final pass: {}", e);
-                        // Fall back: just return what was already streamed.
-                        let streamed_text = self.take_incremental_paste_cursor();
+                        // Recovery: retype the streaming text we just erased so
+                        // the user doesn't lose their transcript.
+                        if !streamed.is_empty() {
+                            let mut sink = crate::output::select_sink_auto();
+                            let _ = sink.append(&streamed);
+                            let _ = sink.finalize();
+                            self.append_incremental_paste(&streamed);
+                        }
                         return Ok(transcribe_rs::TranscriptionResult {
-                            text: streamed_text,
+                            text: streamed,
                             segments: None,
                         });
                     }
@@ -947,86 +983,38 @@ impl TranscriptionManager {
                                 "[mlx_audio M3] final-pass batch inference failed ({:.0}ms): {}",
                                 final_pass_ms, e
                             );
-                            // On failure: return streamed content as-is (no reconcile).
-                            let streamed_text = self.take_incremental_paste_cursor();
+                            // Recovery: retype the streaming text we just erased.
+                            if !streamed.is_empty() {
+                                let mut sink = crate::output::select_sink_auto();
+                                let _ = sink.append(&streamed);
+                                let _ = sink.finalize();
+                                self.append_incremental_paste(&streamed);
+                            }
                             return Ok(transcribe_rs::TranscriptionResult {
-                                text: streamed_text,
+                                text: streamed,
                                 segments: None,
                             });
                         }
                     };
 
-                    // -- Step 2: reconcile with already-pasted streaming text -------------
-                    let streamed = self.take_incremental_paste_cursor();
+                    // -- Step 2: type the polished final text -----------------------------
+                    //
+                    // Screen is currently blank (we erased streaming garbage
+                    // before batch inference). Reconcile collapses to "type the
+                    // whole final_text from scratch". The previous
+                    // BackspaceAndRetype/AppendTail branching is no longer
+                    // needed because there is no streamed content left on
+                    // screen to diff against.
+                    let backspace_chars = streamed_chars;
+                    let retype_chars = final_text.chars().count();
+                    let divergence_chars = retype_chars;
 
-                    let action =
-                        crate::output::reconcile::reconcile_streamed_with_final(&streamed, &final_text);
-
-                    let divergence_chars: usize;
-                    let backspace_chars: usize;
-                    let retype_chars: usize;
-
-                    match &action {
-                        crate::output::reconcile::ReconcileAction::NoOp => {
-                            divergence_chars = 0;
-                            backspace_chars = 0;
-                            retype_chars = 0;
-                            // Nothing to do — screen already matches.
-                        }
-                        crate::output::reconcile::ReconcileAction::AppendTail(tail) => {
-                            divergence_chars = tail.chars().count();
-                            backspace_chars = 0;
-                            retype_chars = tail.chars().count();
-                            // Append residual suffix via the streaming sink.
-                            // We use a fresh sink here since the chunked drainer
-                            // already closed its sink (no reference kept).
-                            if !tail.is_empty() {
-                                let mut sink = crate::output::select_sink_auto();
-                                if let Err(e) = sink.append(tail) {
-                                    warn!("[mlx_audio M3] sink.append (tail) failed: {}", e);
-                                } else {
-                                    let _ = sink.finalize();
-                                }
-                            }
-                        }
-                        crate::output::reconcile::ReconcileAction::BackspaceAndRetype {
-                            backspaces,
-                            retype,
-                        } => {
-                            let bs = *backspaces;
-                            let rt = retype.clone();
-                            divergence_chars = streamed.chars().count()
-                                - (streamed.chars().count() - bs);
-                            backspace_chars = bs;
-                            retype_chars = rt.chars().count();
-
-                            // Erase divergent suffix via Backspace keystrokes.
-                            if bs > 0 {
-                                if let Some(enigo_state) =
-                                    partial_emit_handle.try_state::<crate::input::EnigoState>()
-                                {
-                                    if let Ok(mut enigo) = enigo_state.0.lock() {
-                                        if let Err(e) =
-                                            crate::input::send_backspaces(&mut enigo, bs)
-                                        {
-                                            error!(
-                                                "[mlx_audio M3] backspace × {} failed: {}",
-                                                bs, e
-                                            );
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Type the corrected suffix.
-                            if !rt.is_empty() {
-                                let mut sink = crate::output::select_sink_auto();
-                                if let Err(e) = sink.append(&rt) {
-                                    warn!("[mlx_audio M3] sink.append (retype) failed: {}", e);
-                                } else {
-                                    let _ = sink.finalize();
-                                }
-                            }
+                    if !final_text.is_empty() {
+                        let mut sink = crate::output::select_sink_auto();
+                        if let Err(e) = sink.append(&final_text) {
+                            warn!("[mlx_audio M3] sink.append (final) failed: {}", e);
+                        } else {
+                            let _ = sink.finalize();
                         }
                     }
 
