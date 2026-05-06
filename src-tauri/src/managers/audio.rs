@@ -613,18 +613,19 @@ impl AudioRecordingManager {
 
             loop {
                 if drainer_stop_clone.load(AOrdering::Relaxed) {
-                    // Drain all remaining partials before exit.
-                    while let Some(partial) = orch_for_drainer.try_recv_partial() {
-                        let interval_ms = emit_interval_ms(&mut last_partial_at);
-                        process_chunk_partial(
-                            &partial,
-                            &mut delta_computer,
-                            sink.as_mut(),
-                            &append_paste_arc,
-                            interval_ms,
-                        );
-                    }
-                    // Finalize sink.
+                    // FD-006 follow-up #3: do NOT drain the channel on stop.
+                    // The orchestrator has been cancelled and may still emit
+                    // a few in-flight partials (e.g. last chunk that was
+                    // already mid-inference + buffered silent-window chunks
+                    // producing model hallucinations like "嗯。"). Writing
+                    // those to the sink visibly types junk to the user's
+                    // screen for 3-6 s after key release.
+                    //
+                    // The transcription.rs M3 final pass runs a full-audio
+                    // batch inference and reconciles against the
+                    // incremental_paste_cursor — that is the authoritative
+                    // source for the rest of the transcript. Late partials
+                    // are pure noise; discard them.
                     if let Err(e) = sink.finalize() {
                         warn!("[streaming-drainer] sink.finalize failed: {}", e);
                     }
@@ -668,9 +669,19 @@ impl AudioRecordingManager {
 
         let session_opt = self.streaming_session.lock().unwrap().take();
         if let Some(mut session) = session_opt {
-            if !do_finalize {
-                session.orchestrator.cancel();
-            }
+            // FD-006 follow-up #3: ALWAYS cancel the orchestrator on stop,
+            // not just on do_finalize=false. Otherwise the worker keeps
+            // serially inferencing the queued chunks (~5-10 of them, each
+            // ~650 ms) for 3-6 s after the user releases the key. Each one
+            // emits a partial that the drainer then writes to the screen,
+            // producing the user-reported "嗯。嗯。嗯。" trailing artefact
+            // (silent chunks → model hallucinates filler tokens).
+            //
+            // do_finalize is now purely a sink.finalize() vs sink.cancel()
+            // gate inside the drainer; final pass batch inference in
+            // transcription.rs is the authoritative source for the full
+            // transcript, so dropping the in-flight chunks is exactly right.
+            session.orchestrator.cancel();
             // Signal drainer to drain+exit.
             session
                 .drainer_stop
