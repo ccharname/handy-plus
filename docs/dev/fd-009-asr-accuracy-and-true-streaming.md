@@ -1,15 +1,16 @@
 ---
-fd: FD-007
+fd: FD-009
 title: ASR accuracy uplift + true streaming architecture
 status: draft
 created: 2026-05-06
 deadline: review-by 2026-05-07 07:00
 project: v2t (Handy fork)
 authors: claude (research), zheng (decision)
-supersedes: FD-006 (chunked streaming, abandoned 2026-05-06)
+supersedes: FD-006 (v2t-true-streaming chunked, abandoned 2026-05-06)
+note: renamed from FD-007 → FD-009 (Lucky global FD-007/008 already taken)
 ---
 
-# FD-007 — ASR 准确率提升 + 真流式架构
+# FD-009 — ASR 准确率提升 + 真流式架构
 
 ## 问题陈述
 
