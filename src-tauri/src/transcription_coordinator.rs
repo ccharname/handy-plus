@@ -24,6 +24,7 @@ enum Command {
 }
 
 /// Pipeline lifecycle, owned exclusively by the coordinator thread.
+#[derive(Debug)]
 enum Stage {
     Idle,
     Recording(String), // binding_id
@@ -49,6 +50,12 @@ impl TranscriptionCoordinator {
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let mut stage = Stage::Idle;
                 let mut last_press: Option<Instant> = None;
+                // FD-006 follow-up #7: queue a press that arrived while the
+                // pipeline was still Processing the previous session, so the
+                // user's "release-then-immediately-press-again" is honoured
+                // when Processing → Idle. Without this the press is silently
+                // dropped and the user has to release + press a second time.
+                let mut pending_press: Option<(String, String, bool)> = None;
 
                 while let Ok(cmd) = rx.recv() {
                     match cmd {
@@ -67,6 +74,28 @@ impl TranscriptionCoordinator {
                                     continue;
                                 }
                                 last_press = Some(now);
+                            }
+
+                            // If the pipeline is busy (Processing or recording
+                            // a different binding), queue this press so it
+                            // fires when we return to Idle.
+                            if is_pressed && !matches!(stage, Stage::Idle) {
+                                debug!(
+                                    "Press for '{binding_id}' arrived during {:?}; queued until Idle",
+                                    stage
+                                );
+                                pending_press = Some((
+                                    binding_id.clone(),
+                                    hotkey_string.clone(),
+                                    push_to_talk,
+                                ));
+                                continue;
+                            }
+                            // A release cancels any queued press the user no
+                            // longer wants (e.g. brief tap during processing).
+                            if !is_pressed && pending_press.is_some() {
+                                debug!("Release cancels pending press for '{binding_id}'");
+                                pending_press = None;
                             }
 
                             if push_to_talk {
@@ -103,6 +132,19 @@ impl TranscriptionCoordinator {
                         }
                         Command::ProcessingFinished => {
                             stage = Stage::Idle;
+                            // FD-006 follow-up #7: if the user pressed the
+                            // hotkey during Processing (e.g. release-then-
+                            // immediately-press), trigger the queued start
+                            // now that we're back to Idle.
+                            if let Some((binding_id, hotkey_string, _push_to_talk)) =
+                                pending_press.take()
+                            {
+                                debug!(
+                                    "Replaying queued press for '{binding_id}' after Processing → Idle"
+                                );
+                                start(&app, &mut stage, &binding_id, &hotkey_string);
+                                last_press = Some(Instant::now());
+                            }
                         }
                     }
                 }

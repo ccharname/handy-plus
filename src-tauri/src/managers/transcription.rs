@@ -985,8 +985,6 @@ impl TranscriptionManager {
                                 if let Err(e) = sink.append(tail) {
                                     warn!("[mlx_audio M3] sink.append (tail) failed: {}", e);
                                 } else {
-                                    // Track pasted so actions.rs residual = "".
-                                    self.append_incremental_paste(tail);
                                     let _ = sink.finalize();
                                 }
                             }
@@ -1026,12 +1024,20 @@ impl TranscriptionManager {
                                 if let Err(e) = sink.append(&rt) {
                                     warn!("[mlx_audio M3] sink.append (retype) failed: {}", e);
                                 } else {
-                                    self.append_incremental_paste(&rt);
                                     let _ = sink.finalize();
                                 }
                             }
                         }
                     }
+
+                    // FD-006 follow-up #6: after reconcile the screen content
+                    // equals `final_text`. Repopulate incremental_paste_cursor
+                    // so actions.rs T7Output sees `already_pasted == final_text`
+                    // → residual = "" → its own batch sink.append is skipped.
+                    // Without this, actions.rs sees a stale or partial cursor
+                    // and re-types the prefix, producing a duplicate first
+                    // sentence on the user's screen.
+                    self.append_incremental_paste(&final_text);
 
                     // -- Step 4: observability -------------------------------------------
                     let final_char_count = final_text.chars().count();
