@@ -28,7 +28,7 @@
 //! via Tauri's event system.
 
 use handy_keys::{Hotkey, HotkeyId, HotkeyManager, HotkeyState, KeyboardListener};
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use serde::Serialize;
 use specta::Type;
 use std::collections::HashMap;
@@ -36,11 +36,112 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
+use std::time::Instant;
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::settings::{self, get_settings, ShortcutBinding};
 
 use super::handler::handle_shortcut_event;
+
+// ── FD-006 follow-up #9: stuck-modifier sentinel ──────────────────────────────
+//
+// macOS occasionally fails to deliver pure-modifier keyup events through the
+// CGEventTap that backs handy-keys. The user-visible symptom: press Right Cmd
+// → speak → physically release → recording continues silently for 30-60 s
+// because handy-keys never receives a Released event. The user has to re-press
+// the key to "wake up" the OS event flow before stop fires.
+//
+// This sentinel polls the hardware (HID) modifier/key state every loop
+// iteration. If a binding is in our Pressed-tracking map but the underlying
+// key is no longer physically held, we synthesize a Released event so the
+// rest of the pipeline (coordinator → stop → final pass) proceeds normally.
+//
+// We use `CGEventSourceKeyState` against the HID source — that reads the raw
+// hardware state, bypassing whatever queue the CGEventTap is stuck on.
+
+#[cfg(target_os = "macos")]
+mod modifier_poll {
+    type CGEventSourceStateID = i32;
+    type CGKeyCode = u16;
+    /// kCGEventSourceStateHIDSystemState — hardware-level state, unaffected
+    /// by stuck CGEventTap queues.
+    const HID_SYSTEM_STATE: CGEventSourceStateID = 1;
+
+    // Carbon HIToolbox virtual key codes.
+    pub const VK_COMMAND: CGKeyCode = 0x37; // Left Cmd
+    pub const VK_RIGHT_COMMAND: CGKeyCode = 0x36;
+    pub const VK_OPTION: CGKeyCode = 0x3A; // Left Option
+    pub const VK_RIGHT_OPTION: CGKeyCode = 0x3D;
+    pub const VK_CONTROL: CGKeyCode = 0x3B; // Left Control
+    pub const VK_RIGHT_CONTROL: CGKeyCode = 0x3E;
+    pub const VK_SHIFT: CGKeyCode = 0x38; // Left Shift
+    pub const VK_RIGHT_SHIFT: CGKeyCode = 0x3C;
+    pub const VK_FUNCTION: CGKeyCode = 0x3F;
+
+    #[link(name = "CoreGraphics", kind = "framework")]
+    extern "C" {
+        fn CGEventSourceKeyState(state: CGEventSourceStateID, key: CGKeyCode) -> bool;
+    }
+
+    /// Returns true if the given virtual keycode is currently held according
+    /// to the hardware/HID state.
+    pub fn is_key_held(keycode: CGKeyCode) -> bool {
+        unsafe { CGEventSourceKeyState(HID_SYSTEM_STATE, keycode) }
+    }
+
+    /// Map a handy-keys hotkey string (e.g. "command_right", "option+space")
+    /// to the list of virtual keycodes that must be held for the hotkey to
+    /// still be considered pressed. We only handle the modifier-only case
+    /// today — the bug we're fixing is exclusively about pure-modifier
+    /// keyup loss. Returns None for non-modifier hotkeys (skip the check).
+    pub fn modifier_keycodes_for(hotkey_string: &str) -> Option<Vec<CGKeyCode>> {
+        let s = hotkey_string.trim().to_lowercase();
+        // Only fire the sentinel for pure-modifier hotkeys. Anything with a
+        // '+' or a non-modifier token is left to handy-keys.
+        let is_pure_modifier = matches!(
+            s.as_str(),
+            "command_right"
+                | "command_left"
+                | "command"
+                | "option_right"
+                | "option_left"
+                | "option"
+                | "alt_right"
+                | "alt_left"
+                | "alt"
+                | "control_right"
+                | "control_left"
+                | "control"
+                | "ctrl_right"
+                | "ctrl_left"
+                | "ctrl"
+                | "shift_right"
+                | "shift_left"
+                | "shift"
+                | "fn"
+        );
+        if !is_pure_modifier {
+            return None;
+        }
+
+        Some(match s.as_str() {
+            "command_right" => vec![VK_RIGHT_COMMAND],
+            "command_left" => vec![VK_COMMAND],
+            "command" => vec![VK_COMMAND, VK_RIGHT_COMMAND],
+            "option_right" | "alt_right" => vec![VK_RIGHT_OPTION],
+            "option_left" | "alt_left" => vec![VK_OPTION],
+            "option" | "alt" => vec![VK_OPTION, VK_RIGHT_OPTION],
+            "control_right" | "ctrl_right" => vec![VK_RIGHT_CONTROL],
+            "control_left" | "ctrl_left" => vec![VK_CONTROL],
+            "control" | "ctrl" => vec![VK_CONTROL, VK_RIGHT_CONTROL],
+            "shift_right" => vec![VK_RIGHT_SHIFT],
+            "shift_left" => vec![VK_SHIFT],
+            "shift" => vec![VK_SHIFT, VK_RIGHT_SHIFT],
+            "fn" => vec![VK_FUNCTION],
+            _ => return None,
+        })
+    }
+}
 
 /// Commands that can be sent to the hotkey manager thread
 enum ManagerCommand {
@@ -123,6 +224,20 @@ impl HandyKeysState {
         let mut binding_to_hotkey: HashMap<String, HotkeyId> = HashMap::new();
         let mut hotkey_to_binding: HashMap<HotkeyId, (String, String)> = HashMap::new(); // (binding_id, hotkey_string)
 
+        // FD-006 follow-up #9: bindings currently believed to be Pressed.
+        // We use this to drive the stuck-modifier sentinel — if HID state
+        // says the hotkey is no longer held, we synthesize a Released.
+        // Value is a small grace-period anchor: we wait briefly after the
+        // initial Pressed before polling so we don't fight a legit press
+        // that hasn't fully settled.
+        let mut pressed_bindings: HashMap<HotkeyId, Instant> = HashMap::new();
+        // Throttle the sentinel poll to ~50 ms (5 manager loops at 10 ms)
+        // so we don't read HID state on every iteration. Latency budget:
+        // user releases at T → sentinel fires at most T+50 ms.
+        let mut last_sentinel_check = Instant::now();
+        const SENTINEL_GRACE: std::time::Duration = std::time::Duration::from_millis(120);
+        const SENTINEL_INTERVAL: std::time::Duration = std::time::Duration::from_millis(50);
+
         loop {
             // Check for hotkey events (non-blocking)
             while let Some(event) = manager.try_recv() {
@@ -132,7 +247,55 @@ impl HandyKeysState {
                         binding_id, hotkey_string, event.state
                     );
                     let is_pressed = event.state == HotkeyState::Pressed;
+                    if is_pressed {
+                        pressed_bindings.insert(event.id, Instant::now());
+                    } else {
+                        pressed_bindings.remove(&event.id);
+                    }
                     handle_shortcut_event(&app, binding_id, hotkey_string, is_pressed);
+                }
+            }
+
+            // FD-006 follow-up #9: stuck-modifier sentinel. For each binding
+            // we believe is held, ask the HID layer whether the underlying
+            // physical key is actually still held. If not, synthesize a
+            // Released event — this is the recovery path for the macOS
+            // CGEventTap dropping pure-modifier keyup events.
+            #[cfg(target_os = "macos")]
+            if !pressed_bindings.is_empty()
+                && last_sentinel_check.elapsed() >= SENTINEL_INTERVAL
+            {
+                last_sentinel_check = Instant::now();
+                let mut to_release: Vec<HotkeyId> = Vec::new();
+                for (&id, &pressed_at) in &pressed_bindings {
+                    // Skip the grace window so we don't race a fresh press.
+                    if pressed_at.elapsed() < SENTINEL_GRACE {
+                        continue;
+                    }
+                    let Some((_, hotkey_string)) = hotkey_to_binding.get(&id) else {
+                        continue;
+                    };
+                    let Some(keycodes) = modifier_poll::modifier_keycodes_for(hotkey_string)
+                    else {
+                        // Non-modifier hotkey — leave it to handy-keys.
+                        continue;
+                    };
+                    // For "command" (any side) we accept either side held.
+                    let any_held = keycodes.iter().any(|&kc| modifier_poll::is_key_held(kc));
+                    if !any_held {
+                        to_release.push(id);
+                    }
+                }
+                for id in to_release {
+                    pressed_bindings.remove(&id);
+                    if let Some((binding_id, hotkey_string)) = hotkey_to_binding.get(&id) {
+                        warn!(
+                            "[handy-keys sentinel] HID says '{}' ({}) is released but \
+                             CGEventTap never delivered keyup — synthesizing Released event",
+                            binding_id, hotkey_string
+                        );
+                        handle_shortcut_event(&app, binding_id, hotkey_string, false);
+                    }
                 }
             }
 
