@@ -841,16 +841,28 @@ impl ShortcutAction for TranscribeAction {
             // Clear any partial text from a previous session as soon as we enter
             // the transcribing state.
             let _ = ah.emit("transcription-partial-clear", ());
-            // Also reset the incremental-paste cursor so the new run starts
-            // from an empty baseline (Apple Speech path only; no-op for others).
-            tm.reset_incremental_paste();
+            // FD-006 follow-up #4: do NOT reset_incremental_paste here when
+            // chunked streaming was active. The cursor was just populated by
+            // the drainer thread with all the streaming text the user can see
+            // on screen; the M3 final pass needs that cursor for reconcile
+            // (streamed vs final → backspace+retype). Wiping here makes
+            // reconcile see streamed="" → AppendTail(final) → user sees the
+            // streamed text PLUS the final text appended, instead of the
+            // final text replacing/correcting the streamed text.
+            //
+            // The Apple Speech path (and other non-chunked paths) still need
+            // the reset for a clean per-session baseline.
+            let was_streaming = rm.is_streaming_active();
+            if !was_streaming {
+                tm.reset_incremental_paste();
+            }
 
             let stop_recording_time = Instant::now();
             let t2_sw = Stopwatch::start();
             // FD-006 M2: signal the streaming session to drain + finalize.
             // stop_chunked_streaming(true) waits for the drainer thread to
             // process remaining partials before we proceed to transcription.
-            if rm.is_streaming_active() {
+            if was_streaming {
                 rm.stop_chunked_streaming(true);
                 debug!("[FD-006 M2] Chunked streaming session drained");
             }
