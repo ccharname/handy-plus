@@ -915,10 +915,16 @@ impl TranscriptionManager {
                 }
 
                 // FD-009 M4: fetch rolling history context (last 5 transcripts,
-                // 60s TTL) for multi-utterance session self-adaptation.
+                // 180s TTL) for multi-utterance session self-adaptation.
+                //
+                // TTL chosen to match real dictation cadence: post-deploy
+                // telemetry showed gaps of 30-90s between consecutive utterances
+                // during normal work, and a 60s cutoff caused 50% of sessions to
+                // see 0 history rows (M0 audit 2026-05-07). 180s captures
+                // multi-step workflow context without stale-topic leakage.
                 let recent_transcripts =
                     if let Some(hm) = partial_emit_handle.try_state::<std::sync::Arc<crate::managers::history::HistoryManager>>() {
-                        let transcripts = hm.get_recent_completed_transcripts(5, 60).unwrap_or_default();
+                        let transcripts = hm.get_recent_completed_transcripts(5, 180).unwrap_or_default();
                         debug!(
                             "[mlx_audio] context biasing with {} recent transcripts",
                             transcripts.len()
