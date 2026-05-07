@@ -431,21 +431,53 @@ pub fn filter_transcription_output(
 ) -> String {
     let mut filtered = text.to_string();
 
-    // Build filler patterns from custom list or language defaults
-    let patterns: Vec<Regex> = match custom_filler_words {
-        Some(words) => words
-            .iter()
-            .filter_map(|word| Regex::new(&format!(r"(?i)\b{}\b[,.]?", regex::escape(word))).ok())
-            .collect(),
+    // Source list (custom override or language default).
+    let filler_words: Vec<String> = match custom_filler_words {
+        Some(words) => words.clone(),
         None => get_filler_words_for_language(lang)
             .iter()
-            .map(|word| Regex::new(&format!(r"(?i)\b{}\b[,.]?", regex::escape(word))).unwrap())
+            .map(|s| s.to_string())
             .collect(),
     };
 
-    // Remove filler words
-    for pattern in &patterns {
+    // Split into ASCII fillers (Latin / Cyrillic etc — \b regex works) and
+    // CJK fillers (single CJK char fillers like 嗯 / 呃 — \b never fires in
+    // CJK runs so we strip them by direct char substitution instead).
+    let mut ascii_patterns: Vec<Regex> = Vec::new();
+    let mut cjk_fillers: Vec<&str> = Vec::new();
+    for word in &filler_words {
+        let is_cjk_filler = !word.is_empty()
+            && word.chars().all(is_cjk_char);
+        if is_cjk_filler {
+            cjk_fillers.push(word.as_str());
+        } else if let Ok(rx) = Regex::new(&format!(r"(?i)\b{}\b[,.]?", regex::escape(word))) {
+            ascii_patterns.push(rx);
+        }
+    }
+
+    // Remove ASCII fillers via word-boundary regex.
+    for pattern in &ascii_patterns {
         filtered = pattern.replace_all(&filtered, "").to_string();
+    }
+
+    // Remove CJK fillers via raw substitution. Order matters slightly — strip
+    // longer fillers first so e.g. a hypothetical "啊呀" pattern would beat
+    // single "啊". Current default zh list is all single-char, so stable.
+    let mut cjk_sorted = cjk_fillers.clone();
+    cjk_sorted.sort_by_key(|s| std::cmp::Reverse(s.chars().count()));
+    for word in &cjk_sorted {
+        // Also swallow a trailing comma/period after the filler so we don't
+        // leave "，，" doubles after stripping a "嗯，" pattern.
+        let with_comma = format!("{},", word);
+        let with_zh_comma = format!("{}，", word);
+        let with_period = format!("{}.", word);
+        let with_zh_period = format!("{}。", word);
+        filtered = filtered
+            .replace(&with_comma, "")
+            .replace(&with_zh_comma, "")
+            .replace(&with_period, "")
+            .replace(&with_zh_period, "")
+            .replace(word, "");
     }
 
     // Collapse repeated 1-2 letter words (stutter artifacts like "wh wh wh wh")
@@ -848,6 +880,82 @@ mod tests {
         assert!(
             result.contains("扛着两天") && !result.contains("扛着扛着"),
             "expected one-instance after pipeline, got: {}",
+            result
+        );
+    }
+
+    // ── CJK filler removal tests (M0 finding 2026-05-07) ─────────────────────
+
+    #[test]
+    fn cjk_filler_removed_mid_sentence() {
+        // The post-deploy bug: middle-of-sentence "嗯" survives \b regex.
+        // Char-substitution path strips it.
+        let result = filter_transcription_output(
+            "提供了连接跟断开的嗯方式",
+            "zh",
+            &None,  // None → use default zh filler list (includes 嗯)
+        );
+        assert!(
+            !result.contains('嗯'),
+            "expected mid-sentence '嗯' stripped, got: {}",
+            result
+        );
+        assert!(
+            result.contains("方式"),
+            "must preserve real content: {}",
+            result
+        );
+    }
+
+    #[test]
+    fn cjk_filler_removed_with_trailing_comma() {
+        // "嗯，" pattern — strip the filler AND the trailing comma so we
+        // don't leave a sentence-leading "，".
+        let result = filter_transcription_output(
+            "嗯，需要在这个快捷方式里面",
+            "zh",
+            &None,
+        );
+        assert!(!result.contains('嗯'), "filler should be gone: {}", result);
+        // The leading "，" is also gone (post-trim) so the sentence is clean.
+        assert!(
+            !result.starts_with('，'),
+            "leading '，' should be cleaned: {}",
+            result
+        );
+    }
+
+    #[test]
+    fn cjk_filler_e_removed() {
+        // "呃" same path.
+        let result = filter_transcription_output(
+            "需要在这个，呃，快捷方式",
+            "zh",
+            &None,
+        );
+        assert!(!result.contains('呃'), "filler '呃' should be gone: {}", result);
+    }
+
+    #[test]
+    fn cjk_filler_preserves_non_filler_chars() {
+        // "啊" is a default zh filler. Make sure stripping it doesn't break
+        // unrelated text. (Edge case: "第一啊" loses the emphasis — accepted
+        // tradeoff per FD-009 default zh list.)
+        let result = filter_transcription_output("你好世界", "zh", &None);
+        assert_eq!(result, "你好世界");
+    }
+
+    #[test]
+    fn cjk_filler_list_empty_skips_strip() {
+        // Explicit empty custom list = "no filtering" override.
+        let result = filter_transcription_output(
+            "嗯方式",
+            "zh",
+            &Some(vec![]),
+        );
+        assert!(
+            result.contains('嗯'),
+            "empty custom list must NOT strip: {}",
             result
         );
     }
