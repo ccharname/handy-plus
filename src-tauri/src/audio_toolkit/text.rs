@@ -285,6 +285,91 @@ fn get_filler_words_for_language(lang: &str) -> &'static [&'static str] {
 
 static MULTI_SPACE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\s{2,}").unwrap());
 
+/// Collapses CJK n-gram repetitions (3+ consecutive identical 1-3 char
+/// blocks) to a single instance. Handles ASR repetition hallucinations
+/// in CJK-only text where there's no whitespace to split on.
+///
+/// Examples:
+///   "扛着扛着扛着忙了两天" → "扛着忙了两天"   (bigram "扛着" × 3)
+///   "我我我我吗"               → "我吗"           (unigram "我" × 4)
+///   "走走停停"                 → "走走停停"       (only 2 reps each, kept)
+///   "看看"                     → "看看"           (verb reduplication, 2 reps kept)
+///   "你好世界"                 → "你好世界"       (no repetition)
+///
+/// Skips ASCII codepoints — those are handled by `collapse_stutters` which
+/// is whitespace-aware. Algorithm: scan with shrinking n-gram window
+/// (largest first: 3, 2, 1). At each position try to find the longest
+/// n-gram that repeats ≥ 3 times immediately, collapse to 1 instance,
+/// advance the cursor past the run.
+fn collapse_cjk_repetitions(text: &str) -> String {
+    let chars: Vec<char> = text.chars().collect();
+    if chars.len() < 3 {
+        return text.to_string();
+    }
+
+    let mut result = String::with_capacity(text.len());
+    let mut i = 0;
+
+    while i < chars.len() {
+        // Anchor must be a CJK codepoint to attempt repetition collapse.
+        // ASCII / latin / digits are left alone so collapse_stutters can
+        // handle them via whitespace tokenisation.
+        if !is_cjk_char(chars[i]) {
+            result.push(chars[i]);
+            i += 1;
+            continue;
+        }
+
+        let mut collapsed = false;
+        // Try n-gram lengths 3, 2, 1 (longest first wins).
+        for ngram_len in (1..=3).rev() {
+            if i + ngram_len * 3 > chars.len() {
+                continue;
+            }
+            // The candidate n-gram must be all CJK to anchor a repetition.
+            let ngram: &[char] = &chars[i..i + ngram_len];
+            if !ngram.iter().all(|&c| is_cjk_char(c)) {
+                continue;
+            }
+            // Count consecutive matches (including the anchor).
+            let mut count = 1;
+            while i + ngram_len * (count + 1) <= chars.len()
+                && chars[i + ngram_len * count..i + ngram_len * (count + 1)] == *ngram
+            {
+                count += 1;
+            }
+            if count >= 3 {
+                // Emit one instance, skip the rest of the run.
+                for &c in ngram {
+                    result.push(c);
+                }
+                i += ngram_len * count;
+                collapsed = true;
+                break;
+            }
+        }
+
+        if !collapsed {
+            result.push(chars[i]);
+            i += 1;
+        }
+    }
+
+    result
+}
+
+/// True for CJK Unified Ideographs (U+4E00..U+9FFF) and the major
+/// extension blocks. Excludes punctuation, kana, hangul.
+#[inline]
+fn is_cjk_char(c: char) -> bool {
+    matches!(c as u32,
+        0x4E00..=0x9FFF |    // CJK Unified Ideographs
+        0x3400..=0x4DBF |    // CJK Extension A
+        0x20000..=0x2A6DF |  // CJK Extension B
+        0xF900..=0xFAFF      // CJK Compatibility Ideographs
+    )
+}
+
 /// Collapses repeated words (3+ repetitions) to a single instance.
 /// E.g., "wh wh wh wh" -> "wh", "I I I I" -> "I"
 fn collapse_stutters(text: &str) -> String {
@@ -365,6 +450,11 @@ pub fn filter_transcription_output(
 
     // Collapse repeated 1-2 letter words (stutter artifacts like "wh wh wh wh")
     filtered = collapse_stutters(&filtered);
+
+    // Collapse CJK n-gram repetitions (e.g. "扛着扛着扛着" → "扛着") —
+    // common Qwen3-ASR-0.6B-8bit hallucination pattern not caught by the
+    // whitespace-based collapse_stutters above.
+    filtered = collapse_cjk_repetitions(&filtered);
 
     // Clean up multiple spaces to single space
     filtered = MULTI_SPACE_PATTERN.replace_all(&filtered, " ").to_string();
@@ -669,6 +759,95 @@ mod tests {
         assert!(
             !result.contains("GPT-44"),
             "got double-counted result: {}",
+            result
+        );
+    }
+
+    // ── collapse_cjk_repetitions tests ───────────────────────────────────────
+
+    #[test]
+    fn cjk_collapse_bigram_three_reps() {
+        // The canonical zheng-reported case: "扛着扛着扛着" → "扛着".
+        assert_eq!(
+            collapse_cjk_repetitions("扛着扛着扛着忙了两天"),
+            "扛着忙了两天"
+        );
+    }
+
+    #[test]
+    fn cjk_collapse_unigram_four_reps() {
+        assert_eq!(collapse_cjk_repetitions("我我我我吗"), "我吗");
+    }
+
+    #[test]
+    fn cjk_keep_two_reps_verb_reduplication() {
+        // Chinese AAB-form verb reduplication ("看看", "试试", "想想") must
+        // be preserved — only ≥ 3 consecutive reps collapse.
+        assert_eq!(collapse_cjk_repetitions("我看看就走"), "我看看就走");
+        assert_eq!(collapse_cjk_repetitions("试试这个"), "试试这个");
+    }
+
+    #[test]
+    fn cjk_keep_two_reps_bigram_phrase() {
+        // "走走停停" is two bigrams reduplicated once each, both kept.
+        assert_eq!(collapse_cjk_repetitions("走走停停"), "走走停停");
+    }
+
+    #[test]
+    fn cjk_no_repetition_unchanged() {
+        assert_eq!(collapse_cjk_repetitions("你好世界"), "你好世界");
+        assert_eq!(collapse_cjk_repetitions("今天天气真好"), "今天天气真好");
+    }
+
+    #[test]
+    fn cjk_collapse_trigram_three_reps() {
+        // Trigram repetition is rarer but the algorithm must catch it.
+        assert_eq!(
+            collapse_cjk_repetitions("不行了不行了不行了"),
+            "不行了"
+        );
+    }
+
+    #[test]
+    fn cjk_mixed_with_ascii_only_cjk_collapsed() {
+        // ASCII/Latin runs are skipped — handled by collapse_stutters via
+        // whitespace tokenisation. Only CJK n-grams collapse.
+        let input = "use Claude Claude Claude 来扛着扛着扛着活";
+        let out = collapse_cjk_repetitions(input);
+        // ASCII "Claude" repetitions left alone (no whitespace inside this fn);
+        // CJK "扛着" × 3 collapses to one.
+        assert!(out.contains("Claude Claude Claude"), "ASCII untouched: {}", out);
+        assert!(out.contains("扛着活") && !out.contains("扛着扛着"), "CJK collapsed: {}", out);
+    }
+
+    #[test]
+    fn cjk_short_text_unchanged() {
+        assert_eq!(collapse_cjk_repetitions(""), "");
+        assert_eq!(collapse_cjk_repetitions("你"), "你");
+        assert_eq!(collapse_cjk_repetitions("你好"), "你好");
+    }
+
+    #[test]
+    fn cjk_punctuation_does_not_anchor() {
+        // Chinese punctuation between repetitions must break the run.
+        // "好。好。好。" should NOT collapse — the 。 is a sentence boundary.
+        let result = collapse_cjk_repetitions("好。好。好。");
+        // The unigram "好" appears 3× but not consecutively (broken by 。)
+        // → kept as-is.
+        assert_eq!(result, "好。好。好。");
+    }
+
+    #[test]
+    fn cjk_filter_pipeline_integration() {
+        // End-to-end through filter_transcription_output for zh.
+        let result = filter_transcription_output(
+            "扛着扛着扛着两天",
+            "zh",
+            &Some(vec![]),  // empty custom_filler_words → no filler removal
+        );
+        assert!(
+            result.contains("扛着两天") && !result.contains("扛着扛着"),
+            "expected one-instance after pipeline, got: {}",
             result
         );
     }
