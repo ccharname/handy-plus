@@ -726,7 +726,10 @@ fn default_auto_submit() -> bool {
 }
 
 fn default_history_limit() -> usize {
-    5
+    // FD-009 audit retention: 200 entries supports a 7-day baseline-vs-deploy
+    // comparison (typical zheng cadence ~10-30 dictations/day → ~70-200 in
+    // a week). Old default of 5 blocked any longitudinal audit.
+    200
 }
 
 fn default_recording_retention_period() -> RecordingRetentionPeriod {

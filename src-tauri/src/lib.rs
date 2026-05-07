@@ -520,7 +520,13 @@ pub fn run(cli_args: CliArgs) {
         .plugin(
             LogBuilder::new()
                 .level(log::LevelFilter::Trace) // Set to most verbose level globally
-                .max_file_size(500_000)
+                // FD-009 7-day audit needs ~30 MB headroom for telemetry;
+                // 500 KB + KeepOne would lose 6 of 7 days. Bump to 50 MB so
+                // a normal week of dictation telemetry stays in a single
+                // file. KeepOne semantics retained — if the 50 MB ceiling
+                // is hit (very heavy use), the previous file is preserved
+                // as v2t.log.1 and the audit script can stitch both.
+                .max_file_size(50_000_000)
                 .rotation_strategy(RotationStrategy::KeepOne)
                 .clear_targets()
                 .targets([
