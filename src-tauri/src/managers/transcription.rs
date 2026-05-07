@@ -914,13 +914,28 @@ impl TranscriptionManager {
                     return Err(anyhow::anyhow!("mlx_audio: cancelled"));
                 }
 
-                // FD-009 M3: build lexical biasing context from custom_words +
-                // custom_word_aliases keys.  Pass None when the word list is empty
-                // to avoid injecting a vacuous system message.
+                // FD-009 M4: fetch rolling history context (last 5 transcripts,
+                // 60s TTL) for multi-utterance session self-adaptation.
+                let recent_transcripts =
+                    if let Some(hm) = partial_emit_handle.try_state::<std::sync::Arc<crate::managers::history::HistoryManager>>() {
+                        let transcripts = hm.get_recent_completed_transcripts(5, 60).unwrap_or_default();
+                        debug!(
+                            "[mlx_audio] context biasing with {} recent transcripts",
+                            transcripts.len()
+                        );
+                        transcripts
+                    } else {
+                        Vec::new()
+                    };
+
+                // FD-009 M3+M4: build lexical biasing context from custom_words +
+                // custom_word_aliases keys + rolling history.  Pass None when
+                // everything is empty to avoid injecting a vacuous system message.
                 let lexical_context = crate::mlx_audio::build_lexical_bias_context(
                     &settings.custom_words,
                     &settings.custom_word_aliases,
                     1500,
+                    &recent_transcripts,
                 );
                 if let Some(ref ctx) = lexical_context {
                     debug!(

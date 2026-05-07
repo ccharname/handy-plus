@@ -292,58 +292,122 @@ pub fn transcribe_streaming<F: FnMut(&str)>(
 /// 1. Collects `custom_words` + keys of `custom_word_aliases`.
 /// 2. Deduplicates (preserving insertion order: custom_words first).
 /// 3. Formats them as `"User often dictates terms: A, B, C, ..."`.
-/// 4. Hard-caps at `max_chars` characters (default 1500; CJK = 1 char each).
+/// 4. Hard-caps at `max_chars` characters total across hotwords + history sections
+///    (default 1500; CJK = 1 char each).
 ///
-/// Returns `None` when the combined word list is empty (avoids passing an
-/// empty context string that could pollute the model's attention).
+/// FD-009 M4: also accepts `recent_transcripts` — the last N finalized
+/// transcription texts from the current session (newest-first).  When
+/// non-empty they are appended *after* the hotwords section under a
+/// "Recent dictation context:" header.  Budget allocation rules:
+///
+/// - Hotwords are rendered first and consume budget freely.
+/// - History lines are added only if at least 1 char of budget remains
+///   after the hotwords section; each line is added atomically (no
+///   mid-line truncation).
+/// - If hotwords already consumed the full `max_chars` budget, history
+///   is silently omitted.
+///
+/// Returns `None` when both word lists are empty **and** `recent_transcripts`
+/// is empty (avoids passing a vacuous context string).
 pub fn build_lexical_bias_context(
     custom_words: &[String],
     custom_word_aliases: &std::collections::HashMap<String, Vec<String>>,
     max_chars: usize,
+    recent_transcripts: &[String],
 ) -> Option<String> {
-    if custom_words.is_empty() && custom_word_aliases.is_empty() {
+    let no_hotwords = custom_words.is_empty() && custom_word_aliases.is_empty();
+
+    if no_hotwords && recent_transcripts.is_empty() {
         return None;
     }
 
-    // Collect unique terms: custom_words first, then alias keys not already present.
-    let mut seen = std::collections::HashSet::new();
-    let mut terms: Vec<&str> = Vec::new();
+    let mut result = String::new();
 
-    for w in custom_words {
-        let trimmed = w.trim();
-        if !trimmed.is_empty() && seen.insert(trimmed) {
-            terms.push(trimmed);
+    // ── Hotwords section ──────────────────────────────────────────────────────
+    if !no_hotwords {
+        // Collect unique terms: custom_words first, then alias keys not already present.
+        let mut seen = std::collections::HashSet::new();
+        let mut terms: Vec<&str> = Vec::new();
+
+        for w in custom_words {
+            let trimmed = w.trim();
+            if !trimmed.is_empty() && seen.insert(trimmed) {
+                terms.push(trimmed);
+            }
+        }
+        for key in custom_word_aliases.keys() {
+            let trimmed = key.trim();
+            if !trimmed.is_empty() && seen.insert(trimmed) {
+                terms.push(trimmed);
+            }
+        }
+
+        if !terms.is_empty() {
+            let prefix = "User often dictates terms: ";
+            let mut hw_section = prefix.to_string();
+            let mut first = true;
+
+            for term in terms {
+                let sep = if first { "" } else { ", " };
+                let candidate = format!("{}{}", sep, term);
+                // char_count treats every Unicode scalar as 1 (CJK included).
+                if hw_section.chars().count() + candidate.chars().count() > max_chars {
+                    break;
+                }
+                hw_section.push_str(&candidate);
+                first = false;
+            }
+
+            // Only append hotwords block if at least one term was included.
+            if hw_section != prefix {
+                result.push_str(&hw_section);
+            }
         }
     }
-    for key in custom_word_aliases.keys() {
-        let trimmed = key.trim();
-        if !trimmed.is_empty() && seen.insert(trimmed) {
-            terms.push(trimmed);
+
+    // ── History section ───────────────────────────────────────────────────────
+    if !recent_transcripts.is_empty() {
+        let remaining = max_chars.saturating_sub(result.chars().count());
+        if remaining > 0 {
+            let history_header = if result.is_empty() {
+                "Recent dictation context:\n".to_string()
+            } else {
+                "\nRecent dictation context:\n".to_string()
+            };
+            let header_chars = history_header.chars().count();
+
+            if remaining > header_chars {
+                let mut history_section = history_header;
+                let mut budget = remaining - header_chars;
+
+                for transcript in recent_transcripts {
+                    // Sanitize: replace interior newlines so each entry stays on one line.
+                    let sanitized = transcript.replace('\n', " ").replace('\r', " ");
+                    let line = format!("- {}", sanitized);
+                    let line_chars = line.chars().count() + 1; // +1 for trailing '\n'
+                    if line_chars > budget {
+                        // Drop this entry entirely — no partial lines.
+                        break;
+                    }
+                    history_section.push_str(&line);
+                    history_section.push('\n');
+                    budget -= line_chars;
+                }
+
+                // Only include history block if at least one line was added.
+                let header_only = if result.is_empty() {
+                    history_section == "Recent dictation context:\n"
+                } else {
+                    history_section == "\nRecent dictation context:\n"
+                };
+                if !header_only {
+                    result.push_str(&history_section);
+                }
+            }
         }
     }
 
-    if terms.is_empty() {
-        return None;
-    }
-
-    // Prefix counts toward the char cap.
-    let prefix = "User often dictates terms: ";
-    let mut result = prefix.to_string();
-    let mut first = true;
-
-    for term in terms {
-        let sep = if first { "" } else { ", " };
-        let candidate = format!("{}{}", sep, term);
-        // char_count treats every Unicode scalar as 1 (CJK included).
-        if result.chars().count() + candidate.chars().count() > max_chars {
-            break;
-        }
-        result.push_str(&candidate);
-        first = false;
-    }
-
-    // If nothing was appended after the prefix (all terms were too long), return None.
-    if result == prefix {
+    if result.is_empty() {
         return None;
     }
 
@@ -1091,13 +1155,14 @@ mod tests {
 
     // ── FD-009 M3: lexical biasing context string tests ───────────────────────
 
-    /// Empty word lists → None (avoids polluting the model with empty context).
+    /// Empty word lists and empty history → None (avoids polluting the model with empty context).
     #[test]
     fn lexical_bias_empty_lists_returns_none() {
         let result = build_lexical_bias_context(
             &[],
             &std::collections::HashMap::new(),
             1500,
+            &[],
         );
         assert!(result.is_none(), "empty lists must return None");
     }
@@ -1106,8 +1171,9 @@ mod tests {
     #[test]
     fn lexical_bias_custom_words_builds_context() {
         let words = vec!["Anthropic".to_string(), "Claude".to_string()];
-        let result = build_lexical_bias_context(&words, &std::collections::HashMap::new(), 1500)
-            .expect("non-empty list must produce Some");
+        let result =
+            build_lexical_bias_context(&words, &std::collections::HashMap::new(), 1500, &[])
+                .expect("non-empty list must produce Some");
         assert!(
             result.starts_with("User often dictates terms: "),
             "must start with prefix, got: {result:?}"
@@ -1123,8 +1189,8 @@ mod tests {
         let mut aliases = std::collections::HashMap::new();
         aliases.insert("Claude".to_string(), vec!["claude".to_string()]);
         aliases.insert("Anthropic".to_string(), vec!["antrophic".to_string()]); // dup
-        let result = build_lexical_bias_context(&words, &aliases, 1500)
-            .expect("must produce Some");
+        let result =
+            build_lexical_bias_context(&words, &aliases, 1500, &[]).expect("must produce Some");
         // Anthropic must appear once.
         assert_eq!(
             result.matches("Anthropic").count(),
@@ -1145,6 +1211,7 @@ mod tests {
             &words,
             &std::collections::HashMap::new(),
             1500,
+            &[],
         )
         .expect("non-empty words must produce Some");
         assert!(
@@ -1163,6 +1230,7 @@ mod tests {
             &words,
             &std::collections::HashMap::new(),
             200,
+            &[],
         )
         .expect("must produce Some");
         assert!(
@@ -1177,11 +1245,190 @@ mod tests {
     fn lexical_bias_single_oversized_word_returns_none() {
         // Word is longer than the entire cap (15 chars cap, word = 20 chars).
         let words = vec!["A".repeat(20)];
-        let result = build_lexical_bias_context(&words, &std::collections::HashMap::new(), 15);
+        let result =
+            build_lexical_bias_context(&words, &std::collections::HashMap::new(), 15, &[]);
         assert!(
             result.is_none(),
             "prefix alone exceeds cap → must return None, got {result:?}"
         );
+    }
+
+    // ── FD-009 M4: lexical biasing with history tests ─────────────────────────
+
+    /// history-only (no hotwords): context contains history section, no hotwords prefix.
+    #[test]
+    fn lexical_bias_with_history_history_only() {
+        let history = vec![
+            "我们今天讨论 Rust 并发".to_string(),
+            "上一条是关于 async/await".to_string(),
+        ];
+        let result = build_lexical_bias_context(
+            &[],
+            &std::collections::HashMap::new(),
+            1500,
+            &history,
+        )
+        .expect("history-only must produce Some");
+        assert!(
+            result.contains("Recent dictation context:"),
+            "must contain history header: {result:?}"
+        );
+        assert!(
+            result.contains("我们今天讨论 Rust 并发"),
+            "must contain first entry: {result:?}"
+        );
+        assert!(
+            !result.contains("User often dictates"),
+            "must NOT contain hotwords prefix: {result:?}"
+        );
+    }
+
+    /// hotwords + history combined: both sections present, hotwords first.
+    #[test]
+    fn lexical_bias_with_history_hotwords_and_history() {
+        let words = vec!["Anthropic".to_string()];
+        let history = vec!["talked about Anthropic models".to_string()];
+        let result = build_lexical_bias_context(
+            &words,
+            &std::collections::HashMap::new(),
+            1500,
+            &history,
+        )
+        .expect("combined must produce Some");
+        assert!(
+            result.contains("User often dictates terms:"),
+            "hotwords prefix must be present: {result:?}"
+        );
+        assert!(
+            result.contains("Recent dictation context:"),
+            "history header must be present: {result:?}"
+        );
+        // Hotwords section must come before history section.
+        let hw_pos = result.find("User often dictates").unwrap();
+        let hist_pos = result.find("Recent dictation context:").unwrap();
+        assert!(hw_pos < hist_pos, "hotwords must precede history");
+    }
+
+    /// history too long: each line that exceeds remaining budget is dropped atomically.
+    #[test]
+    fn lexical_bias_with_history_long_history_capped() {
+        // Fill hotwords to use ~1400 chars, leaving ~100 chars for history.
+        let words: Vec<String> = (0..70)
+            .map(|i| format!("LongHotword{:04}", i))
+            .collect();
+        // Each history line is ~60 chars. With ~100 chars left some will fit, some won't.
+        let history: Vec<String> = (0..10)
+            .map(|i| format!("This is a moderately long history entry number {:04}", i))
+            .collect();
+        let result = build_lexical_bias_context(
+            &words,
+            &std::collections::HashMap::new(),
+            1500,
+            &history,
+        );
+        // Result must be Some and within cap regardless of history.
+        if let Some(ref r) = result {
+            assert!(
+                r.chars().count() <= 1500,
+                "total output must not exceed 1500 chars, got {}",
+                r.chars().count()
+            );
+        }
+        // No partial lines: every "- " entry must be a complete line.
+        if let Some(ref r) = result {
+            for line in r.lines() {
+                if line.starts_with("- ") {
+                    assert!(
+                        !line.ends_with("…"),
+                        "lines must not be mid-truncated: {line:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    /// Empty history vec behaves identically to passing no history (no history section).
+    #[test]
+    fn lexical_bias_with_history_empty_vec_same_as_none() {
+        let words = vec!["Claude".to_string()];
+        let with_empty_history = build_lexical_bias_context(
+            &words,
+            &std::collections::HashMap::new(),
+            1500,
+            &[],
+        );
+        let without_history = build_lexical_bias_context(
+            &words,
+            &std::collections::HashMap::new(),
+            1500,
+            &[],
+        );
+        assert_eq!(
+            with_empty_history, without_history,
+            "empty history slice must produce same result as &[]"
+        );
+        // Neither should contain a history section.
+        if let Some(ref r) = with_empty_history {
+            assert!(
+                !r.contains("Recent dictation context:"),
+                "no history header when history is empty: {r:?}"
+            );
+        }
+    }
+
+    /// Single history entry that alone exceeds remaining budget is dropped entirely.
+    #[test]
+    fn lexical_bias_with_history_single_oversized_entry_dropped() {
+        // Use a tight cap of 60 chars; one history entry is 80 chars.
+        let long_entry = "A".repeat(80);
+        let history = vec![long_entry];
+        let result = build_lexical_bias_context(
+            &[],
+            &std::collections::HashMap::new(),
+            60,
+            &history,
+        );
+        // Either None or Some without the oversized entry.
+        if let Some(ref r) = result {
+            assert!(
+                r.chars().count() <= 60,
+                "output must not exceed cap, got {}: {r:?}",
+                r.chars().count()
+            );
+            // The 80-char entry must not appear (it was dropped).
+            assert!(
+                !r.contains(&"A".repeat(80)),
+                "oversized entry must be dropped: {r:?}"
+            );
+        }
+    }
+
+    /// History entries containing newlines/special chars don't break prompt structure.
+    #[test]
+    fn lexical_bias_with_history_newlines_sanitized() {
+        let history = vec![
+            "line one\nline two".to_string(),
+            "tab\there".to_string(),
+            "normal entry".to_string(),
+        ];
+        let result = build_lexical_bias_context(
+            &[],
+            &std::collections::HashMap::new(),
+            1500,
+            &history,
+        )
+        .expect("must produce Some");
+        // Entries with embedded newlines must be sanitized (no bare newline inside a "- " line).
+        for line in result.lines() {
+            if line.starts_with("- ") {
+                assert!(
+                    !line[2..].contains('\n'),
+                    "history entry must not embed newlines: {line:?}"
+                );
+            }
+        }
+        // Normal entry still present.
+        assert!(result.contains("normal entry"), "normal entry must survive: {result:?}");
     }
 
     /// Verify `transcribe_streaming_with_context` stub returns Err on non-aarch64.

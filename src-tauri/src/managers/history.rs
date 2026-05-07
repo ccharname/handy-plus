@@ -504,6 +504,38 @@ impl HistoryManager {
         Ok(PaginatedHistory { entries, has_more })
     }
 
+    /// Test-only helper: run the recent-transcripts query against an arbitrary
+    /// `Connection` (allows in-memory DB tests without a full `HistoryManager`).
+    #[cfg(test)]
+    fn get_recent_completed_transcripts_with_conn(
+        conn: &Connection,
+        limit: usize,
+        max_age_secs: u64,
+    ) -> Result<Vec<String>> {
+        let now = Utc::now().timestamp();
+        let cutoff = now.saturating_sub(max_age_secs as i64);
+
+        let mut stmt = conn.prepare(
+            "SELECT transcription_text
+             FROM transcription_history
+             WHERE transcription_text != ''
+               AND timestamp > ?1
+             ORDER BY timestamp DESC
+             LIMIT ?2",
+        )?;
+
+        let rows = stmt.query_map(
+            params![cutoff, limit as i64],
+            |row| row.get::<_, String>(0),
+        )?;
+
+        let mut results = Vec::new();
+        for row in rows {
+            results.push(row?);
+        }
+        Ok(results)
+    }
+
     #[cfg(test)]
     fn get_latest_entry_with_conn(conn: &Connection) -> Result<Option<HistoryEntry>> {
         let mut stmt = conn.prepare(
@@ -524,6 +556,45 @@ impl HistoryManager {
 
         let entry = stmt.query_row([], Self::map_history_entry).optional()?;
         Ok(entry)
+    }
+
+    /// FD-009 M4: fetch recent non-empty transcripts for rolling context priming.
+    ///
+    /// Returns at most `limit` entries with `timestamp` newer than
+    /// `max_age_secs` seconds ago, ordered newest-first. Only `transcription_text`
+    /// is returned (not `post_processed_text`) to avoid prompt pollution.
+    ///
+    /// `timestamp` is stored as Unix seconds (see `save_entry` which calls
+    /// `Utc::now().timestamp()`), so the cutoff is computed in the same unit.
+    pub fn get_recent_completed_transcripts(
+        &self,
+        limit: usize,
+        max_age_secs: u64,
+    ) -> Result<Vec<String>> {
+        let conn = self.get_connection()?;
+        let now = Utc::now().timestamp();
+        // Saturating cast: max_age_secs is always << i64::MAX in practice.
+        let cutoff = now.saturating_sub(max_age_secs as i64);
+
+        let mut stmt = conn.prepare(
+            "SELECT transcription_text
+             FROM transcription_history
+             WHERE transcription_text != ''
+               AND timestamp > ?1
+             ORDER BY timestamp DESC
+             LIMIT ?2",
+        )?;
+
+        let rows = stmt.query_map(
+            params![cutoff, limit as i64],
+            |row| row.get::<_, String>(0),
+        )?;
+
+        let mut results = Vec::new();
+        for row in rows {
+            results.push(row?);
+        }
+        Ok(results)
     }
 
     /// Get the latest entry with non-empty transcription text.
@@ -733,5 +804,67 @@ mod tests {
 
         assert_eq!(entry.timestamp, 100);
         assert_eq!(entry.transcription_text, "completed");
+    }
+
+    // ── FD-009 M4: get_recent_completed_transcripts tests ─────────────────────
+
+    /// Empty DB → empty vec, not an error.
+    #[test]
+    fn recent_transcripts_empty_db_returns_empty() {
+        let conn = setup_conn();
+        let results =
+            HistoryManager::get_recent_completed_transcripts_with_conn(&conn, 5, 60)
+                .expect("should not error on empty DB");
+        assert!(results.is_empty(), "expected empty, got {:?}", results);
+    }
+
+    /// Entries older than TTL are excluded; recent entries are returned newest-first.
+    #[test]
+    fn recent_transcripts_ttl_filters_old_entries() {
+        let conn = setup_conn();
+        let now = chrono::Utc::now().timestamp();
+        // 120 seconds old — older than 60s TTL
+        insert_entry(&conn, now - 120, "too old", None);
+        // 30 seconds old — within TTL
+        insert_entry(&conn, now - 30, "recent", None);
+        // 10 seconds old — within TTL
+        insert_entry(&conn, now - 10, "newest", None);
+
+        let results =
+            HistoryManager::get_recent_completed_transcripts_with_conn(&conn, 5, 60)
+                .expect("query ok");
+        assert_eq!(results.len(), 2, "only 2 entries within TTL");
+        assert_eq!(results[0], "newest", "newest-first ordering");
+        assert_eq!(results[1], "recent");
+    }
+
+    /// Empty-text entries are never returned even if within TTL.
+    #[test]
+    fn recent_transcripts_skips_empty_text() {
+        let conn = setup_conn();
+        let now = chrono::Utc::now().timestamp();
+        insert_entry(&conn, now - 5, "", None); // empty — must be skipped
+        insert_entry(&conn, now - 5, "hello", None);
+
+        let results =
+            HistoryManager::get_recent_completed_transcripts_with_conn(&conn, 5, 60)
+                .expect("query ok");
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0], "hello");
+    }
+
+    /// `limit` caps the number of results even when more entries match.
+    #[test]
+    fn recent_transcripts_limit_caps_results() {
+        let conn = setup_conn();
+        let now = chrono::Utc::now().timestamp();
+        for i in 0..10_i64 {
+            insert_entry(&conn, now - i, &format!("entry {}", i), None);
+        }
+
+        let results =
+            HistoryManager::get_recent_completed_transcripts_with_conn(&conn, 3, 60)
+                .expect("query ok");
+        assert_eq!(results.len(), 3, "limit=3 must cap results");
     }
 }
